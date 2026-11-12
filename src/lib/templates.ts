@@ -82,6 +82,7 @@ export function makeElement(kind: ElementKind): HudElement {
     ...(kind === 'technical' ? { technicalSide: 'left' as const, technicalLayout: 'side' as const } : {}),
     ...(kind === 'freeText' ? {
       freeTextStyle: 'legacyLabel' as const,
+      freeTextIcon: 'none' as const,
       freeTextCaptions: ['CARROCERIA', 'MODELO', 'CHASSI', 'MODELO', 'EMPRESA', 'PREFIXO'],
       technicalSide: 'left' as const,
       richText: { ...DEFAULT_RICH_TEXT },
