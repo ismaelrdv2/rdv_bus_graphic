@@ -4,7 +4,7 @@
   import { DEFAULT_PALETTE, colorAsSelected, textGroupAsSelected } from '../lib/palette';
   import { FIELD_LABELS, KIND_INFO } from '../lib/templates';
   import { DEFAULT_RICH_TEXT } from '../lib/richtext';
-  import { isBottomBar } from '../lib/geometry';
+  import { isBottomBar, isCompactCartela, CREDIT_CARD_WIDTH, CREDIT_CARD_HEIGHT } from '../lib/geometry';
   import type { FreeTextStyle, RichTextSettings, TechnicalLayout, VisualPreset, HudElement, HudStyle, RDVProject, TextField, TextColorKey, TextColorRole, TextColorGroup, PaletteColors, PaletteId } from '../lib/types';
 
   export let project: RDVProject;
@@ -35,12 +35,26 @@
   export let onRichText: (key: keyof RichTextSettings, value: string | number | boolean) => void;
   export let onFreeTextCaption: (index: number, value: string) => void;
   export let onResetScale: () => void;
+  export let onStandardizeSelected: () => void;
+  export let onStandardizeAll: () => void;
   export let onSelectNone: () => void;
 
   const colorGroups: { key: TextColorGroup, label: string, note: string }[] = [
     { key: 'title', label: 'Cor do título', note: 'Cabeçalho e títulos das cartelas' },
     { key: 'body', label: 'Cor do corpo', note: 'Valores e texto principal' },
     { key: 'secondary', label: 'Cor do texto secundário', note: 'Subtítulos, rótulos e rodapés' },
+  ];
+  type InspectorTab = 'content' | 'typography' | 'colors' | 'dimensions' | 'motion' | 'palette' | 'project';
+  let activeTab: InspectorTab = 'content';
+  let previousSelection = '';
+  $: if ((selected?.id || '') !== previousSelection) {
+    previousSelection = selected?.id || '';
+    activeTab = selected ? 'content' : 'project';
+  }
+  const selectedTabs: {id: InspectorTab; title: string}[] = [
+    {id:'content',title:'Conteúdo'}, {id:'typography',title:'Tipografia'},
+    {id:'colors',title:'Cores'}, {id:'dimensions',title:'Dimensões'},
+    {id:'motion',title:'Animação'}, {id:'palette',title:'Paleta'},
   ];
   let imageInput: HTMLInputElement;
   let allSelectedRole: TextColorRole = 'white';
@@ -107,8 +121,13 @@
       <div><strong>{KIND_INFO[selected.kind].label}</strong><small>Elemento selecionado</small></div>
     </div>
 
-    <section class="property-section">
-      <h3>Conteúdo</h3>
+    <div class="inspector-tabs" role="tablist" aria-label="Categorias de personalização">
+      {#each selectedTabs as tab}
+        <button type="button" role="tab" class:inspector-tab-active={activeTab === tab.id} aria-selected={activeTab === tab.id} on:click={() => activeTab = tab.id}>{tab.title}</button>
+      {/each}
+    </div>
+    {#if activeTab === 'content'}
+    <section class="property-section"><h3>Conteúdo do elemento</h3>
       {#if selected.kind === 'freeText'}
         <label class="field"><span>Estilo do texto livre</span>
           <select value={selected.freeTextStyle || 'classic'} on:change={(event) => onFreeTextStyle(event.currentTarget.value as FreeTextStyle)}>
@@ -142,24 +161,7 @@
       </label>
       <p class="inspector-hint">A opção "Clássico" restaura a aparência e animação em camadas dos itens. Os modos originais de Texto livre usam sempre seu desenho histórico.</p>
       <label class="field"><span>Nome no projeto</span><input type="text" value={selected.title} maxlength="80" on:input={(event) => onRename(event.currentTarget.value)}/></label>
-      <div class="palette-color-group" aria-label="Cores independentes dos textos">
-        <h4>Cores dos textos — independentes</h4>
-        <p class="inspector-hint">Defina a cor do título, do corpo e dos textos secundários separadamente. As cores acompanham a paleta atual. Cada alteração afeta apenas o grupo escolhido.</p>
-        {#each colorGroups as group}
-          <label class="field text-role-picker">
-            <span>{group.label}</span>
-            <select value={textGroupAsSelected(selected,group.key)} on:change={(event) => onTextGroup(group.key,event.currentTarget.value as TextColorRole)}>
-              <option value="original">Cor original deste estilo</option>
-              <option value="white">Branco</option>
-              <option value="primary">Destaque — cor principal</option>
-              <option value="secondary">Cor secundária da paleta</option>
-            </select>
-          </label>
-          <p class="inspector-hint">{group.note}</p>
-          <button type="button" class="button secondary-button fill" on:click={()=>onProjectTextGroup(group.key,textGroupAsSelected(selected,group.key))}>Aplicar {group.label.toLowerCase()} a todo o projeto</button>
-        {/each}
-      </div>
-      <h4>Conteúdo e cores individuais por campo</h4>
+      <h4>Editar os campos</h4>
       {#each fieldKeys as field}
         {@const label = selected.kind === 'freeText' && (selected.freeTextStyle || 'classic') !== 'classic'
           ? field === 'heading' ? 'Título' : richEditor && field === 'line1' ? 'Corpo do texto' : `Texto ${field.replace('line','')}`
@@ -174,52 +176,39 @@
             <input type="text" maxlength="500" value={selected.fields[field as TextField]} on:input={(event) => onField(field as TextField, event.currentTarget.value)}/>
           {/if}
         </label>
-        <label class="field text-role-picker"><span>Cor de {label.toLowerCase()}</span>
-          <select value={colorAsSelected(selected,field)} on:change={(event)=>onTextColor(field,event.currentTarget.value as TextColorRole)}>
-            <option value="original">Padrão original do estilo</option>
-            <option value="white">Branco</option>
-            <option value="primary">Cor principal (destaque)</option>
-            <option value="secondary">Cor secundária</option>
-          </select>
-        </label>
       {/each}
-      <div class="palette-color-group">
-        <label class="field"><span>Cor de todos os textos deste elemento</span>
-          <select bind:value={allSelectedRole}>
-            <option value="white">Branco</option>
-            <option value="primary">Cor principal (destaque)</option>
-            <option value="secondary">Cor secundária</option>
-            <option value="original">Restaurar padrão original</option>
-          </select>
-        </label>
-        <button type="button" class="button secondary-button fill" on:click={()=>onAllSelectedText(allSelectedRole)}>Aplicar a todos os textos deste elemento</button>
-      </div>
       {#if selected.kind === 'technical' || (selected.kind === 'freeText' && ['technicalBar','technicalAlpha1','fullTechnical'].includes(selected.freeTextStyle || 'classic'))}
         <div class="caption-fields">
           <h4>Rótulos acima dos valores</h4>
           {#each Array.from({ length: selected.kind === 'technical' || selected.freeTextStyle === 'technicalBar' || selected.freeTextStyle === 'fullTechnical' ? 6 : 4 }, (_, i) => i) as index}
             <label class="field"><span>Rótulo {index+1}</span><input type="text" maxlength="80" value={(selected.kind === 'technical' ? selected.technicalCaptions : selected.freeTextCaptions)?.[index] || ''} on:input={(event) => onFreeTextCaption(index, event.currentTarget.value)}/></label>
-            <label class="field text-role-picker"><span>Cor do rótulo {index+1}</span>
-              <select value={colorAsSelected(selected,('caption'+index) as TextColorKey)} on:change={event=>onTextColor(('caption'+index) as TextColorKey,event.currentTarget.value as TextColorRole)}>
-                <option value="original">Padrão original</option><option value="white">Branco</option><option value="primary">Destaque</option><option value="secondary">Secundária</option>
-              </select>
-            </label>
           {/each}
         </div>
       {/if}
-      {#if selected.kind === 'freeText' && ['legacyLabel','legacyHalfBar','legacyFullBar'].includes(selected.freeTextStyle || '')}
-        <div class="rich-tools">
-          <h4>Rolagem original — linhas independentes</h4>
-          <label class="field"><span>Linha 1</span><select value={richText.scrollLine1?'on':'off'} on:change={(event)=>onRichText('scrollLine1',event.currentTarget.value==='on')}><option value="off">Parada</option><option value="on">Rolando ◀</option></select></label>
-          <label class="field"><span>Linha 2</span><select value={richText.scrollLine2?'on':'off'} on:change={(event)=>onRichText('scrollLine2',event.currentTarget.value==='on')}><option value="off">Parada</option><option value="on">Rolando ◀</option></select></label>
-          <div class="two-fields">
-            <label class="field"><span>Velocidade (px/s)</span><input type="number" min="30" max="1400" step="10" value={richText.scrollPixelsPerSecond} on:change={(event)=>onRichText('scrollPixelsPerSecond', Number(event.currentTarget.value))}/></label>
-            <label class="field"><span>Repetições</span><input type="number" min="1" max="20" step="1" value={richText.scrollRepeats} on:change={(event)=>onRichText('scrollRepeats', Number(event.currentTarget.value))}/></label>
-          </div>
-          <label class="field"><span>Distância entre repetições (px)</span><input type="number" min="0" max="1000" step="10" value={richText.scrollGap} on:change={(event)=>onRichText('scrollGap', Number(event.currentTarget.value))}/></label>
-          <button type="button" class="button secondary-button fill" on:click={onFitScrollDuration}>Ajustar duração para completar a rolagem</button>
-          <p class="inspector-hint">Velocidade em px/s e repetições, como no RDV Bus 0.14. O botão ajusta a duração global da composição (até 30 segundos), incluindo entrada e saída.</p>
-        </div>
+      {#if selected.kind === 'corner'}
+        <input class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp" bind:this={imageInput} on:change={imageChanged}/>
+        <button class="button secondary-button fill" on:click={() => imageInput.click()}><Icon name="upload" size={16}/> {selected.imageData ? 'Trocar imagem' : 'Escolher imagem'}</button>
+        {#if selected.imageData}<button class="text-action" on:click={() => onImage(undefined)}>Remover imagem</button>{/if}
+        {#if imageError}<small class="error-text">{imageError}</small>{/if}
+      {/if}
+      <h4>Ações do elemento</h4>
+      <div class="action-buttons"><button class="button secondary-button" on:click={onDuplicate}><Icon name="copy" size={16}/> Duplicar</button><button class="button danger-button" on:click={onDelete}><Icon name="trash" size={16}/> Excluir</button></div>
+    </section>
+    {:else if activeTab === 'typography'}
+    <section class="property-section"><h3>Tipografia e formatação</h3>
+      <label class="field"><span>Fonte do elemento (sistema operacional)</span>
+        <select value={selected.style.fontFamily || 'Inter'} on:change={(event)=>onFontFamily(event.currentTarget.value)}>
+          {#each Array.from(new Set([selected.style.fontFamily || 'Inter', ...systemFonts])) as family}
+            <option value={family}>{family}</option>
+          {/each}
+        </select>
+      </label>
+      <p class="inspector-hint">A fonte selecionada vale para todos os textos do elemento; uma fonte aplicada na barra flutuante tem prioridade apenas naquele campo. O projeto guarda o nome da fonte, não seus arquivos.</p>
+      <label class="field"><span>Tamanho geral do texto (px)</span><input type="number" min="16" max="110" step="1" value={selected.style.fontSize} on:change={(event) => onStyle('fontSize', Number(event.currentTarget.value))}/></label>
+      {#if richEditor}
+        <label class="field"><span>Selecionar texto do corpo para formatar</span>
+          <textarea rows="6" maxlength="6000" bind:this={bodyEditor} value={selected.fields.line1} on:input={(event) => onField('line1', event.currentTarget.value)}></textarea>
+        </label>
       {/if}
       {#if richEditor}
         <div class="rich-tools">
@@ -258,30 +247,71 @@
           {/if}
         </div>
       {/if}
-      {#if selected.kind === 'corner'}
-        <input class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp" bind:this={imageInput} on:change={imageChanged}/>
-        <button class="button secondary-button fill" on:click={() => imageInput.click()}><Icon name="upload" size={16}/> {selected.imageData ? 'Trocar imagem' : 'Escolher imagem'}</button>
-        {#if selected.imageData}<button class="text-action" on:click={() => onImage(undefined)}>Remover imagem</button>{/if}
-        {#if imageError}<small class="error-text">{imageError}</small>{/if}
-      {/if}
     </section>
-
-    <section class="property-section">
-      <h3>Aparência</h3>
-      <label class="field"><span>Fonte do elemento (sistema operacional)</span>
-        <select value={selected.style.fontFamily || 'Inter'} on:change={(event)=>onFontFamily(event.currentTarget.value)}>
-          {#each Array.from(new Set([selected.style.fontFamily || 'Inter', ...systemFonts])) as family}
-            <option value={family}>{family}</option>
+    {:else if activeTab === 'colors'}
+    <section class="property-section"><h3>Cores dos textos e do elemento</h3>
+      <div class="palette-color-group" aria-label="Cores independentes dos textos">
+        <h4>Cores dos textos — independentes</h4>
+        <p class="inspector-hint">Defina a cor do título, do corpo e dos textos secundários separadamente. As cores acompanham a paleta atual. Cada alteração afeta apenas o grupo escolhido.</p>
+        {#each colorGroups as group}
+          <label class="field text-role-picker">
+            <span>{group.label}</span>
+            <select value={textGroupAsSelected(selected,group.key)} on:change={(event) => onTextGroup(group.key,event.currentTarget.value as TextColorRole)}>
+              <option value="original">Cor original deste estilo</option>
+              <option value="white">Branco</option>
+              <option value="primary">Destaque — cor principal</option>
+              <option value="secondary">Cor secundária da paleta</option>
+            </select>
+          </label>
+          <p class="inspector-hint">{group.note}</p>
+          <button type="button" class="button secondary-button fill" on:click={()=>onProjectTextGroup(group.key,textGroupAsSelected(selected,group.key))}>Aplicar {group.label.toLowerCase()} a todo o projeto</button>
+        {/each}
+      </div>
+      <h4>Cor de cada campo</h4>
+      {#each fieldKeys as field}
+        {@const label = selected.kind === 'freeText' && (selected.freeTextStyle || 'classic') !== 'classic'
+          ? field === 'heading' ? 'Título' : richEditor && field === 'line1' ? 'Corpo do texto' : `Texto ${field.replace('line','')}`
+          : richEditor && field === 'line1' ? 'Corpo do texto' : labels[field] || field}
+        <label class="field text-role-picker"><span>Cor de {label.toLowerCase()}</span>
+          <select value={colorAsSelected(selected,field)} on:change={(event)=>onTextColor(field,event.currentTarget.value as TextColorRole)}>
+            <option value="original">Padrão original do estilo</option>
+            <option value="white">Branco</option>
+            <option value="primary">Cor principal (destaque)</option>
+            <option value="secondary">Cor secundária</option>
+          </select>
+        </label>
+      {/each}
+      <div class="palette-color-group">
+        <label class="field"><span>Cor de todos os textos deste elemento</span>
+          <select bind:value={allSelectedRole}>
+            <option value="white">Branco</option>
+            <option value="primary">Cor principal (destaque)</option>
+            <option value="secondary">Cor secundária</option>
+            <option value="original">Restaurar padrão original</option>
+          </select>
+        </label>
+        <button type="button" class="button secondary-button fill" on:click={()=>onAllSelectedText(allSelectedRole)}>Aplicar a todos os textos deste elemento</button>
+      </div>
+      {#if selected.kind === 'technical' || (selected.kind === 'freeText' && ['technicalBar','technicalAlpha1','fullTechnical'].includes(selected.freeTextStyle || 'classic'))}
+        <div class="caption-fields">
+          <h4>Cor de cada rótulo</h4>
+          {#each Array.from({ length: selected.kind === 'technical' || selected.freeTextStyle === 'technicalBar' || selected.freeTextStyle === 'fullTechnical' ? 6 : 4 }, (_, i) => i) as index}
+            <label class="field text-role-picker"><span>Cor do rótulo {index+1}</span>
+              <select value={colorAsSelected(selected,('caption'+index) as TextColorKey)} on:change={event=>onTextColor(('caption'+index) as TextColorKey,event.currentTarget.value as TextColorRole)}>
+                <option value="original">Padrão original</option><option value="white">Branco</option><option value="primary">Destaque</option><option value="secondary">Secundária</option>
+              </select>
+            </label>
           {/each}
-        </select>
-      </label>
-      <p class="inspector-hint">A fonte selecionada vale para todos os textos do elemento; uma fonte aplicada na barra flutuante tem prioridade apenas naquele campo. O projeto guarda o nome da fonte, não seus arquivos.</p>
+        </div>
+      {/if}
       <label class="field"><span>Cor principal deste elemento</span><div class="color-control"><input type="color" value={selected.style.accent} on:input={(event) => onStyle('accent', event.currentTarget.value)}/><code>{selected.style.accent}</code></div></label>
       <label class="field"><span>Cor secundária deste elemento</span><div class="color-control"><input type="color" value={selected.style.secondary || DEFAULT_PALETTE.colors.secondary} on:input={(event) => onStyle('secondary', event.currentTarget.value)}/><code>{selected.style.secondary || DEFAULT_PALETTE.colors.secondary}</code></div></label>
       <label class="field"><span>Fundo deste elemento</span><div class="color-control"><input type="color" value={selected.style.background} on:input={(event) => onStyle('background', event.currentTarget.value)}/><code>{selected.style.background}</code></div></label>
       <p class="inspector-hint">Estas alterações afetam apenas o elemento selecionado. Use a paleta do projeto para atualizar todas as seções simultaneamente, inclusive por RGB e HEX.</p>
+    </section>
+    {:else if activeTab === 'dimensions'}
+    <section class="property-section"><h3>Dimensões e posição</h3>
       <div class="two-fields">
-        <label class="field"><span>Tamanho texto</span><input type="number" min="16" max="110" step="1" value={selected.style.fontSize} on:change={(event) => onStyle('fontSize', Number(event.currentTarget.value))}/></label>
         <label class="field"><span>Largura</span><input disabled={isFullscreen || bottomBar} type="number" min={selected.kind === 'technical' || (selected.kind === 'freeText' && selected.freeTextStyle === 'technicalBar') ? 640 : 140} max="1600" step="1" value={selected.style.width} on:change={(event) => onStyle('width', Number(event.currentTarget.value))}/></label>
       </div>
       <div class="two-fields">
@@ -292,10 +322,6 @@
       <p class="inspector-hint">{isFullscreen ? 'Este modelo ocupa toda a tela; altere para faixa lateral/cartela para dimensioná-lo.' : 'Arraste as alças douradas na pré-visualização para redimensionar. As fontes agora mantêm as proporções.'}</p>
 
       <label class="field"><span class="range-head">Opacidade <b>{selected.style.opacity}%</b></span><input type="range" min="0" max="100" step="1" value={selected.style.opacity} on:input={(event) => onStyle('opacity', Number(event.currentTarget.value))}/></label>
-    </section>
-
-    <section class="property-section">
-      <h3>Posição e animação</h3>
       {#if bottomBar}<p class="inspector-hint">Em 9:16, a faixa técnica se ajusta automaticamente à parte inferior. Use escala vertical ou a alça superior para ajustar sua altura.</p>{/if}
       {#if !bottomBar && ((selected.kind === 'technical' && !['fullscreen','legacyFullscreen'].includes(selected.technicalLayout || '')) || (selected.kind === 'freeText' && selected.freeTextStyle === 'technicalBar'))}
         <label class="field"><span>Lado da faixa técnica</span><select value={selected.technicalSide || 'left'} on:change={(event) => onTechnicalSide(event.currentTarget.value as 'left' | 'right')}><option value="left">Esquerdo — referência B 692</option><option value="right">Direito — referência 1171</option></select></label>
@@ -304,22 +330,55 @@
         <label class="field"><span>Posição X</span><input disabled={isFullscreen || bottomBar} type="number" min="0" max={project.canvas.width} value={selected.style.x} on:change={(event) => onStyle('x', Number(event.currentTarget.value))}/></label>
         <label class="field"><span>Posição Y</span><input disabled={isFullscreen || bottomBar} type="number" min="0" max={project.canvas.height} value={selected.style.y} on:change={(event) => onStyle('y', Number(event.currentTarget.value))}/></label>
       </div>
+      {#if isCompactCartela(selected)}
+        <div class="palette-color-group">
+          <h4>Cartela de referência: crédito de filmagem</h4>
+          <p class="inspector-hint">Tamanho padrão: {CREDIT_CARD_WIDTH} × {CREDIT_CARD_HEIGHT} px. As cartelas compactas de localização, data, linha, motorista, crédito e etiqueta de texto livre seguem esta referência. Slides e fichas técnicas mantêm seus próprios tamanhos.</p>
+          <button type="button" class="button secondary-button fill" on:click={onStandardizeSelected}>Usar tamanho da cartela de créditos</button>
+          <button type="button" class="button secondary-button fill" on:click={onStandardizeAll}>Padronizar todas as cartelas do projeto</button>
+        </div>
+      {/if}
+    </section>
+    {:else if activeTab === 'motion'}
+    <section class="property-section"><h3>Animação e rolagem</h3>
       <label class="field"><span>Entrada e saída</span><select value={selected.animation} on:change={(event) => onAnimation(event.currentTarget.value as HudElement['animation'])}><option value="legacy">Animação original 0.14 — por camadas</option><option value="slide">Deslizamento HUD (Studio)</option><option value="fade">Fade suave</option><option value="none">Sem animação</option></select></label>
+      {#if selected.kind === 'freeText' && ['legacyLabel','legacyHalfBar','legacyFullBar'].includes(selected.freeTextStyle || '')}
+        <div class="rich-tools">
+          <h4>Rolagem original — linhas independentes</h4>
+          <label class="field"><span>Linha 1</span><select value={richText.scrollLine1?'on':'off'} on:change={(event)=>onRichText('scrollLine1',event.currentTarget.value==='on')}><option value="off">Parada</option><option value="on">Rolando ◀</option></select></label>
+          <label class="field"><span>Linha 2</span><select value={richText.scrollLine2?'on':'off'} on:change={(event)=>onRichText('scrollLine2',event.currentTarget.value==='on')}><option value="off">Parada</option><option value="on">Rolando ◀</option></select></label>
+          <div class="two-fields">
+            <label class="field"><span>Velocidade (px/s)</span><input type="number" min="30" max="1400" step="10" value={richText.scrollPixelsPerSecond} on:change={(event)=>onRichText('scrollPixelsPerSecond', Number(event.currentTarget.value))}/></label>
+            <label class="field"><span>Repetições</span><input type="number" min="1" max="20" step="1" value={richText.scrollRepeats} on:change={(event)=>onRichText('scrollRepeats', Number(event.currentTarget.value))}/></label>
+          </div>
+          <label class="field"><span>Distância entre repetições (px)</span><input type="number" min="0" max="1000" step="10" value={richText.scrollGap} on:change={(event)=>onRichText('scrollGap', Number(event.currentTarget.value))}/></label>
+          <button type="button" class="button secondary-button fill" on:click={onFitScrollDuration}>Ajustar duração para completar a rolagem</button>
+          <p class="inspector-hint">Velocidade em px/s e repetições, como no RDV Bus 0.14. O botão ajusta a duração global da composição (até 30 segundos), incluindo entrada e saída.</p>
+        </div>
+      {/if}
     </section>
-    <section class="property-section">
-      <h3>Ações</h3>
-      <div class="action-buttons"><button class="button secondary-button" on:click={onDuplicate}><Icon name="copy" size={16}/> Duplicar</button><button class="button danger-button" on:click={onDelete}><Icon name="trash" size={16}/> Excluir</button></div>
-    </section>
+    {:else if activeTab === 'palette'}
+      <PalettePanel palette={project.palette || DEFAULT_PALETTE} onPreset={onPalettePreset} onColor={onPaletteColor} onAllText={onAllProjectText} />
+    {/if}
   {:else}
+    <div class="inspector-tabs" role="tablist" aria-label="Configurações do projeto">
+      <button type="button" role="tab" class:inspector-tab-active={activeTab === 'project'} aria-selected={activeTab === 'project'} on:click={() => activeTab = 'project'}>Vídeo</button>
+      <button type="button" role="tab" class:inspector-tab-active={activeTab === 'palette'} aria-selected={activeTab === 'palette'} on:click={() => activeTab = 'palette'}>Paleta</button>
+    </div>
+    {#if activeTab === 'palette'}
+      <PalettePanel palette={project.palette || DEFAULT_PALETTE} onPreset={onPalettePreset} onColor={onPaletteColor} onAllText={onAllProjectText} />
+    {:else}
     <div class="selected-heading"><div class="selected-icon"><Icon name="layout" size={23}/></div><div><strong>Projeto</strong><small>Configurações gerais</small></div></div>
     <section class="property-section"><h3>Vídeo</h3>
       <label class="field"><span>Formato da composição</span><select value={project.canvas.width === 1080 ? 'portrait' : 'landscape'} on:change={(event) => onCanvas('orientation', event.currentTarget.value)}><option value="landscape">Horizontal · 1920 × 1080</option><option value="portrait">Vertical · 1080 × 1920</option></select></label>
       <label class="field"><span>Taxa de quadros</span><select value={project.canvas.fps} on:change={(event) => onCanvas('fps', Number(event.currentTarget.value))}><option value="60">60 FPS</option><option value="30">30 FPS</option></select></label>
       <label class="field"><span>Duração (segundos)</span><input type="number" min="1" max="30" step="0.1" value={project.canvas.duration} on:change={(event) => onCanvas('duration', Number(event.currentTarget.value))}/></label>
     </section>
-  {/if}
-  <PalettePanel palette={project.palette || DEFAULT_PALETTE} onPreset={onPalettePreset} onColor={onPaletteColor} onAllText={onAllProjectText} />
-  {#if !selected}
-    <section class="property-section"><h3>Sobre esta versão</h3><p class="info-copy">Os templates clássicos são vetoriais. A exportação de vídeo está disponível no Tauri; o renderizador nativo Rust/resvg continua planejado.</p></section>
+      <section class="property-section"><h3>Cartelas compactas</h3>
+        <p class="inspector-hint">Padronize localização, data, linha, motorista, crédito e etiqueta livre com as dimensões da cartela de crédito (550 × 102 px). Não altera os modos especiais.</p>
+        <button type="button" class="button secondary-button fill" on:click={onStandardizeAll}>Padronizar cartelas existentes</button>
+      </section>
+      <section class="property-section"><h3>Sobre esta versão</h3><p class="info-copy">Editor vetorial SVG com paletas personalizáveis. Exportação de vídeo pelo Tauri.</p></section>
+    {/if}
   {/if}
 </div>

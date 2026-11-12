@@ -48,7 +48,7 @@ jobs:
       - name: Publicar AppImage de teste
         uses: actions/upload-artifact@v4
         with:
-          name: RDV-Bus-Studio-Desktop-alpha9.3.1-Linux-AppImage
+          name: RDV-Bus-Studio-Desktop-alpha9.3.2-Linux-AppImage
           path: src-tauri/target/release/bundle/appimage/*.AppImage
           if-no-files-found: error
           retention-days: 14
@@ -79,14 +79,14 @@ jobs:
       - name: Publicar instalador Windows
         uses: actions/upload-artifact@v4
         with:
-          name: RDV-Bus-Studio-Desktop-alpha9.3.1-Windows-Instalador
+          name: RDV-Bus-Studio-Desktop-alpha9.3.2-Windows-Instalador
           path: src-tauri/target/release/bundle/nsis/*.exe
           if-no-files-found: error
           retention-days: 14
       - name: Publicar executável Windows sem instalador (experimental)
         uses: actions/upload-artifact@v4
         with:
-          name: RDV-Bus-Studio-Desktop-alpha9.3.1-Windows-EXE-Direto
+          name: RDV-Bus-Studio-Desktop-alpha9.3.2-Windows-EXE-Direto
           path: src-tauri/target/release/rdv-bus.exe
           if-no-files-found: warn
           retention-days: 14

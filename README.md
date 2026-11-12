@@ -1,4 +1,4 @@
-# RDV Bus Studio — 0.1.0-alpha.9.3.1
+# RDV Bus Studio — 0.1.0-alpha.9.3.2
 
 > **Alpha.8:** edição de textos por clique diretamente na pré-visualização, mini-barra flutuante de formatação e ícones clássicos maiores/centralizados. Mantidos os presets e o sistema de exportação 2×. Veja `CHANGELOG.md`.
 
@@ -6,6 +6,12 @@
 **Nova geração do RDV Bus, reconstruída do zero.** Editor desktop de elementos HUD para vídeos de ônibus, com interface Svelte 5 + TypeScript, Vite e Tauri 2 (Rust).
 
 > Estado: **alpha experimental**, ainda não substitui a versão 0.13.x. A exportação de vídeo usa **FFmpeg pelo aplicativo Tauri**, com renderização de quadros pelo Canvas do WebView; o renderizador nativo **resvg ainda não está implementado**. No navegador a exportação de vídeo não é suportada.
+
+## Personalização por abas (alpha.9.3.2)
+
+Selecione uma camada e use as abas **Conteúdo**, **Tipografia**, **Cores**, **Dimensões**, **Animação** e **Paleta**. No painel do projeto, há **Vídeo** e **Paleta**. As configurações de título, corpo e texto secundário continuam independentes; a paleta mantém os controles RGB/HEX.
+
+As **cartelas compactas** de localização, data, linha, motorista, crédito e etiqueta de texto livre usam por padrão o tamanho da cartela de crédito de filmagem: **550 × 102 px**. Para cartelas antigas já redimensionadas, escolha **Dimensões > Usar tamanho da cartela de créditos**, ou **Padronizar todas as cartelas do projeto**. Essa ação não modifica os modos especiais (tela inteira, fichas técnicas, slides e barras).
 
 ## Correção da alpha.9.2 — animação dos textos no modo vertical
 

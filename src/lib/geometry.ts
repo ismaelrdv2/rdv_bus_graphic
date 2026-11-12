@@ -2,6 +2,26 @@ import type { HudElement } from './types';
 import { clamp } from './timing';
 
 export const PORTRAIT_BAR_HEIGHT = 650;
+/** Dimensões de referência da cartela de crédito de filmagem (Full HD 16:9). */
+export const CREDIT_CARD_WIDTH = 550;
+export const CREDIT_CARD_HEIGHT = 102;
+export const CREDIT_CARD_FONT_SIZE = 29;
+/** Apenas cartelas compactas: telas inteiras, slides, barras e logotipos mantêm layout próprio. */
+export function isCompactCartela(element: HudElement): boolean {
+  return ['location','date','route','driver','credit'].includes(element.kind)
+    || (element.kind === 'freeText' && element.freeTextStyle === 'legacyLabel');
+}
+/** Padroniza largura, altura e fonte mantendo conteúdo, cores e animações personalizados. */
+export function standardizeCard(element: HudElement, canvasWidth: number, canvasHeight: number): HudElement {
+  if (!isCompactCartela(element)) return element;
+  const newHeightScale = CREDIT_CARD_HEIGHT / elementBaseHeight(element, canvasHeight);
+  return {...element, style:{...element.style,
+    width: CREDIT_CARD_WIDTH, fontSize: CREDIT_CARD_FONT_SIZE,
+    scaleX: 1, scaleY: newHeightScale,
+    x: Math.max(0, Math.min(element.style.x, canvasWidth-CREDIT_CARD_WIDTH)),
+    y: Math.max(0, Math.min(element.style.y, canvasHeight-CREDIT_CARD_HEIGHT)) }};
+}
+
 export function isBottomBar(element: HudElement, canvasWidth: number, canvasHeight: number): boolean {
   return canvasHeight > canvasWidth && isBar(element);
 }
@@ -16,10 +36,11 @@ export function elementBaseHeight(element: HudElement, canvasHeight: number): nu
     if (['fullTechnical', 'fullPage', 'legacyPresentationSlide'].includes(element.freeTextStyle || '')) return canvasHeight;
     if (element.freeTextStyle === 'technicalAlpha1') return 480;
     if (element.freeTextStyle === 'legacyPresentationBar') return 222;
-    if (['legacyLabel','legacyHalfBar','legacyFullBar'].includes(element.freeTextStyle || '')) return 128;
+    if (element.freeTextStyle === 'legacyLabel') return CREDIT_CARD_HEIGHT;
+    if (['legacyHalfBar','legacyFullBar'].includes(element.freeTextStyle || '')) return 128;
     return 165;
   }
-  if (element.kind === 'credit') return 102;
+  if (['location','date','route','driver','credit'].includes(element.kind)) return CREDIT_CARD_HEIGHT;
   if (element.kind === 'corner') return 175;
   if (element.kind === 'slide') return 212;
   return 150;

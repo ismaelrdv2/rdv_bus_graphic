@@ -1,4 +1,4 @@
-"""Checks for independent color controls and persistence (Desktop 0.1.0-alpha.9.3.1)."""
+"""Checks for independent color controls and persistence (Desktop 0.1.0-alpha.9.3.2)."""
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 def read(name):return (ROOT/name).read_text(encoding='utf8')

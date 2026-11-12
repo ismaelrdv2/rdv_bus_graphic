@@ -2,6 +2,15 @@
 
 > Política de versões: cada lançamento terá uma seção própria neste arquivo, atualizada no mesmo ZIP da versão. Registros estão em ordem decrescente. Atualizações planejadas não são apresentadas como recursos concluídos.
 
+## 0.1.0-alpha.9.3.2 — Organização das propriedades e cartelas compactas
+
+- Painel de personalização dividido em seis abas: Conteúdo, Tipografia, Cores, Dimensões, Animação e Paleta.
+- Configurações globais do projeto divididas em Vídeo e Paleta.
+- Localização, data, linha de ônibus, motorista, crédito e etiqueta compacta de Texto livre passam a usar 550 × 102 px como tamanho visual padrão (crédito de filmagem).
+- Ações de padronização do elemento selecionado e de todas as cartelas existentes no projeto, preservando textos, paletas, animações e posicionamento quando possível.
+- Fichas técnicas, slides e apresentações em tela inteira permanecem com dimensões próprias.
+- Testes de regressão para preservar projetos antigos e nova organização do painel.
+
 ## 0.1.0-alpha.9.3.1 — Seletores independentes por tipo de texto
 
 ### Adicionado

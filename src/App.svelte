@@ -12,7 +12,7 @@
   import { duplicateElement, makeElement, newProject } from './lib/templates';
   import { APP_VERSION } from './lib/types';
   import { clamp, exportFrameTime } from './lib/timing';
-  import { isBar, isBottomBar, PORTRAIT_BAR_HEIGHT } from './lib/geometry';
+  import { isBar, isBottomBar, PORTRAIT_BAR_HEIGHT, isCompactCartela, standardizeCard, CREDIT_CARD_HEIGHT } from './lib/geometry';
   import { FALLBACK_FONTS, fontStack, normalizeFontName } from './lib/fonts';
   import { getSystemFontFamilies } from './lib/systemFonts';
   import { DEFAULT_RICH_TEXT } from './lib/richtext';
@@ -81,13 +81,26 @@
       if (isBar(element)) { element.style = { ...element.style, x:0, y:project.canvas.height-PORTRAIT_BAR_HEIGHT, width:1080, scaleX:1, scaleY:1 }; }
       else {
         element.style.x = 60;
-        element.style.y = kind === 'credit' ? 1740 : kind === 'freeText' ? 1530 : kind === 'slide' ? 1190 : kind === 'corner' ? 70 : 1450;
+        element.style.y = isCompactCartela(element) ? project.canvas.height - CREDIT_CARD_HEIGHT - 52 : kind === 'freeText' ? 1530 : kind === 'slide' ? 1190 : kind === 'corner' ? 70 : 1450;
       }
     }
     applyChange({ ...project, elements: [...project.elements, element] });
     selectedId = element.id;
     time = Math.min(1.65, project.canvas.duration / 2);
     notify(`${element.title} adicionado ao projeto.`, 'success');
+  }
+
+  function standardizeSelectedCard(): void {
+    if (!selectedId || !selected || !isCompactCartela(selected)) return;
+    changeElement(selectedId, element => standardizeCard(element, project.canvas.width, project.canvas.height));
+    notify('Cartela ajustada para 550 × 102 px, mantendo os textos e cores.', 'success');
+  }
+
+  function standardizeAllCards(): void {
+    const count = project.elements.filter(isCompactCartela).length;
+    if (!count) return notify('Nenhuma cartela compacta para padronizar.', 'info');
+    applyChange({...project, elements:project.elements.map(el => standardizeCard(el, project.canvas.width, project.canvas.height))});
+    notify(`${count} cartela(s) padronizada(s) para 550 × 102 px.`, 'success');
   }
 
   function updateSelectedField(key: TextField, value: string): void {
@@ -633,7 +646,7 @@
     </main>
 
     <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onTechnicalLayout={updateTechnicalLayout}
-      {systemFonts} onFontFamily={updateSelectedFontFamily} onVisualPreset={updateSelectedVisualPreset} onFitScrollDuration={fitSelectedScrollDuration} onRichText={updateRichText} onFreeTextStyle={changeFreeTextStyle} onFreeTextCaption={updateFreeTextCaption} onResetScale={resetSelectedScale} onSelectNone={() => selectedId = null}/></aside>
+      {systemFonts} onFontFamily={updateSelectedFontFamily} onVisualPreset={updateSelectedVisualPreset} onFitScrollDuration={fitSelectedScrollDuration} onRichText={updateRichText} onFreeTextStyle={changeFreeTextStyle} onFreeTextCaption={updateFreeTextCaption} onResetScale={resetSelectedScale} onStandardizeSelected={standardizeSelectedCard} onStandardizeAll={standardizeAllCards} onSelectNone={() => selectedId = null}/></aside>
   </div>
 
   <footer class="app-footer"><div><span class="footer-dot"></span> RDV Bus Studio <span class="footer-divider">·</span> <span class="muted">{APP_VERSION}</span></div><div><span class="footer-stat">{project.elements.length} elemento(s)</span><span class="footer-divider">·</span><span class="footer-stat">{totalFrames} quadros</span><span class="footer-divider">·</span><span class="muted">{isDesktop() ? 'Tauri Desktop' : 'Modo navegador'}</span></div></footer>

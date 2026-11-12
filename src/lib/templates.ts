@@ -3,6 +3,7 @@ import { APP_VERSION, DEFAULT_DURATION, SCHEMA_VERSION } from './types';
 import { BRAND } from './brand';
 import { DEFAULT_PALETTE, DEFAULT_COLORS } from './palette';
 import { DEFAULT_RICH_TEXT } from './richtext';
+import { CREDIT_CARD_WIDTH, CREDIT_CARD_HEIGHT, CREDIT_CARD_FONT_SIZE } from './geometry';
 
 export const FIELD_LABELS: Record<ElementKind, Partial<Record<TextField, string>>> = {
   technical: { heading: 'Título', line1: 'Carroceria', line2: 'Modelo da carroceria', line3: 'Chassi', line4: 'Modelo do chassi', line5: 'Empresa', line6: 'Prefixo' },
@@ -51,19 +52,23 @@ export function makeElement(kind: ElementKind): HudElement {
       Object.assign(fields, { heading: 'FICHA TÉCNICA', line1: 'CAIO', line2: 'Millennium V', line3: 'Mercedes-Benz', line4: 'O-500M Bluetec 6', line5: 'BRT Amazônia', line6: 'B 692' });
       style = { ...style, x: 0, y: 0, width: 640, fontSize: 41 }; break;
     case 'location':
+      style = { ...style, x:60, y:1080-CREDIT_CARD_HEIGHT-52, width:CREDIT_CARD_WIDTH, fontSize:CREDIT_CARD_FONT_SIZE };
       Object.assign(fields, { heading: 'LOCALIZAÇÃO', line1: 'Avenida Almirante Barroso', line2: 'Belém • PA' }); break;
     case 'date':
+      style = { ...style, x:60, y:1080-CREDIT_CARD_HEIGHT-52, width:CREDIT_CARD_WIDTH, fontSize:CREDIT_CARD_FONT_SIZE };
       Object.assign(fields, { heading: 'DATA DA GRAVAÇÃO', line1: '11 de novembro de 2026', line2: 'Belém • PA' }); break;
     case 'route':
+      style = { ...style, x:60, y:1080-CREDIT_CARD_HEIGHT-52, width:CREDIT_CARD_WIDTH, fontSize:CREDIT_CARD_FONT_SIZE };
       Object.assign(fields, { heading: 'IDENTIFICAÇÃO DA LINHA', line1: '305 – ICOARACI', line2: 'Belém • Pará' }); break;
     case 'driver':
+      style = { ...style, x:60, y:1080-CREDIT_CARD_HEIGHT-52, width:CREDIT_CARD_WIDTH, fontSize:CREDIT_CARD_FONT_SIZE };
       Object.assign(fields, { heading: 'MOTORISTA', line1: 'Nome do motorista', line2: 'Identificação' }); break;
     case 'credit':
       Object.assign(fields, { heading: 'CRÉDITO DE FILMAGEM', line1: 'Imagens: RDV Bus', line2: 'Parceria e filmagem' });
-      style = { ...style, x: 60, y: 926, width: 550, fontSize: 29 }; animation = 'legacy'; break;
+      style = { ...style, x:60, y:1080-CREDIT_CARD_HEIGHT-52, width:CREDIT_CARD_WIDTH, fontSize:CREDIT_CARD_FONT_SIZE }; animation = 'legacy'; break;
     case 'freeText':
       Object.assign(fields, { heading: 'TEXTO LIVRE', line1: 'Sua mensagem aqui', line2: 'Texto personalizável' });
-      style = { ...style, y: 816, width: 740, fontSize: 39 }; break;
+      style = { ...style, x:60, y:1080-CREDIT_CARD_HEIGHT-52, width:CREDIT_CARD_WIDTH, fontSize:CREDIT_CARD_FONT_SIZE }; break;
     case 'slide':
       Object.assign(fields, { heading: 'DESTAQUE', line1: 'Uma viagem pela cidade', line2: 'RDV Bus apresenta' });
       style = { ...style, x: 110, y: 470, width: 1180, fontSize: 60 }; break;
@@ -86,6 +91,9 @@ export function makeElement(kind: ElementKind): HudElement {
 
 export function newProject(): RDVProject {
   const now = new Date().toISOString();
+  const route = makeElement('route');
+  route.style.y = 816; // Evita sobreposição com a cartela de crédito na composição inicial.
+  const credit = makeElement('credit');
   return {
     schemaVersion: SCHEMA_VERSION,
     appVersion: APP_VERSION,
@@ -95,7 +103,7 @@ export function newProject(): RDVProject {
     updatedAt: now,
     canvas: { width: 1920, height: 1080, fps: 60, duration: DEFAULT_DURATION },
     palette: { preset: DEFAULT_PALETTE.preset, colors: {...DEFAULT_COLORS} },
-    elements: [makeElement('route'), makeElement('credit')],
+    elements: [route, credit],
   };
 }
 

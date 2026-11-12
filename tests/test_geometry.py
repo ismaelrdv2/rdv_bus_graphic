@@ -31,7 +31,7 @@ let free = makeElement('freeText');
 assert.equal(free.style.scaleX, 1);
 assert.equal(free.style.scaleY, 1);
 assert.equal(free.freeTextStyle, 'legacyLabel');
-assert.equal(elementBaseHeight(free, 1080), 128);
+assert.equal(elementBaseHeight(free, 1080), 102);
 free.freeTextStyle = 'technicalBar';
 assert.equal(elementBaseHeight(free, 1080), 1080);
 assert.equal(isBar(free), true);
