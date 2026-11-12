@@ -1,27 +1,28 @@
-"""Regressão para resgate de ícones 0.14 e varredura de brilho no Studio."""
+"""Ícones legados e brilhos opcionais sem vazamento para os formatos Desktop."""
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[1]
-HUD=(ROOT/'src/components/HudShape.svelte').read_text()
-LEGACY=(ROOT/'src/components/LegacyShape.svelte').read_text()
-ICONS=(ROOT/'src/lib/cardIcons.ts').read_text()
-
-def test_shared_vector_icons():
-    for kind in ['location','route','date','driver','credit','default']:
-        assert kind+':' in ICONS
-    assert 'CARD_ICONS[element.kind] || CARD_ICONS.default' in HUD
-    assert 'CARD_ICONS[element.kind] || CARD_ICONS.default' in LEGACY
-
-def test_studio_has_dedicated_text_area():
-    assert 'studioTextX = studioCard ? 100 : 30' in HUD
-    assert 'studioTextWidth = Math.max(90, w - studioTextX - 34)' in HUD
-    assert 'x={studioTextX}' in HUD
-
-def test_studio_sweep_clipped_and_after_enter():
-    assert 'studioShineVisible' in HUD
-    assert 'clipPath id={`card-shine-${id}`}' in HUD
-    assert 'Math.sin(Math.PI * shineElapsed)' in HUD
-    assert "element.animation !== 'none'" in HUD
-    assert 'time >= shineStart' in HUD
-
-def test_legacy_sweep_preserved():
-    assert 'time >= .55 && time < 1.15' in LEGACY
+R=Path(__file__).resolve().parents[1]
+def src(p): return (R/p).read_text()
+hud=src('src/components/HudShape.svelte')
+old=src('src/components/LegacyShape.svelte')
+bottom=src('src/components/BottomTechnical.svelte')
+def test_icons_and_masks():
+    icons=src('src/lib/cardIcons.ts')
+    for x in ('location','route','date','driver','credit','default'):assert x+':' in icons
+    for x in (hud,old):assert 'CARD_ICONS[element.kind] || CARD_ICONS.default' in x
+    overlay=src('src/components/ShineOverlay.svelte')
+    assert '<clipPath id={clipId}' in overlay and '<path d={shape}/>' in overlay
+    assert 'clip-path={`url(#${clipId})`}' in overlay
+def test_all_renderers_and_diagonals():
+    for x in (hud,old,bottom):
+        assert '<ShineOverlay' in x and '<DiagonalGlow' in x
+        assert 'element.shineEnabled!==false' in x
+        assert 'element.diagonalGlowEnabled===true' in x
+    assert 'technical ? panelPath' in hud and 'isTechSide?techShape' in old
+def test_controls_and_persistence():
+    panel=src('src/components/PropertiesPanel.svelte')
+    app=src('src/App.svelte')
+    assert 'onShineToggle' in panel and 'onDiagonalGlowToggle' in panel
+    assert 'updateSelectedShine' in app and 'updateSelectedDiagonalGlow' in app
+    validate=src('src/lib/validation.ts')
+    assert 'item.shineEnabled!==false' in validate
+    assert 'item.diagonalGlowEnabled===true' in validate

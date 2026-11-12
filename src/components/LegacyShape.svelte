@@ -4,6 +4,8 @@
   import { fontStack } from '../lib/fonts';
   import { BRAND, TECHNICAL_CAPTIONS } from '../lib/brand';
   import { CARD_ICONS } from '../lib/cardIcons';
+  import ShineOverlay from './ShineOverlay.svelte';
+  import DiagonalGlow from './DiagonalGlow.svelte';
   import { palettePaint, textColor } from '../lib/palette';
   import type { TextColorKey, TextColorRole } from '../lib/types';
   import { elementBaseHeight, compactCardTextBaselines } from '../lib/geometry';
@@ -27,6 +29,11 @@
   $: fullSlide = element.kind === 'freeText' && element.freeTextStyle === 'legacyPresentationSlide';
   $: isFull = fullTech || fullSlide;
   $: isTechSide = isTech && !fullTech;
+  $: techShape=sideRight?`M84 0 H${w} V${h} H0 Z`:`M0 0 H${w-84} L${w} ${h} H0 Z`;
+  $: diagonalPath=sideRight?`M84 0 L0 ${h}`:`M${w-84} 0 L${w} ${h}`;
+  $: diagonalInner=sideRight?`M101 0 L17 ${h}`:`M${w-101} 0 L${w-17} ${h}`;
+  $: legacyShineShape=isTechSide?techShape:isFull?'':
+    `M16 0 H${w-22} L${w} 22 V${h-20} Q${w} ${h} ${w-20} ${h} H16 Q0 ${h} 0 ${h-16} V16 Q0 0 16 0Z`;
   $: freeBarPresentation = element.kind === 'slide' || (element.kind === 'freeText' && element.freeTextStyle === 'legacyPresentationBar');
   $: freeLabel = element.kind === 'freeText' && ['legacyLabel','legacyHalfBar','legacyFullBar'].includes(element.freeTextStyle || '');
   // Ícones desenhados no mesmo sistema 24x24; o viewBox garante alinhamento
@@ -282,10 +289,15 @@
         {#if fields.line2}<text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x="100" y={cardTextY.secondary} fill={textColor(element,'line2','secondary')} font-family={fontFamily} font-size={fit(fields.line2, Math.min(18*fontScale,h*.15), w-134,false)}>{fields.line2}</text>{/if}
       </g>
     {/if}
-    {#if element.animation === 'legacy' && time >= .55 && time < 1.15}
-      <g opacity={.15 * Math.sin(Math.PI*(time-.55)/.6)}>
-        <path d={`M${-80+(time-.55)/.6*(w+160)} 0 l65 ${h} h18 l-65 -${h} Z`} fill="#fff" />
-      </g>
+  {/if}
+  {#if element.kind!=='corner'}
+    <ShineOverlay id={`classic-${id}`} {time} {duration} width={w} height={h}
+      shape={legacyShineShape} kind={isFull?'full':isTechSide?'bar':'card'}
+      enabled={element.shineEnabled!==false}/>
+    {#if isTechSide}
+      <DiagonalGlow id={`classic-${id}`} {time} {duration} width={w} height={h}
+        shape={techShape} path={diagonalPath} secondaryPath={diagonalInner}
+        enabled={element.diagonalGlowEnabled===true}/>
     {/if}
   {/if}
 </g>

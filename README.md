@@ -1,4 +1,4 @@
-# RDV Bus Studio — 0.1.0-alpha.9.3.5
+# RDV Bus Studio — 0.1.0-alpha.9.3.6
 
 > **Alpha.8:** edição de textos por clique diretamente na pré-visualização, mini-barra flutuante de formatação e ícones clássicos maiores/centralizados. Mantidos os presets e o sistema de exportação 2×. Veja `CHANGELOG.md`.
 
@@ -6,6 +6,10 @@
 **Nova geração do RDV Bus, reconstruída do zero.** Editor desktop de elementos HUD para vídeos de ônibus, com interface Svelte 5 + TypeScript, Vite e Tauri 2 (Rust).
 
 > Estado: **alpha experimental**, ainda não substitui a versão 0.13.x. A exportação de vídeo usa **FFmpeg pelo aplicativo Tauri**, com renderização de quadros pelo Canvas do WebView; o renderizador nativo **resvg ainda não está implementado**. No navegador a exportação de vídeo não é suportada.
+
+## Brilhos independentes (alpha.9.3.6)
+
+Na aba **Animação**, altere **Brilho após a entrada** (ligado por padrão) e, nas fichas em barra, **Brilho nas linhas diagonais** (desligado por padrão). Os efeitos são independentes, aparecem uma única vez e são limitados ao contorno real da arte. Valem para Clássico/Studio, barras laterais/inferiores e tela inteira.
 
 ## Personalização por abas (alpha.9.3.2)
 

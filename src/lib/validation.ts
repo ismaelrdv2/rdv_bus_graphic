@@ -83,6 +83,8 @@ export function validateProject(raw: unknown): RDVProject {
       title: safeString(item.title, 80) || 'Elemento',
       visible: item.visible !== false,
       animation,
+      shineEnabled:item.shineEnabled!==false,
+      diagonalGlowEnabled:item.diagonalGlowEnabled===true,
       visualPreset: item.visualPreset === 'legacy' ? 'legacy' : 'studio',
       ...((technical || freeText) ? { technicalSide } : {}),
       ...(technical ? {technicalLayout: item.technicalLayout === 'legacyFullscreen' ? 'legacyFullscreen' as const : item.technicalLayout === 'fullscreen' ? 'fullscreen' as const : 'side' as const} : {}),

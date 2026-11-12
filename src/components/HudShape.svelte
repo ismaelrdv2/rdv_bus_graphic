@@ -5,6 +5,8 @@
   import type { TextColorKey, TextColorRole } from '../lib/types';
   import LegacyShape from './LegacyShape.svelte';
   import BottomTechnical from './BottomTechnical.svelte';
+  import ShineOverlay from './ShineOverlay.svelte';
+  import DiagonalGlow from './DiagonalGlow.svelte';
   import { fontStack } from '../lib/fonts';
   import type { HudElement } from '../lib/types';
   import { fieldTextStyle } from '../lib/inlineText';
@@ -47,12 +49,11 @@
   $: studioCard = !shouldUseLegacy && ['location','date','route','driver','credit'].includes(element.kind);
   $: studioTextX = studioCard ? 100 : 30;
   $: studioTextWidth = Math.max(90, w - studioTextX - 34);
-  // A luz atravessa a cartela somente após a transição inicial do Studio.
-  $: shineStart = Math.min(.84, Math.max(.16, duration * .18));
-  $: shineLength = Math.min(.6, Math.max(.18, duration * .17));
-  $: shineElapsed = (time - shineStart) / shineLength;
-  $: studioShineVisible = studioCard && element.animation !== 'none' &&
-    time >= shineStart && time < shineStart + shineLength && time < duration - .12;
+  // O recorte coincide com a arte, não com uma moldura retangular genérica.
+  $: studioShineShape = technical ? panelPath : fullTech || fullPage || credit ? '' :
+    (freeText && element.freeTextStyle==='classic') || slide
+      ? `M14 0 H${w-32} L${w} 26 V${height-20} Q${w} ${height} ${w-20} ${height} H16 Q0 ${height} 0 ${height-16} V14 Q0 0 14 0Z`
+      : `M14 0 H${w-28} L${w} 25 V${height-17} Q${w} ${height} ${w-17} ${height} H14 Q0 ${height} 0 ${height-14} V14 Q0 0 14 0Z`;
   $: cardTextY = compactCardTextBaselines(height);
   $: corner = element.kind === 'corner';
   $: freeText = element.kind === 'freeText';
@@ -281,16 +282,16 @@
       </svg>
     </g>
   {/if}
-  {#if studioShineVisible}
-    <defs>
-      <clipPath id={`card-shine-${id}`}>
-        <rect width={w} height={height} rx="15"/>
-      </clipPath>
-    </defs>
-    <g clip-path={`url(#card-shine-${id})`} pointer-events="none"
-      opacity={.17 * Math.sin(Math.PI * shineElapsed)}>
-      <path d={`M${-90 + shineElapsed * (w + 180)} 0 l65 ${height} h18 l-65 -${height} Z`}
-        fill="#ffffff"/>
-    </g>
+  {#if !shouldUseLegacy && !portraitBottom && !corner}
+    <ShineOverlay id={`studio-${id}`} {time} {duration} width={w} height={height}
+      shape={studioShineShape} radius={credit?15:0}
+      kind={fullTech || fullPage ? 'full' : technical ? 'bar' : 'card'}
+      enabled={element.shineEnabled!==false}/>
+    {#if technical}
+      <DiagonalGlow id={`studio-${id}`} {time} {duration} width={w} height={height}
+        shape={panelPath} path={edgePath}
+        secondaryPath={isRight?`M104 0 L20 ${height}`:`M${w-105} 0 L${w-20} ${height}`}
+        enabled={element.diagonalGlowEnabled===true}/>
+    {/if}
   {/if}
 </g>

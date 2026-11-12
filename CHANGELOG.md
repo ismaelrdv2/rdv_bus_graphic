@@ -2,6 +2,14 @@
 
 > Política de versões: cada lançamento terá uma seção própria neste arquivo, atualizada no mesmo ZIP da versão. Registros estão em ordem decrescente. Atualizações planejadas não são apresentadas como recursos concluídos.
 
+## 0.1.0-alpha.9.3.6 — Controle independente de brilho e diagonais
+
+- Aba Animação: liga/desliga brilho de varredura após a entrada e, nas fichas em barra, brilho extra nas linhas diagonais.
+- O brilho geral vem ligado nos projetos existentes e novos; o brilho das diagonais é opcional e começa desligado.
+- Máscara pelo contorno SVG exato (clássico e Studio), sem vazamento nos recortes e cantos das cartelas.
+- Uma passagem sincronizada por quadro também nas fichas laterais e inferiores, cartelas e apresentações em tela inteira, com menor intensidade nos formatos grandes.
+- Preservados texto, exportação e dados JSON anteriores.
+
 ## 0.1.0-alpha.9.3.5 — Ícones originais e brilho nas cartelas Studio
 
 - Extrai os caminhos SVG originais de localização, data, linha, motorista e crédito do renderizador Clássico para uma fonte vetorial compartilhada.

@@ -7,6 +7,8 @@
   import { fontStack } from '../lib/fonts';
   import { clamp } from '../lib/timing';
   import { legacyPhase, legacyStage } from '../lib/legacy';
+  import ShineOverlay from './ShineOverlay.svelte';
+  import DiagonalGlow from './DiagonalGlow.svelte';
   export let element: HudElement;
   export let time = 0;
   export let duration = 5.3;
@@ -85,4 +87,9 @@
       <path d={`M${w-134} ${h-20} h72 l19 -17`} stroke={element.style.accent} stroke-width="2.5" fill="none"/>
     </g>
   </g>
+  <ShineOverlay id={`bottom-${id}`} {time} {duration} width={w} height={h}
+    shape={`M0 68 L68 0 H${w} V${h} H0Z`} kind="bar" enabled={element.shineEnabled!==false}/>
+  <DiagonalGlow id={`bottom-${id}`} {time} {duration} width={w} height={h}
+    shape={`M0 68 L68 0 H${w} V${h} H0Z`} path="M0 68 L68 0"
+    secondaryPath="M16 78 L85 12" enabled={element.diagonalGlowEnabled===true}/>
 </g>
