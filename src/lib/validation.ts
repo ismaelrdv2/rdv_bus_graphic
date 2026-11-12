@@ -90,6 +90,7 @@ export function validateProject(raw: unknown): RDVProject {
       ...((technical || freeText) ? { technicalSide } : {}),
       ...(technical ? {technicalLayout: item.technicalLayout === 'legacyFullscreen' ? 'legacyFullscreen' as const : item.technicalLayout === 'fullscreen' ? 'fullscreen' as const : 'side' as const} : {}),
       ...(freeText ? { freeTextStyle, freeTextCaptions: captions,
+        freeTextDisplay: ['both','first','second','alternate'].includes(String(item.freeTextDisplay)) ? item.freeTextDisplay as HudElement['freeTextDisplay'] : 'both' as const,
         freeTextIcon: ['facebook','instagram','x','tiktok','twitch','whatsapp','telegram','discord'].includes(String(item.freeTextIcon)) ? item.freeTextIcon as HudElement['freeTextIcon'] : 'none' as const,
         richText: (() => { const rich = isObject(item.richText) ? item.richText : {};
           const safeBool = (key:keyof typeof DEFAULT_RICH_TEXT) => typeof rich[key] === 'boolean' ? rich[key] : DEFAULT_RICH_TEXT[key];

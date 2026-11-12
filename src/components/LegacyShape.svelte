@@ -13,6 +13,7 @@
   import { technicalSeparatorEnd, technicalTextX, technicalTextRightEdge, technicalRowTextX, technicalTextAvailableWidth } from '../lib/technicalGeometry';
   import { clamp } from '../lib/timing';
   import { legacyPhase, legacyStage, legacyScrollDistance } from '../lib/legacy';
+  import { compactTextWeights, singleLineText } from '../lib/compactText';
   import { DEFAULT_RICH_TEXT, layoutRichText, alignedX, textAnchor, type MeasureRich } from '../lib/richtext';
 
   export let element: HudElement;
@@ -37,6 +38,8 @@
     `M16 0 H${w-22} L${w} 22 V${h-20} Q${w} ${h} ${w-20} ${h} H16 Q0 ${h} 0 ${h-16} V16 Q0 0 16 0Z`;
   $: freeBarPresentation = element.kind === 'slide' || (element.kind === 'freeText' && element.freeTextStyle === 'legacyPresentationBar');
   $: freeLabel = element.kind === 'freeText' && ['legacyLabel','legacyHalfBar','legacyFullBar'].includes(element.freeTextStyle || '');
+  $: compactLabel = element.kind === 'freeText' && element.freeTextStyle === 'legacyLabel';
+  $: labelWeights = compactTextWeights(compactLabel ? element.freeTextDisplay : 'both', time, duration);
   // Ícones desenhados no mesmo sistema 24x24; o viewBox garante alinhamento
   // independente de altura do caminho (o pin antes ultrapassava a moldura).
   $: isSmallLabel = !isTech && !fullSlide && !freeBarPresentation && !freeLabel;
@@ -95,8 +98,8 @@
   // A apresentação em barra separa o corpo do divisor e reserva espaço
   // para uma eventual segunda linha.
   $: barBodyBaseline = Math.max(h*.66, h*.39 + bodyFontSize*1.16);
-  $: line1Text = fields.line1 || '';
-  $: line2Text = fields.line2 || '';
+  $: line1Text = compactLabel ? singleLineText(fields.line1 || '') : fields.line1 || '';
+  $: line2Text = compactLabel ? singleLineText(fields.line2 || '') : fields.line2 || '';
   $: speed = rich.scrollPixelsPerSecond || 200;
   $: repeatCount = Math.round(clamp(rich.scrollRepeats || 1, 1, 20));
   $: scrollGap = rich.scrollGap || 240;
@@ -131,7 +134,7 @@
   // Atualiza os progressos de cada campo quando phase muda. A chamada indireta
   // a rowProgress() dentro de {@const} não é reativa em Svelte.
   $: rowReveals = Array.from({ length: 6 }, (_, i) => legacyStage(phase, .55 + .09 * i, .32));
-  function lineY(n: number): number { return (freeLabel ? (n === 0 ? h*.43 : h*.85) : h*.67); }
+  function lineY(n: number): number { return (freeLabel ? (labelWeights.stacked ? (n === 0 ? h*.43 : h*.85) : h*.66) : h*.67); }
 </script>
 
 <g font-family={fontFamily}>
@@ -264,6 +267,7 @@
       </g>
     {:else if freeLabel}
       <g clip-path={`url(#${contentClipId})`} opacity={pBody}>
+        <g opacity={labelWeights.first}>
         {#if activeScroll1}
           {#each Array.from({length:repeatCount},(_,i)=>i) as i}
             <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={startScroll-scrollDistance+i*(lineWidth1+scrollGap)} y={lineY(0)} fill={textColor(element,'line1','white')} font-size={typeSize} font-family={fontFamily} font-weight="800">{line1Text}</text>
@@ -273,6 +277,8 @@
             <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={clipStart+2} y={lineY(0)} fill={textColor(element,'line1','white')} font-size={fit(line1Text,typeSize,clipWidth-6)} font-family={fontFamily} font-weight="800">{line1Text}</text>
           </g>
         {/if}
+        </g>
+        <g opacity={labelWeights.second}>
         {#if fields.line2}
           {#if activeScroll2}
             {#each Array.from({length:repeatCount},(_,i)=>i) as i}
@@ -282,6 +288,7 @@
             <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={clipStart+2} y={lineY(1)} fill={textColor(element,'line2','secondary')} font-size={fit(line2Text,typeSize*.68,clipWidth-6,false)} font-family={fontFamily}>{line2Text}</text>
           {/if}
         {/if}
+        </g>
       </g>
     {:else}
       <g opacity={stage(.28,.35)} transform={`translate(48 49) scale(${.65+.35*stage(.28,.35)}) translate(-48 -49)`}>

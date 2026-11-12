@@ -15,6 +15,7 @@
   import { clamp } from '../lib/timing';
   import { technicalRowTextX, technicalTextAvailableWidth } from '../lib/technicalGeometry';
   import { DEFAULT_RICH_TEXT, layoutRichText, parseRuns, alignedX, textAnchor, type MeasureRich } from '../lib/richtext';
+  import { compactTextWeights, singleLineText } from '../lib/compactText';
 
   export let element: HudElement;
   export let canvasHeight = 1080;
@@ -27,7 +28,7 @@
   $: shouldUseLegacy = element.kind === 'technical'
     ? (element.technicalLayout === 'legacyFullscreen' || (element.technicalLayout !== 'fullscreen' && element.visualPreset === 'legacy'))
     : element.kind === 'freeText'
-      ? ['legacyLabel', 'legacyHalfBar', 'legacyFullBar', 'legacyPresentationBar', 'legacyPresentationSlide'].includes(element.freeTextStyle || '')
+      ? (element.freeTextStyle === 'legacyLabel' ? element.visualPreset !== 'studio' : ['legacyHalfBar', 'legacyFullBar', 'legacyPresentationBar', 'legacyPresentationSlide'].includes(element.freeTextStyle || ''))
         || (element.visualPreset === 'legacy' && element.freeTextStyle === 'technicalBar')
       : element.visualPreset === 'legacy';
   $: sx = element.style.scaleX;
@@ -102,7 +103,12 @@
   $: fullTitleSize = Math.min(57, Math.max(25, w * .043));
   $: bodySize = clamp(rich.bodySize * textFactor, 12, 170);
   $: headingSize = clamp(rich.titleSize * textFactor, 12, 170);
-  $: freeSocial = freeText && (element.freeTextIcon || 'none') !== 'none' && element.freeTextStyle === 'classic';
+  $: freeSocial = freeText && (element.freeTextIcon || 'none') !== 'none' && ['classic','legacyLabel'].includes(element.freeTextStyle || '');
+  $: compactWeights = compactTextWeights(element.freeTextDisplay, time, duration);
+  $: compactLine1 = singleLineText(fields.line1);
+  $: compactLine2 = singleLineText(fields.line2);
+  $: compactLabelX = freeSocial ? 104 : 28;
+  $: compactLabelWidth = Math.max(30, w - compactLabelX - 28);
   $: bodyLeft = fullPage ? fullMargin : freeSocial ? 100 : 34;
   $: bodyWidth = Math.max(60, w - 2 * bodyLeft);
   $: bodyStart = fullPage ? Math.max(215, height * .22) : 73 * sy;
@@ -235,6 +241,27 @@
     <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={studioTextX} y={height*.30} font-family={fontFamily} font-weight="800" font-size={Math.min(15*textFactor,height*.2)} fill={textColor(element,'heading','secondary')} letter-spacing="2.8">{fields.heading}</text>
     <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={studioTextX} y={cardTextY.main} font-family={fontFamily} font-weight="800" font-size={scaledText(fields.line1,Math.min(size,height*.37),studioTextWidth)} fill={textColor(element,'line1','white')}>{fields.line1}</text>
     <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={studioTextX} y={cardTextY.secondary} font-family={fontFamily} font-size={Math.min(17*textFactor,height*.17)} fill={textColor(element,'line2','secondary')}>{fields.line2}</text>
+  {:else if freeText && element.freeTextStyle === 'legacyLabel'}
+    <!-- Modelo Studio da etiqueta: mantém dois campos de uma linha e espaço próprio para o ícone. -->
+    <defs>
+      <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
+        <stop stop-color={paint.background}/><stop offset="1" stop-color={bg}/>
+      </linearGradient>
+      <clipPath id={contentClipId}><rect x={compactLabelX} y="6" width={compactLabelWidth} height={Math.max(12,height-12)}/></clipPath>
+    </defs>
+    <rect x="1.5" y="1.5" width={Math.max(1,w-3)} height={Math.max(1,height-3)} rx="15" fill={`url(#${gradId})`} fill-opacity=".98" stroke={paint.edge} stroke-width="2.5"/>
+    <path d={`M13 1.5 H${Math.min(w*.42,230)}`} stroke={accent} stroke-width="4"/>
+    <rect x="9" y={height*.25} width="4" height={height*.5} rx="2" fill={accent} fill-opacity=".9"/>
+    {#if compactWeights.stacked}
+      <path d={`M${compactLabelX} ${height*.54} H${w-24}`} stroke={accent} stroke-width="1" stroke-opacity=".4"/>
+    {/if}
+    {#if freeSocial}<SocialIcon icon={element.freeTextIcon || 'none'} x={24} y={Math.max(10,height/2-26)} size={52} color={accent} framed={true}/>{/if}
+    <g clip-path={`url(#${contentClipId})`}>
+      <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={compactLabelX} y={compactWeights.stacked?height*.42:height*.66} opacity={compactWeights.first} fill={textColor(element,'line1','white')} font-family={fontFamily} font-weight="800" font-size={scaledText(compactLine1,Math.min(size,height*(compactWeights.stacked ? .32 : .42)),compactLabelWidth)}>{compactLine1}</text>
+      {#if compactLine2}
+        <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={compactLabelX} y={compactWeights.stacked?height*.86:height*.66} opacity={compactWeights.second} fill={textColor(element,'line2','secondary')} font-family={fontFamily} font-size={scaledText(compactLine2,Math.min(size*(compactWeights.stacked ? .75 : 1),height*(compactWeights.stacked ? .22 : .40)),compactLabelWidth)}>{compactLine2}</text>
+      {/if}
+    </g>
   {:else if freeText && element.freeTextStyle === 'classic'}
     <defs><clipPath id={contentClipId}><rect x="30" y={bodyStart} width={w-60} height={bodyAreaHeight}/></clipPath></defs>
     <path d={`M14 0 H${w-32} L${w} 26 V${height-20} Q${w} ${height} ${w-20} ${height} H16 Q0 ${height} 0 ${height-16} V14 Q0 0 14 0Z`} fill={bg} fill-opacity=".97" stroke={paint.edge} stroke-width="3"/>
