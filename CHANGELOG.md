@@ -2,6 +2,13 @@
 
 > Política de versões: cada lançamento terá uma seção própria neste arquivo, atualizada no mesmo ZIP da versão. Registros estão em ordem decrescente. Atualizações planejadas não são apresentadas como recursos concluídos.
 
+## 0.1.0-alpha.9.3.4 — Espaçamento dos textos das cartelas
+
+- Corrigida a aproximação do texto secundário ao corpo em cartelas compactas (Clássico e Studio), usando baselines consistentes dentro dos 102 px.
+- Título, corpo e texto inferior continuam com cores e estilos independentes; textos longos ainda são ajustados à largura sem deformar a fonte.
+- Aplicado também aos modelos de slide compacto e texto livre de três linhas, preservando o layout de fichas técnicas, paletas, curvas de animação e dimensões das cartelas.
+- Regressões geométricas e de paridade Mobile incluídas.
+
 ## 0.1.0-alpha.9.3.3 — Margens da ficha técnica lateral
 
 - Linhas separadoras da barra à esquerda terminam antes da linha diagonal, em função da altura de cada campo.

@@ -25,7 +25,11 @@ const assert = require('node:assert/strict');
 const root = process.argv[1];
 const { makeElement, newProject } = require(root + '/templates.js');
 const { validateProject } = require(root + '/validation.js');
-const { resizeBounds, elementBaseHeight, isBar } = require(root + '/geometry.js');
+const { resizeBounds, elementBaseHeight, isBar, compactCardTextBaselines } = require(root + '/geometry.js');
+const baseline = compactCardTextBaselines(102);
+assert.ok(baseline.main < baseline.secondary);
+assert.ok(baseline.secondary - baseline.main >= 28);
+assert.ok(baseline.secondary <= 96); // mantém o texto inferior dentro da cartela.
 const project = newProject();
 let free = makeElement('freeText');
 assert.equal(free.style.scaleX, 1);

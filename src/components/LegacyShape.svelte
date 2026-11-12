@@ -5,7 +5,7 @@
   import { BRAND, TECHNICAL_CAPTIONS } from '../lib/brand';
   import { palettePaint, textColor } from '../lib/palette';
   import type { TextColorKey, TextColorRole } from '../lib/types';
-  import { elementBaseHeight } from '../lib/geometry';
+  import { elementBaseHeight, compactCardTextBaselines } from '../lib/geometry';
   import { technicalSeparatorEnd, technicalTextX } from '../lib/technicalGeometry';
   import { clamp } from '../lib/timing';
   import { legacyPhase, legacyStage, legacyScrollDistance } from '../lib/legacy';
@@ -39,6 +39,7 @@
     default:'M4 4h16v16H4z',
   };
   $: isSmallLabel = !isTech && !fullSlide && !freeBarPresentation && !freeLabel;
+  $: cardTextY = compactCardTextBaselines(h);
   $: fields = element.fields;
   $: paint = palettePaint(element.style);
   $: accent = element.style.accent;
@@ -125,7 +126,7 @@
   // Atualiza os progressos de cada campo quando phase muda. A chamada indireta
   // a rowProgress() dentro de {@const} não é reativa em Svelte.
   $: rowReveals = Array.from({ length: 6 }, (_, i) => legacyStage(phase, .55 + .09 * i, .32));
-  function lineY(n: number): number { return (freeLabel ? (n === 0 ? h*.47 : h*.78) : h*.67); }
+  function lineY(n: number): number { return (freeLabel ? (n === 0 ? h*.43 : h*.85) : h*.67); }
 </script>
 
 <g font-family={fontFamily}>
@@ -284,8 +285,8 @@
         <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="100" y={h*.36} fill={textColor(element,'heading','secondary')} font-size={Math.min(17*fontScale,h*.21)} font-weight="800" letter-spacing="2.7">{fields.heading}</text>
       </g>
       <g opacity={pBody} transform={`translate(${-26*(1-pBody)} 0)`}>
-        <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x="100" y={h*.70} fill={textColor(element,'line1','white')} font-family={fontFamily} font-size={fit(fields.line1, Math.min(fSize,h*.32), w-134)} font-weight="800">{fields.line1}</text>
-        {#if fields.line2}<text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x="100" y={h*.87} fill={textColor(element,'line2','secondary')} font-family={fontFamily} font-size={fit(fields.line2, Math.min(18*fontScale,h*.15), w-134,false)}>{fields.line2}</text>{/if}
+        <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x="100" y={cardTextY.main} fill={textColor(element,'line1','white')} font-family={fontFamily} font-size={fit(fields.line1, Math.min(fSize,h*.32), w-134)} font-weight="800">{fields.line1}</text>
+        {#if fields.line2}<text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x="100" y={cardTextY.secondary} fill={textColor(element,'line2','secondary')} font-family={fontFamily} font-size={fit(fields.line2, Math.min(18*fontScale,h*.15), w-134,false)}>{fields.line2}</text>{/if}
       </g>
     {/if}
     {#if element.animation === 'legacy' && time >= .55 && time < 1.15}

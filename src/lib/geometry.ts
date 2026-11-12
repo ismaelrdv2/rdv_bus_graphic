@@ -96,3 +96,8 @@ export function resizeBounds(
     height: h,
   };
 }
+
+/** Linhas das cartelas de 102 px: afastamento mínimo entre corpo e texto inferior. */
+export function compactCardTextBaselines(height: number): { main: number; secondary: number } {
+  return {main: height * .64, secondary: height * .92};
+}
