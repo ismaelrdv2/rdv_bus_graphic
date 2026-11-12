@@ -1,5 +1,6 @@
 <script lang="ts">
   import { BRAND, TECHNICAL_CAPTIONS } from '../lib/brand';
+  import { CARD_ICONS } from '../lib/cardIcons';
   import { palettePaint, textColor } from '../lib/palette';
   import type { TextColorKey, TextColorRole } from '../lib/types';
   import LegacyShape from './LegacyShape.svelte';
@@ -42,6 +43,16 @@
   $: fullPage = element.kind === 'freeText' && element.freeTextStyle === 'fullPage';
   $: isRight = (element.technicalSide || 'left') === 'right';
   $: credit = element.kind === 'credit';
+  // As cartelas compactas Studio reutilizam os ícones vetoriais originais.
+  $: studioCard = !shouldUseLegacy && ['location','date','route','driver','credit'].includes(element.kind);
+  $: studioTextX = studioCard ? 100 : 30;
+  $: studioTextWidth = Math.max(90, w - studioTextX - 34);
+  // A luz atravessa a cartela somente após a transição inicial do Studio.
+  $: shineStart = Math.min(.84, Math.max(.16, duration * .18));
+  $: shineLength = Math.min(.6, Math.max(.18, duration * .17));
+  $: shineElapsed = (time - shineStart) / shineLength;
+  $: studioShineVisible = studioCard && element.animation !== 'none' &&
+    time >= shineStart && time < shineStart + shineLength && time < duration - .12;
   $: cardTextY = compactCardTextBaselines(height);
   $: corner = element.kind === 'corner';
   $: freeText = element.kind === 'freeText';
@@ -210,9 +221,9 @@
     <rect width={w} height={height} rx="15" fill={bg} fill-opacity="0.98" stroke={paint.edge} stroke-width="3"/>
     <path d={`M13 2 H${Math.min(w*.5,198)}`} stroke={accent} stroke-width="5"/>
     <path d={`M${w-115} ${height-2} h80 l22 -20`} stroke={accent} stroke-width="3" fill="none"/>
-    <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="28" y={height*.30} font-family={fontFamily} font-weight="800" font-size={Math.min(15*textFactor,height*.2)} fill={textColor(element,'heading','secondary')} letter-spacing="2.8">{fields.heading}</text>
-    <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x="28" y={cardTextY.main} font-family={fontFamily} font-weight="800" font-size={scaledText(fields.line1,Math.min(size,height*.37),w-60)} fill={textColor(element,'line1','white')}>{fields.line1}</text>
-    <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x="28" y={cardTextY.secondary} font-family={fontFamily} font-size={Math.min(17*textFactor,height*.17)} fill={textColor(element,'line2','secondary')}>{fields.line2}</text>
+    <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={studioTextX} y={height*.30} font-family={fontFamily} font-weight="800" font-size={Math.min(15*textFactor,height*.2)} fill={textColor(element,'heading','secondary')} letter-spacing="2.8">{fields.heading}</text>
+    <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={studioTextX} y={cardTextY.main} font-family={fontFamily} font-weight="800" font-size={scaledText(fields.line1,Math.min(size,height*.37),studioTextWidth)} fill={textColor(element,'line1','white')}>{fields.line1}</text>
+    <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={studioTextX} y={cardTextY.secondary} font-family={fontFamily} font-size={Math.min(17*textFactor,height*.17)} fill={textColor(element,'line2','secondary')}>{fields.line2}</text>
   {:else if freeText && element.freeTextStyle === 'classic'}
     <defs><clipPath id={contentClipId}><rect x="30" y={bodyStart} width={w-60} height={bodyAreaHeight}/></clipPath></defs>
     <path d={`M14 0 H${w-32} L${w} 26 V${height-20} Q${w} ${height} ${w-20} ${height} H16 Q0 ${height} 0 ${height-16} V14 Q0 0 14 0Z`} fill={bg} fill-opacity=".97" stroke={paint.edge} stroke-width="3"/>
@@ -253,9 +264,33 @@
     <path d={`M14 0 H${w-28} L${w} 25 V${height-17} Q${w} ${height} ${w-17} ${height} H14 Q0 ${height} 0 ${height-14} V14 Q0 0 14 0Z`} fill={bg} fill-opacity=".98" stroke={paint.edge} stroke-width="2.5"/>
     <path d={`M14 1 H${Math.min(w*.4,185)}`} stroke={accent} stroke-width="5"/>
     <path d={`M${w-95} ${height-1} h55 l20 -18`} stroke={accent} stroke-width="2.5" fill="none"/>
-    <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="30" y={height*.25} fill={textColor(element,'heading','secondary')} font-family={fontFamily} font-size={Math.min(20*textFactor,height*.18)} font-weight="800" letter-spacing="2.5">{fields.heading}</text>
+    <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={studioTextX} y={height*.25} fill={textColor(element,'heading','secondary')} font-family={fontFamily} font-size={Math.min(20*textFactor,height*.18)} font-weight="800" letter-spacing="2.5">{fields.heading}</text>
     <path d={`M30 ${height*.34} H${Math.min(w-48,440)}`} stroke={paint.edge} stroke-width="2"/>
-    <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x="30" y={cardTextY.main} fill={textColor(element,'line1','white')} font-family={fontFamily} font-size={scaledText(fields.line1,Math.min(size,height*.36),w-64)} font-weight="800">{fields.line1}</text>
-    {#if fields.line2}<text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x="30" y={cardTextY.secondary} fill={textColor(element,'line2','secondary')} font-size={Math.min(21*textFactor,height*.17)}>{fields.line2}</text>{/if}
+    <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={studioTextX} y={cardTextY.main} fill={textColor(element,'line1','white')} font-family={fontFamily} font-size={scaledText(fields.line1,Math.min(size,height*.36),studioTextWidth)} font-weight="800">{fields.line1}</text>
+    {#if fields.line2}<text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={studioTextX} y={cardTextY.secondary} fill={textColor(element,'line2','secondary')} font-size={Math.min(21*textFactor,height*.17)}>{fields.line2}</text>{/if}
+  {/if}
+  {#if studioCard}
+    <!-- Reaproveita o desenho dos ícones 0.14; fica dentro da área reservada à esquerda. -->
+    <g transform={`translate(18 ${Math.max(8,(height-60)/2)})`} pointer-events="none">
+      <rect x="0" y="0" width="60" height="60" rx="12"
+        fill={paint.edge} fill-opacity=".32" stroke={accent} stroke-width="1.7"/>
+      <svg x="9" y="9" width="42" height="42" viewBox="0 0 24 24"
+        preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <path d={CARD_ICONS[element.kind] || CARD_ICONS.default} fill="none"
+          stroke={accent} stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </g>
+  {/if}
+  {#if studioShineVisible}
+    <defs>
+      <clipPath id={`card-shine-${id}`}>
+        <rect width={w} height={height} rx="15"/>
+      </clipPath>
+    </defs>
+    <g clip-path={`url(#card-shine-${id})`} pointer-events="none"
+      opacity={.17 * Math.sin(Math.PI * shineElapsed)}>
+      <path d={`M${-90 + shineElapsed * (w + 180)} 0 l65 ${height} h18 l-65 -${height} Z`}
+        fill="#ffffff"/>
+    </g>
   {/if}
 </g>

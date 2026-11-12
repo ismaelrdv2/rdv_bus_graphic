@@ -2,6 +2,14 @@
 
 > Política de versões: cada lançamento terá uma seção própria neste arquivo, atualizada no mesmo ZIP da versão. Registros estão em ordem decrescente. Atualizações planejadas não são apresentadas como recursos concluídos.
 
+## 0.1.0-alpha.9.3.5 — Ícones originais e brilho nas cartelas Studio
+
+- Extrai os caminhos SVG originais de localização, data, linha, motorista e crédito do renderizador Clássico para uma fonte vetorial compartilhada.
+- Ícones visíveis nas cartelas Studio com a área de texto realocada, respeitando a largura padronizada e as margens.
+- Introduz varredura brilhosa (*shine sweep*) no Studio após a entrada, limitada ao formato da cartela e sem interromper a edição do texto.
+- Mantém o brilho histórico do visual Clássico, cores da paleta, animações e exportações existentes.
+- A temporização reproduz o efeito implementado no código clássico; o vídeo de referência no YouTube não pôde ser inspecionado quadro a quadro para afinação exata.
+
 ## 0.1.0-alpha.9.3.4 — Espaçamento dos textos das cartelas
 
 - Corrigida a aproximação do texto secundário ao corpo em cartelas compactas (Clássico e Studio), usando baselines consistentes dentro dos 102 px.

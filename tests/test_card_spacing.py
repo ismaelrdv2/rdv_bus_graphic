@@ -12,10 +12,10 @@ def test_shared_baselines():
     assert 'cardTextY.main' in CLASSIC and 'cardTextY.secondary' in CLASSIC
 
 def test_credit_and_generic_card_use_same_layout():
-    assert 'x="28" y={cardTextY.main}' in STUDIO
-    assert 'x="28" y={cardTextY.secondary}' in STUDIO
-    assert 'x="30" y={cardTextY.main}' in STUDIO
-    assert 'x="30" y={cardTextY.secondary}' in STUDIO
+    assert 'x={studioTextX} y={cardTextY.main}' in STUDIO
+    assert 'x={studioTextX} y={cardTextY.secondary}' in STUDIO
+    assert 'x={studioTextX} y={cardTextY.main}' in STUDIO
+    assert 'x={studioTextX} y={cardTextY.secondary}' in STUDIO
 
 def test_not_modify_technical_bars():
     assert 'technicalSeparatorEnds[i]' in CLASSIC

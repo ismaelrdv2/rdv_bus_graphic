@@ -3,6 +3,7 @@
   import { fieldTextStyle } from '../lib/inlineText';
   import { fontStack } from '../lib/fonts';
   import { BRAND, TECHNICAL_CAPTIONS } from '../lib/brand';
+  import { CARD_ICONS } from '../lib/cardIcons';
   import { palettePaint, textColor } from '../lib/palette';
   import type { TextColorKey, TextColorRole } from '../lib/types';
   import { elementBaseHeight, compactCardTextBaselines } from '../lib/geometry';
@@ -30,14 +31,6 @@
   $: freeLabel = element.kind === 'freeText' && ['legacyLabel','legacyHalfBar','legacyFullBar'].includes(element.freeTextStyle || '');
   // Ícones desenhados no mesmo sistema 24x24; o viewBox garante alinhamento
   // independente de altura do caminho (o pin antes ultrapassava a moldura).
-  const labelIcons: Record<string,string> = {
-    location:'M12 21s7-5.2 7-11a7 7 0 0 0-14 0c0 5.8 7 11 7 11z M12 7a3 3 0 1 0 0 6a3 3 0 1 0 0-6z',
-    route:'M4 20h5a4 4 0 0 0 0-8H8a4 4 0 0 1 0-8h11m-4-3l4 3-4 3 M4 20a1 1 0 1 0 2 0a1 1 0 1 0-2 0',
-    date:'M4 5h16v16H4z M8 2v6 M16 2v6 M4 11h16',
-    driver:'M12 4a4 4 0 1 0 0 8a4 4 0 1 0 0-8 M4 21c0-9 16-9 16 0',
-    credit:'M3 5h18v14H3z M8 5v14 M16 5v14 M3 10h5 M16 10h5 M3 15h5 M16 15h5',
-    default:'M4 4h16v16H4z',
-  };
   $: isSmallLabel = !isTech && !fullSlide && !freeBarPresentation && !freeLabel;
   $: cardTextY = compactCardTextBaselines(h);
   $: fields = element.fields;
@@ -278,7 +271,7 @@
       <g opacity={stage(.28,.35)} transform={`translate(48 49) scale(${.65+.35*stage(.28,.35)}) translate(-48 -49)`}>
         <rect x="18" y="18" width="60" height="60" rx="12" fill={paint.edge} fill-opacity=".32" stroke={accent} stroke-width="1.7" />
         <svg x="27" y="27" width="42" height="42" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-          <path d={labelIcons[element.kind] || labelIcons.default} fill="none" stroke={accent} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          <path d={CARD_ICONS[element.kind] || CARD_ICONS.default} fill="none" stroke={accent} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </g>
       <g opacity={pTitle} transform={`translate(${-26*(1-pTitle)} 0)`}>
