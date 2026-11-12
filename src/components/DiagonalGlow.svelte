@@ -9,6 +9,7 @@
   $: center=frame.progress*100;
   $: low=Math.max(0,center-18); $: high=Math.min(100,center+18);
 </script>
+<svelte:options namespace="svg" />
 {#if enabled && frame.visible}
   <defs>
     <clipPath id={clipId} clipPathUnits="userSpaceOnUse"><path d={shape}/></clipPath>

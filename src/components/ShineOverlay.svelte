@@ -9,6 +9,7 @@
   $: x=-band-tilt+frame.progress*(width+band+2*tilt);
   $: clipId=`shine-area-${id}`; $: gradId=`shine-grad-${id}`;
 </script>
+<svelte:options namespace="svg" />
 {#if enabled && frame.visible}
   <defs>
     <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
