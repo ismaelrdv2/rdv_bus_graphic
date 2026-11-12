@@ -48,6 +48,11 @@
   $: credit = element.kind === 'credit';
   // As cartelas compactas Studio reutilizam os ícones vetoriais originais.
   $: studioCard = !shouldUseLegacy && ['location','date','route','driver','credit'].includes(element.kind);
+  // A linha interna só começa após o espaço reservado ao ícone.
+  const cardIconX = 18;
+  const cardIconSize = 60;
+  const cardIconGap = 22;
+  $: studioRuleX = studioCard ? cardIconX + cardIconSize + cardIconGap : 30;
   $: studioTextX = studioCard ? 100 : 30;
   $: studioTextWidth = Math.max(90, w - studioTextX - 34);
   // O recorte coincide com a arte, não com uma moldura retangular genérica.
@@ -269,14 +274,14 @@
     <path d={`M14 1 H${Math.min(w*.4,185)}`} stroke={accent} stroke-width="5"/>
     <path d={`M${w-95} ${height-1} h55 l20 -18`} stroke={accent} stroke-width="2.5" fill="none"/>
     <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={studioTextX} y={height*.25} fill={textColor(element,'heading','secondary')} font-family={fontFamily} font-size={Math.min(20*textFactor,height*.18)} font-weight="800" letter-spacing="2.5">{fields.heading}</text>
-    <path d={`M30 ${height*.34} H${Math.min(w-48,440)}`} stroke={paint.edge} stroke-width="2"/>
+    <path d={`M${studioRuleX} ${height*.34} H${Math.max(studioRuleX,Math.min(w-48,440))}`} stroke={paint.edge} stroke-width="2"/>
     <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={studioTextX} y={cardTextY.main} fill={textColor(element,'line1','white')} font-family={fontFamily} font-size={scaledText(fields.line1,Math.min(size,height*.36),studioTextWidth)} font-weight="800">{fields.line1}</text>
     {#if fields.line2}<text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={studioTextX} y={cardTextY.secondary} fill={textColor(element,'line2','secondary')} font-size={Math.min(21*textFactor,height*.17)}>{fields.line2}</text>{/if}
   {/if}
   {#if studioCard}
     <!-- Reaproveita o desenho dos ícones 0.14; fica dentro da área reservada à esquerda. -->
-    <g transform={`translate(18 ${Math.max(8,(height-60)/2)})`} pointer-events="none">
-      <rect x="0" y="0" width="60" height="60" rx="12"
+    <g transform={`translate(${cardIconX} ${Math.max(8,(height-cardIconSize)/2)})`} pointer-events="none">
+      <rect x="0" y="0" width={cardIconSize} height={cardIconSize} rx="12"
         fill={paint.edge} fill-opacity=".32" stroke={accent} stroke-width="1.7"/>
       <svg x="9" y="9" width="42" height="42" viewBox="0 0 24 24"
         preserveAspectRatio="xMidYMid meet" aria-hidden="true">
