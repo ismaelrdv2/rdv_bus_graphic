@@ -9,6 +9,7 @@ export type ElementKind =
 export type TextField = 'heading' | 'line1' | 'line2' | 'line3' | 'line4' | 'line5' | 'line6';
 export type AnimationStyle = 'slide' | 'fade' | 'none' | 'legacy';
 export type VisualPreset = 'studio' | 'legacy';
+export type SocialIconId = 'none' | 'facebook' | 'instagram' | 'x' | 'tiktok' | 'twitch' | 'whatsapp' | 'telegram' | 'discord';
 export type FreeTextStyle = 'classic' | 'technicalBar' | 'technicalAlpha1' | 'fullTechnical' | 'fullPage'
   | 'legacyLabel' | 'legacyHalfBar' | 'legacyFullBar' | 'legacyPresentationBar' | 'legacyPresentationSlide';
 export type TechnicalLayout = 'side' | 'fullscreen' | 'legacyFullscreen';
@@ -97,6 +98,8 @@ export interface HudElement {
   technicalSide?: 'left' | 'right';
   /** Estilos opcionais do Texto livre; versões anteriores usam 'classic'. */
   freeTextStyle?: FreeTextStyle;
+  /** Ícone social opcional do Texto livre; compatível com projetos antigos. */
+  freeTextIcon?: SocialIconId;
   /** Rótulos personalizados dos campos nos dois estilos de ficha. */
   freeTextCaptions?: string[];
   /** Ficha tradicional lateral ou ficha técnica em tela inteira. */
