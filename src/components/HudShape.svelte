@@ -21,7 +21,7 @@
     ? (element.technicalLayout === 'legacyFullscreen' || (element.technicalLayout !== 'fullscreen' && element.visualPreset === 'legacy'))
     : element.kind === 'freeText'
       ? ['legacyLabel', 'legacyHalfBar', 'legacyFullBar', 'legacyPresentationBar', 'legacyPresentationSlide'].includes(element.freeTextStyle || '')
-        || (element.visualPreset === 'legacy' && ['technicalBar', 'fullTechnical'].includes(element.freeTextStyle || ''))
+        || (element.visualPreset === 'legacy' && element.freeTextStyle === 'technicalBar')
       : element.visualPreset === 'legacy';
   $: sx = element.style.scaleX;
   $: sy = element.style.scaleY;
@@ -61,8 +61,18 @@
   $: portrait = w / height < .95;
   $: fullMargin = Math.max(32, Math.min(105, w * .065));
   $: fullColumns = portrait ? 1 : 2;
-  $: fullRows = portrait ? 6 : 3;
-  $: fullRowHeight = (height - Math.max(145, height * .17) - 75) / fullRows;
+  // Distribui somente campos preenchidos, centralizando as linhas incompletas.
+  $: activeTechnical = technicalValues.map((value, index) => ({ value, index }))
+    .filter(item => item.value.trim().length > 0);
+  $: fullRows = Math.max(1, Math.ceil(activeTechnical.length / fullColumns));
+  $: fullGridGap = portrait ? 18 : 28;
+  $: fullGridTop = height * .185;
+  $: fullGridHeight = Math.max(120, height - fullGridTop - Math.max(90, fullMargin * .7));
+  $: fullRowHeight = Math.max(72, Math.min(portrait ? 235 : 250,
+    (fullGridHeight - (fullRows - 1) * fullGridGap) / fullRows));
+  $: fullGridStartY = fullGridTop + Math.max(0,
+    (fullGridHeight - fullRows * fullRowHeight - (fullRows - 1) * fullGridGap) / 2);
+  $: fullCellWidth = (w - 2 * fullMargin - (fullColumns - 1) * 60) / fullColumns;
   $: fullFont = Math.min(size * 1.18, portrait ? 51 : 64, fullRowHeight * .42);
   $: fullTitleSize = Math.min(57, Math.max(25, w * .043));
   $: bodySize = clamp(rich.bodySize * textFactor, 12, 170);
@@ -135,18 +145,18 @@
     <path d={`M${fullMargin} ${height*.118} H${w-fullMargin}`} stroke={BRAND.purpleEdge} stroke-width="3"/>
     <path d={`M${fullMargin} ${height*.118} H${fullMargin+Math.min(260,w*.21)}`} stroke={accent} stroke-width="5"/>
     <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={fullMargin} y={height*.104} fill={accent} font-family={fontFamily} font-weight="800" font-size={scaledText(fields.heading,fullTitleSize,w-2*fullMargin)} letter-spacing="5">{fields.heading}</text>
-    {#each technicalValues as value, index}
-      {@const col = portrait ? 0 : index % 2}
-      {@const row = portrait ? index : Math.floor(index/2)}
-      {@const cellWidth = (w-2*fullMargin-(portrait?0:60))/fullColumns}
-      {@const x = fullMargin + col*(cellWidth+60)}
-      {@const y = height*.185 + row*fullRowHeight}
-      {#if value}
+    {#each activeTechnical as item, position (item.index)}
+      {@const index = item.index}
+      {@const value = item.value}
+      {@const col = position % fullColumns}
+      {@const row = Math.floor(position / fullColumns)}
+      {@const countInRow = Math.min(fullColumns, activeTechnical.length - row * fullColumns)}
+      {@const x = fullMargin + (fullColumns - countInRow) * (fullCellWidth + 60) / 2 + col * (fullCellWidth + 60)}
+      {@const y = fullGridStartY + row * (fullRowHeight + fullGridGap)}
         <path d={`M${x} ${y+9} l15 17 -15 17 M${x+16} ${y+9} l15 17 -15 17`} stroke={accent} stroke-width="4" fill="none" stroke-linecap="round"/>
         <text data-edit-caption={index} style={fieldTextStyle(element,'caption'+index)} x={x+48} y={y+16} font-family={fontFamily} font-size={Math.min(21,fullRowHeight*.19)} fill={BRAND.lilac} font-weight="800" letter-spacing="3">{captions[index] || ''}</text>
-        <text data-edit-field={'line'+(index+1)} style={fieldTextStyle(element,'line'+(index+1))} x={x+48} y={y+Math.min(76,fullRowHeight*.64)} font-family={fontFamily} font-size={scaledText(value,fullFont,cellWidth-58)} fill={BRAND.text} font-weight="800">{value}</text>
-        <path d={`M${x+48} ${y+fullRowHeight*.78} H${x+cellWidth}`} stroke={BRAND.purpleEdge} stroke-width="2"/>
-      {/if}
+        <text data-edit-field={'line'+(index+1)} style={fieldTextStyle(element,'line'+(index+1))} x={x+48} y={y+Math.min(76,fullRowHeight*.64)} font-family={fontFamily} font-size={scaledText(value,fullFont,fullCellWidth-58)} fill={BRAND.text} font-weight="800">{value}</text>
+        <path d={`M${x+48} ${y+fullRowHeight*.78} H${x+fullCellWidth}`} stroke={BRAND.purpleEdge} stroke-width="2"/>
     {/each}
     <text x={fullMargin} y={height-38} font-size="16" fill={BRAND.lilac} letter-spacing="8" font-weight="800">RDV BUS</text>
     <path d={`M${w-fullMargin-70} ${height-36} h45 l24 -24`} stroke={accent} stroke-width="3" fill="none"/>

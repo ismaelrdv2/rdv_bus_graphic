@@ -2,6 +2,13 @@
 
 > Política de versões: cada lançamento terá uma seção própria neste arquivo, atualizada no mesmo ZIP da versão. Registros estão em ordem decrescente. Atualizações planejadas não são apresentadas como recursos concluídos.
 
+## 0.1.0-alpha.9.2.1 — Correção de alinhamento da Ficha em tela inteira
+
+- Corrigida a seleção de renderizador: o estilo “Ficha em tela inteira — 6 campos” usa o renderizador Studio, mesmo quando o modo visual clássico foi selecionado anteriormente.
+- A grade de campos preenchidos agora distribui os itens com centralização horizontal e vertical, inclusive quando há menos de seis campos.
+- Mantidos os desenhos dos modos originais 0.14 e a compatibilidade dos projetos JSON anteriores.
+- Incluídos testes de regressão. Sem mudanças no mecanismo de vídeo, no Mobile ou no formato SVG.
+
 ## 0.1.0-alpha.9.2 — 2026-11-11
 
 ### Corrigido

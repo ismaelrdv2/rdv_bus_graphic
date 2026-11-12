@@ -1,6 +1,6 @@
 [package]
 name = "rdv-bus"
-version = "0.1.0-alpha.9.2"
+version = "0.1.0-alpha.9.2.1"
 description = "RDV Bus Studio"
 authors = ["RDV Bus"]
 edition = "2021"
