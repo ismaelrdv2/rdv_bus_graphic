@@ -1,6 +1,6 @@
 /** Paletas compartilhadas por todos os componentes gráficos; os valores são persistidos no JSON. */
 import { BRAND } from './brand';
-import type { HudElement, HudStyle, PaletteColors, PaletteId, ProjectPalette, TextColorKey, TextColorRole } from './types';
+import type { HudElement, HudStyle, PaletteColors, PaletteId, ProjectPalette, TextColorKey, TextColorRole, TextColorGroup } from './types';
 
 export const DEFAULT_COLORS: PaletteColors = {
   primary: BRAND.gold, secondary: BRAND.lilac, background: BRAND.purpleDeep,
@@ -57,16 +57,43 @@ export function palettePaint(style: HudStyle) {
   };
 }
 
-export function textColor(element: HudElement, key: TextColorKey, defaultRole: TextColorRole = 'white'): string {
-  const override = element.textColors?.[key];
-  const role = override && override !== 'original' ? override : defaultRole;
-  const paint = palettePaint(element.style);
-  if ((!override || override === 'original') && defaultRole === 'white') return BRAND.text;
-  if(role==='primary') return paint.primary;
-  if(role==='secondary') return paint.secondary;
-  return role==='white' ? '#FFFFFF' : BRAND.text;
+/** Resolve a função de cada campo sem confundir o valor da ficha técnica com o texto auxiliar. */
+export function textGroupFor(element: HudElement, key: TextColorKey): TextColorGroup {
+  if (key === 'heading') return 'title';
+  if (key === 'footer' || key.startsWith('caption')) return 'secondary';
+  const technicalValues = element.kind === 'technical' || (element.kind === 'freeText' &&
+    ['technicalBar', 'technicalAlpha1', 'fullTechnical'].includes(element.freeTextStyle || ''));
+  if (key === 'line2' && !technicalValues) return 'secondary';
+  return 'body';
 }
 
-export function colorAsSelected(element: HudElement, key: TextColorKey): TextColorRole | 'original' {
+/** Resolve prioridades: campo específico > grupo semântico > cor original do desenho. */
+export function textColor(element: HudElement, key: TextColorKey, defaultRole: TextColorRole = 'white'): string {
+  const fieldOverride = element.textColors?.[key];
+  const groupOverride = element.textGroups?.[textGroupFor(element, key)] || 'original';
+  const role = fieldOverride === 'original' ? defaultRole
+    : fieldOverride || (groupOverride === 'original' ? defaultRole : groupOverride);
+  const paint = palettePaint(element.style);
+  if (role === 'primary') return paint.primary;
+  if (role === 'secondary') return paint.secondary;
+  if (role === 'white' && defaultRole === 'white' && (fieldOverride === 'original' || (!fieldOverride && groupOverride === 'original'))) return BRAND.text;
+  return role === 'white' ? '#FFFFFF' : BRAND.text;
+}
+
+export function colorAsSelected(element: HudElement, key: TextColorKey): TextColorRole {
   return element.textColors?.[key] || 'original';
+}
+
+/** A seleção do grupo limpa apenas as exceções individuais daquele grupo. */
+export function withTextGroupColor(element: HudElement, group: TextColorGroup, role: TextColorRole): HudElement {
+  const overrides = { ...element.textColors };
+  for (const key of Object.keys(overrides) as TextColorKey[]) {
+    if (textGroupFor(element, key) === group) delete overrides[key];
+  }
+  return { ...element, textColors: overrides,
+    textGroups: { ...element.textGroups, [group]: role } };
+}
+
+export function textGroupAsSelected(element: HudElement, group: TextColorGroup): TextColorRole {
+  return element.textGroups?.[group] || 'original';
 }

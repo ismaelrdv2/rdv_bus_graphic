@@ -1,4 +1,4 @@
-export const APP_VERSION = '0.1.0-alpha.9.3';
+export const APP_VERSION = '0.1.0-alpha.9.3.1';
 export const SCHEMA_VERSION = 1;
 export const DEFAULT_DURATION = 5.3;
 export const MAX_ELEMENTS = 64;
@@ -18,6 +18,8 @@ export type ScrollMode = 'none' | 'vertical' | 'horizontal';
 /** Cores de todos os campos e rótulos, preservando padrão original em projetos antigos. */
 export type TextColorRole = 'white' | 'primary' | 'secondary' | 'original';
 export type TextColorKey = TextField | 'caption0' | 'caption1' | 'caption2' | 'caption3' | 'caption4' | 'caption5' | 'footer';
+/** Grupos semânticos: cada tipo de texto tem sua própria escolha de paleta. */
+export type TextColorGroup = 'title' | 'body' | 'secondary';
 export type PaletteId = 'purple-gold' | 'blue-orange' | 'green-yellow' | 'red-gold' | 'pink-cyan' | 'custom';
 export interface PaletteColors { primary: string; secondary: string; background: string; }
 export interface ProjectPalette { preset: PaletteId; colors: PaletteColors; }
@@ -77,6 +79,8 @@ export interface HudElement {
   /** heading, line1..line6, caption0..caption5; opcional para projetos antigos. */
   textFormatting?: Record<string, TextFormatting>;
   textColors?: Partial<Record<TextColorKey, TextColorRole>>;
+  /** Escolhas independentes para título, corpo e texto secundário. */
+  textGroups?: Partial<Record<TextColorGroup, TextColorRole>>;
   /** Permite personalizar rótulos da ficha técnica original. */
   technicalCaptions?: string[];
   style: HudStyle;

@@ -171,8 +171,8 @@
     <path d={`M33 ${77*sy} H${w-30}`} stroke="#39445a" stroke-width="2"/>
     {#each [fields.line1,fields.line2,fields.line3,fields.line4] as value, index}
       {#if value}
-        <text data-edit-caption={index} style={fieldTextStyle(element,'caption'+index)} x="33" y={(132+index*86)*sy} fill="#aebbd0" font-family={fontFamily} font-size={scaledText(captions[index] || '',21*textFactor,w-66)}>{captions[index] || ''}</text>
-        <text data-edit-field={'line'+(index+1)} style={fieldTextStyle(element,'line'+(index+1))} x="33" y={(170+index*86)*sy} fill="#f9fbff" font-family={fontFamily} font-size={scaledText(value,Math.min(size,32*textFactor),w-66)} font-weight="600">{value}</text>
+        <text data-edit-caption={index} style={fieldTextStyle(element,'caption'+index)} x="33" y={(132+index*86)*sy} fill={textColor(element,('caption'+index) as TextColorKey,'secondary')} font-family={fontFamily} font-size={scaledText(captions[index] || '',21*textFactor,w-66)}>{captions[index] || ''}</text>
+        <text data-edit-field={'line'+(index+1)} style={fieldTextStyle(element,'line'+(index+1))} x="33" y={(170+index*86)*sy} fill={textColor(element,('line'+(index+1)) as TextColorKey,'white')} font-family={fontFamily} font-size={scaledText(value,Math.min(size,32*textFactor),w-66)} font-weight="600">{value}</text>
       {/if}
     {/each}
   {:else if fullPage}

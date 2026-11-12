@@ -1,11 +1,11 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import PalettePanel from './PalettePanel.svelte';
-  import { DEFAULT_PALETTE, colorAsSelected } from '../lib/palette';
+  import { DEFAULT_PALETTE, colorAsSelected, textGroupAsSelected } from '../lib/palette';
   import { FIELD_LABELS, KIND_INFO } from '../lib/templates';
   import { DEFAULT_RICH_TEXT } from '../lib/richtext';
   import { isBottomBar } from '../lib/geometry';
-  import type { FreeTextStyle, RichTextSettings, TechnicalLayout, VisualPreset, HudElement, HudStyle, RDVProject, TextField, TextColorKey, TextColorRole, PaletteColors, PaletteId } from '../lib/types';
+  import type { FreeTextStyle, RichTextSettings, TechnicalLayout, VisualPreset, HudElement, HudStyle, RDVProject, TextField, TextColorKey, TextColorRole, TextColorGroup, PaletteColors, PaletteId } from '../lib/types';
 
   export let project: RDVProject;
   export let systemFonts: string[] = [];
@@ -14,6 +14,8 @@
   export let onField: (key: TextField, value: string) => void;
   export let onStyle: (key: keyof HudStyle, value: number | string) => void;
   export let onTextColor: (key: TextColorKey, role: TextColorRole) => void;
+  export let onTextGroup: (group: TextColorGroup, role: TextColorRole) => void;
+  export let onProjectTextGroup: (group: TextColorGroup, role: TextColorRole) => void;
   export let onAllSelectedText: (role: TextColorRole) => void;
   export let onAllProjectText: (role: TextColorRole) => void;
   export let onPalettePreset: (preset: PaletteId) => void;
@@ -35,6 +37,11 @@
   export let onResetScale: () => void;
   export let onSelectNone: () => void;
 
+  const colorGroups: { key: TextColorGroup, label: string, note: string }[] = [
+    { key: 'title', label: 'Cor do título', note: 'Cabeçalho e títulos das cartelas' },
+    { key: 'body', label: 'Cor do corpo', note: 'Valores e texto principal' },
+    { key: 'secondary', label: 'Cor do texto secundário', note: 'Subtítulos, rótulos e rodapés' },
+  ];
   let imageInput: HTMLInputElement;
   let allSelectedRole: TextColorRole = 'white';
   let bodyEditor: HTMLTextAreaElement;
@@ -135,6 +142,24 @@
       </label>
       <p class="inspector-hint">A opção "Clássico" restaura a aparência e animação em camadas dos itens. Os modos originais de Texto livre usam sempre seu desenho histórico.</p>
       <label class="field"><span>Nome no projeto</span><input type="text" value={selected.title} maxlength="80" on:input={(event) => onRename(event.currentTarget.value)}/></label>
+      <div class="palette-color-group" aria-label="Cores independentes dos textos">
+        <h4>Cores dos textos — independentes</h4>
+        <p class="inspector-hint">Defina a cor do título, do corpo e dos textos secundários separadamente. As cores acompanham a paleta atual. Cada alteração afeta apenas o grupo escolhido.</p>
+        {#each colorGroups as group}
+          <label class="field text-role-picker">
+            <span>{group.label}</span>
+            <select value={textGroupAsSelected(selected,group.key)} on:change={(event) => onTextGroup(group.key,event.currentTarget.value as TextColorRole)}>
+              <option value="original">Cor original deste estilo</option>
+              <option value="white">Branco</option>
+              <option value="primary">Destaque — cor principal</option>
+              <option value="secondary">Cor secundária da paleta</option>
+            </select>
+          </label>
+          <p class="inspector-hint">{group.note}</p>
+          <button type="button" class="button secondary-button fill" on:click={()=>onProjectTextGroup(group.key,textGroupAsSelected(selected,group.key))}>Aplicar {group.label.toLowerCase()} a todo o projeto</button>
+        {/each}
+      </div>
+      <h4>Conteúdo e cores individuais por campo</h4>
       {#each fieldKeys as field}
         {@const label = selected.kind === 'freeText' && (selected.freeTextStyle || 'classic') !== 'classic'
           ? field === 'heading' ? 'Título' : richEditor && field === 'line1' ? 'Corpo do texto' : `Texto ${field.replace('line','')}`

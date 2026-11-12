@@ -2,6 +2,25 @@
 
 > Política de versões: cada lançamento terá uma seção própria neste arquivo, atualizada no mesmo ZIP da versão. Registros estão em ordem decrescente. Atualizações planejadas não são apresentadas como recursos concluídos.
 
+## 0.1.0-alpha.9.3.1 — Seletores independentes por tipo de texto
+
+### Adicionado
+- Controles destacados no painel de propriedades: **Cor do título**, **Cor do corpo** e **Cor do texto secundário**, cada um com escolha independente entre padrão original, branco, cor principal e cor secundária.
+- Aplicação opcional de cada um dos três grupos a todas as seções do projeto, sem afetar os outros grupos.
+- Persistência de `textGroups` em JSON com leitura compatível dos projetos da alpha.9.3 e anteriores.
+- Personalização mais granular por campo continua disponível abaixo dos seletores de grupo.
+
+### Corrigido
+- Escolher uma cor para o grupo remove apenas as exceções de cor dos campos pertencentes àquele grupo, para o resultado aparecer imediatamente.
+- Recuperada a personalização de cor dos textos na ficha compacta `technicalAlpha1`, antes fixada em dois valores RGB.
+- Comando **Cor de todos os textos** reinicia grupos semânticos anteriores, mantendo o comportamento explícito de aplicação global.
+
+### Preservado
+- Paletas predefinidas e personalizadas HEX/RGB, comportamento antigo de `original`, alinhamento e espaçamento corrigidos na alpha.9.2.2, formatos de vídeo e estrutura Mobile independente.
+
+### Validação
+- Testes locais e compilação via GitHub Actions. A aparência final no AppImage depende de novo teste do usuário.
+
 ## 0.1.0-alpha.9.3 — Paletas e cores de texto (Desktop)
 
 ### Adicionado

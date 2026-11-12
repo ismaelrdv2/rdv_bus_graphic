@@ -16,11 +16,11 @@
   import { FALLBACK_FONTS, fontStack, normalizeFontName } from './lib/fonts';
   import { getSystemFontFamilies } from './lib/systemFonts';
   import { DEFAULT_RICH_TEXT } from './lib/richtext';
-  import { DEFAULT_PALETTE, PALETTE_PRESETS, parseColor } from './lib/palette';
+  import { DEFAULT_PALETTE, PALETTE_PRESETS, parseColor, withTextGroupColor } from './lib/palette';
   import type { EditableTextKey } from './lib/inlineText';
   import { legacyScrollRecommendedDuration } from './lib/legacy';
   import { beginVideo, pushVideoFrame, finishVideo, cancelVideo, exportFrameSvg, svgToPngBase64, VIDEO_FORMATS, type VideoFormat, type RasterQuality, type ExportBackground } from './lib/video';
-  import { MAX_ELEMENTS, type TextFormatting, type TextAlign, type BulletMode, type ElementKind, type FreeTextStyle, type RichTextSettings, type TechnicalLayout, type HudElement, type HudStyle, type RDVProject, type TextField, type TextColorKey, type TextColorRole, type PaletteColors, type PaletteId, type UiStatus } from './lib/types';
+  import { MAX_ELEMENTS, type TextFormatting, type TextAlign, type BulletMode, type ElementKind, type FreeTextStyle, type RichTextSettings, type TechnicalLayout, type HudElement, type HudStyle, type RDVProject, type TextField, type TextColorKey, type TextColorRole, type TextColorGroup, type PaletteColors, type PaletteId, type UiStatus } from './lib/types';
   import { isDesktop, loadAutosave, openProjectBrowser, openProjectNative, saveProject, writeAutosave } from './lib/projects';
 
   let project: RDVProject = loadAutosave();
@@ -104,17 +104,27 @@
     changeElement(selectedId, element => ({...element,textColors:{...(element.textColors || {}),[key]:role}}));
   }
 
+  function changeSelectedTextGroup(group: TextColorGroup, role: TextColorRole): void {
+    if (!selectedId) return;
+    changeElement(selectedId, element => withTextGroupColor(element, group, role));
+  }
+
+  function changeProjectTextGroup(group: TextColorGroup, role: TextColorRole): void {
+    applyChange({ ...project, elements: project.elements.map(element => withTextGroupColor(element, group, role)) });
+    notify('Cor de ' + (group === 'title' ? 'títulos' : group === 'body' ? 'corpos' : 'textos secundários') + ' aplicada a todo o projeto.', 'success');
+  }
+
   function textRolesForAll(role: TextColorRole): Record<TextColorKey,TextColorRole> {
     return Object.fromEntries(COLOR_KEYS.map(key=>[key,role])) as Record<TextColorKey,TextColorRole>;
   }
 
   function changeAllSelectedTextColor(role: TextColorRole): void {
     if (!selectedId) return;
-    changeElement(selectedId, element=>({...element,textColors:textRolesForAll(role)}));
+    changeElement(selectedId, element=>({...element,textColors:textRolesForAll(role),textGroups:{}}));
   }
 
   function changeAllProjectTextColor(role: TextColorRole): void {
-    applyChange({...project,elements:project.elements.map(element=>({...element,textColors:textRolesForAll(role)}))});
+    applyChange({...project,elements:project.elements.map(element=>({...element,textColors:textRolesForAll(role),textGroups:{}}))});
     notify('Cores dos textos atualizadas em todos os elementos.', 'success');
   }
 
@@ -622,7 +632,7 @@
       <div class="timeline-panel"><Timeline {project} {selectedId} {time} {playing} onTogglePlay={togglePlayback} onStop={stopAndRewind} onSeek={seek} onSelect={(id) => selectedId = id}/></div>
     </main>
 
-    <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onTechnicalLayout={updateTechnicalLayout}
+    <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onTechnicalLayout={updateTechnicalLayout}
       {systemFonts} onFontFamily={updateSelectedFontFamily} onVisualPreset={updateSelectedVisualPreset} onFitScrollDuration={fitSelectedScrollDuration} onRichText={updateRichText} onFreeTextStyle={changeFreeTextStyle} onFreeTextCaption={updateFreeTextCaption} onResetScale={resetSelectedScale} onSelectNone={() => selectedId = null}/></aside>
   </div>
 

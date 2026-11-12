@@ -14,8 +14,8 @@ def test_configurations():
         assert isinstance(value, dict), relative
     pkg = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))
     tauri = json.loads((ROOT / 'src-tauri/tauri.conf.json').read_text(encoding='utf-8'))
-    assert pkg['version'] == tauri['version'] == '0.1.0-alpha.9.3'
-    assert '0.1.0-alpha.9.3' in (ROOT / 'src-tauri/Cargo.toml').read_text(encoding='utf-8')
+    assert pkg['version'] == tauri['version'] == '0.1.0-alpha.9.3.1'
+    assert '0.1.0-alpha.9.3.1' in (ROOT / 'src-tauri/Cargo.toml').read_text(encoding='utf-8')
     assert tauri['build']['frontendDist'] == '../dist'
     assert tauri['build']['devUrl'] == 'http://127.0.0.1:1420'
 

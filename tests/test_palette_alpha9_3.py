@@ -42,4 +42,6 @@ def test_all_three_renderers_use_palette():
 
 def test_original_default_white_is_preserved():
     script = source('src/lib/palette.ts')
-    assert "defaultRole === 'white') return BRAND.text" in script
+    assert "defaultRole === 'white'" in script
+    assert "return BRAND.text" in script
+    assert "fieldOverride === 'original'" in script

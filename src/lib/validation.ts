@@ -1,4 +1,4 @@
-import type { AnimationStyle, ElementKind, HudElement, RDVProject, TextField, TextColorRole, PaletteId } from './types';
+import type { AnimationStyle, ElementKind, HudElement, RDVProject, TextField, TextColorRole, PaletteId, TextColorGroup } from './types';
 import { MAX_ELEMENTS, SCHEMA_VERSION } from './types';
 import { KINDS } from './templates';
 import { BRAND } from './brand';
@@ -65,6 +65,10 @@ export function validateProject(raw: unknown): RDVProject {
     const validTextRoles = Object.fromEntries(Object.entries(rawRoles).filter(([key,role]) =>
       /^(heading|line[1-6]|caption[0-5]|footer)$/.test(key) && ['white','primary','secondary','original'].includes(String(role))
     )) as Record<string, TextColorRole>;
+    const rawGroups = isObject(item.textGroups) ? item.textGroups : {};
+    const validGroups = Object.fromEntries(Object.entries(rawGroups).filter(([group,role]) =>
+      ['title','body','secondary'].includes(group) && ['white','primary','secondary','original'].includes(String(role))
+    )) as Partial<Record<TextColorGroup, TextColorRole>>;
     const technicalCaptions = Array.isArray(item.technicalCaptions)
       ? ['CARROCERIA','MODELO','CHASSI','MODELO','EMPRESA','PREFIXO'].map((label, i) => typeof item.technicalCaptions === 'object' &&
           Array.isArray(item.technicalCaptions) && typeof item.technicalCaptions[i] === 'string' ? safeString(item.technicalCaptions[i],80) : label)
@@ -74,6 +78,7 @@ export function validateProject(raw: unknown): RDVProject {
       ...(Object.keys(formats).length ? { textFormatting: formats } : {}),
       ...(technicalCaptions ? { technicalCaptions } : {}),
       ...(Object.keys(validTextRoles).length ? { textColors: validTextRoles } : {}),
+      ...(Object.keys(validGroups).length ? { textGroups: validGroups } : {}),
       kind: item.kind as ElementKind,
       title: safeString(item.title, 80) || 'Elemento',
       visible: item.visible !== false,

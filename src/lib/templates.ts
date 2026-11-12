@@ -106,6 +106,7 @@ export function duplicateElement(original: HudElement): HudElement {
     title: `${original.title} (cópia)`,
     fields: { ...original.fields },
     ...(original.textColors ? { textColors: {...original.textColors} } : {}),
+    ...(original.textGroups ? { textGroups: {...original.textGroups} } : {}),
     ...(original.textFormatting ? { textFormatting: Object.fromEntries(Object.entries(original.textFormatting).map(([k,v]) => [k,{...v}])) } : {}),
     ...(original.technicalCaptions ? {technicalCaptions: [...original.technicalCaptions]} : {}),
     ...(original.richText ? {richText: {...original.richText}} : {}),

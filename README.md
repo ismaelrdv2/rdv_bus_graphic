@@ -1,4 +1,4 @@
-# RDV Bus Studio — 0.1.0-alpha.9.3
+# RDV Bus Studio — 0.1.0-alpha.9.3.1
 
 > **Alpha.8:** edição de textos por clique diretamente na pré-visualização, mini-barra flutuante de formatação e ícones clássicos maiores/centralizados. Mantidos os presets e o sistema de exportação 2×. Veja `CHANGELOG.md`.
 
@@ -228,7 +228,7 @@ Atalhos: **Ctrl+S** salvar; **Ctrl+O** abrir; **Espaço** reproduzir/pausar (for
 ## Estrutura
 
 ```text
-RDV_Bus_0.1.0-alpha.9.3/
+RDV_Bus_0.1.0-alpha.9.3.1/
 ├── src/
 │   ├── App.svelte              Editor e comandos
 │   ├── app.css                 Visual do aplicativo
@@ -297,6 +297,15 @@ npm run desktop:build -- --bundles appimage
 ```
 
 
-## Revisão 0.1.0-alpha.9.3
+## Revisão 0.1.0-alpha.9.3.1 — Cores de texto independentes
 
-Esta revisão corrige o erro de compilação do seletor de fontes na barra flutuante de edição e o aviso de acessibilidade do mesmo componente. Nenhum preset de renderização ou animação foi alterado. Consulte `CHANGELOG.md` para os detalhes.
+Para personalizar **Título**, **Corpo** e **Texto secundário** de forma independente:
+
+1. Selecione um elemento no editor e abra **Propriedades → Conteúdo**.
+2. Na seção **Cores dos textos — independentes**, escolha uma opção para cada função: original, branco, cor principal ou cor secundária da paleta.
+3. A alteração afeta apenas o grupo escolhido no elemento. Use **Aplicar ... a todo o projeto** para propagar somente aquele grupo às demais seções.
+4. Os controles **Cor de ...** abaixo de cada campo continuam disponíveis para exceções individuais. Escolher novamente uma cor de grupo remove as exceções daquele grupo e deixa os outros intactos.
+
+Os rótulos e rodapés pertencem ao grupo de texto secundário. Na ficha técnica, as linhas dos valores pertencem ao corpo; nas etiquetas, a segunda linha pode atuar como texto secundário. As configurações são salvas no arquivo JSON do projeto e acompanham exportações SVG e vídeo.
+
+Veja `CHANGELOG.md` para os detalhes e testes de regressão da alpha.9.3.1.
