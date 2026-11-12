@@ -525,6 +525,69 @@
     if (!isDesktop()) notify('Para gerar vídeo, abra o RDV Bus no aplicativo desktop Tauri.', 'info');
   }
 
+  /** Renderiza cada categoria separadamente em um arquivo de vídeo e empacota sem reter vídeos na memória. */
+  async function exportAllTabs(): Promise<void> {
+    if (exportingVideo) return;
+    if (!isDesktop()) return notify('Geração em lote disponível somente no aplicativo Desktop.','error');
+    const categories = populatedCategories(project);
+    if (!categories.length) return notify('Adicione elementos visíveis antes de gerar as abas.','info');
+    const preset = VIDEO_FORMATS.find(item=>item.value===videoFormat) ?? VIDEO_FORMATS[0];
+    const cleanName = project.name.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,50) || 'rdv_bus';
+    const zipPath = await nativeSave({title:'Gerar todas as abas — RDV Bus Studio',defaultPath:joinOutputPath(await getOutputDirectory(),`${cleanName}_todas_as_abas.zip`),filters:[{name:'Pacote ZIP por abas',extensions:['zip']}]});
+    if (!zipPath) return;
+    let tempCreated = false;
+    let currentJob: string | null = null;
+    try {
+      stopPlayback();
+      exportingVideo = true;
+      cancelRequested = false;
+      exportProgress = 0;
+      selectedVideoName = zipPath;
+      const root = await invoke<string>('batch_export_begin');
+      tempCreated = true;
+      const frames = Math.round(project.canvas.duration * project.canvas.fps);
+      const total = frames * categories.length;
+      const canvas = document.createElement('canvas');
+      for (const [categoryIndex, category] of categories.entries()) {
+        if (cancelRequested) throw new Error('Geração de todas as abas cancelada.');
+        batchPreviewCategory = category.kind;
+        exportTime = 0;
+        await tick();
+        const target = joinOutputPath(joinOutputPath(root,category.folder),`${category.folder}.${preset.ext}`);
+        currentJob = await beginVideo(target,project.canvas.width,project.canvas.height,project.canvas.fps,frames,videoFormat);
+        for (let index = 0; index < frames; index++) {
+          if (cancelRequested) throw new Error('Geração de todas as abas cancelada.');
+          exportTime = exportFrameTime(index,frames,project.canvas.duration);
+          await tick();
+          const svg = document.querySelector<SVGSVGElement>('.export-render-stage .scene-svg');
+          if (!svg) throw new Error(`Quadro SVG da aba ${category.label} não encontrado.`);
+          const xml = exportFrameSvg(svg,project.canvas.width*rasterQuality,project.canvas.height*rasterQuality);
+          const png = await svgToPngBase64(xml,project.canvas.width,project.canvas.height,canvas,rasterQuality,exportBackground);
+          await pushVideoFrame(currentJob,png);
+          exportProgress = (categoryIndex*frames + index + 1)/total;
+          if (index%8 === 0) await new Promise<void>(resolve=>setTimeout(resolve,0));
+        }
+        await finishVideo(currentJob);
+        currentJob = null;
+      }
+      if (cancelRequested) throw new Error('Geração de todas as abas cancelada.');
+      const archive = await invoke<string>('batch_export_archive',{path:zipPath});
+      tempCreated = false;
+      showExportVideo = false;
+      outputDirectory = rememberOutputFile(archive);
+      notify(`Pacote com ${categories.length} abas gerado: ${archive}`,'success');
+    } catch (error) {
+      if (currentJob) { try { await cancelVideo(currentJob); } catch { /* processo já finalizado */ } }
+      if (tempCreated) { try { await invoke('batch_export_cancel'); } catch { /* limpeza auxiliar */ } }
+      notify(`Falha ao gerar abas: ${error instanceof Error ? error.message : String(error)}`,'error');
+    } finally {
+      batchPreviewCategory = null;
+      exportingVideo = false;
+      cancelRequested = false;
+      exportProgress = 0;
+    }
+  }
+
   async function exportVideo(): Promise<void> {
     if (exportingVideo) return;
     if (exportScope === 'all') return exportAllTabs();
