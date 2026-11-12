@@ -4,6 +4,9 @@
   export let width:number; export let height:number;
   export let path:string; export let secondaryPath=''; export let shape:string;
   export let kind:ShineKind='bar'; export let enabled=false;
+  /** 100% = brilho anterior; 170% é o novo padrão. */
+  export let intensity=170;
+  $: gain=Math.min(3,Math.max(.5,intensity/100));
   $: frame=shineFrame(time,duration,kind);
   $: clipId=`diag-area-${id}`; $: gradId=`diag-grad-${id}`;
   $: center=frame.progress*100;
@@ -22,8 +25,8 @@
     </linearGradient>
   </defs>
   <g clip-path={`url(#${clipId})`} pointer-events="none" fill="none" stroke-linecap="round" stroke-linejoin="round">
-    <path d={path} stroke={`url(#${gradId})`} stroke-width="10" opacity={frame.strength*2.1}/>
-    <path d={path} stroke={`url(#${gradId})`} stroke-width="3" opacity={frame.strength*3}/>
-    {#if secondaryPath}<path d={secondaryPath} stroke={`url(#${gradId})`} stroke-width="6" opacity={frame.strength*1.6}/>{/if}
+    <path d={path} stroke={`url(#${gradId})`} stroke-width="10" opacity={Math.min(1,frame.strength*2.1*gain)}/>
+    <path d={path} stroke={`url(#${gradId})`} stroke-width="3" opacity={Math.min(1,frame.strength*3*gain)}/>
+    {#if secondaryPath}<path d={secondaryPath} stroke={`url(#${gradId})`} stroke-width="6" opacity={Math.min(1,frame.strength*1.6*gain)}/>{/if}
   </g>
 {/if}

@@ -85,6 +85,7 @@ export function validateProject(raw: unknown): RDVProject {
       animation,
       shineEnabled:item.shineEnabled!==false,
       diagonalGlowEnabled:item.diagonalGlowEnabled===true,
+      diagonalGlowIntensity:safeNumber(item.diagonalGlowIntensity,170,50,300),
       visualPreset: item.visualPreset === 'legacy' ? 'legacy' : 'studio',
       ...((technical || freeText) ? { technicalSide } : {}),
       ...(technical ? {technicalLayout: item.technicalLayout === 'legacyFullscreen' ? 'legacyFullscreen' as const : item.technicalLayout === 'fullscreen' ? 'fullscreen' as const : 'side' as const} : {}),

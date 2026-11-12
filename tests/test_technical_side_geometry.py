@@ -20,13 +20,15 @@ def test_technical_geometry_real_calculation():
           const end=g.technicalSeparatorEnd(w,h,y,false);
           assert.ok(end<=boundary-23,`linha ultrapassou a diagonal: ${end} > ${boundary}`);
           assert.ok(end>g.technicalTextX(false));
-          assert.equal(g.technicalSeparatorEnd(w,h,y,true),w-64);
+          assert.equal(g.technicalSeparatorEnd(w,h,y,true),w-118);
         }
         assert.ok(g.technicalSeparatorEnd(w,h,first,false)<g.technicalSeparatorEnd(w,h,last,false));
         assert.equal(g.technicalTextX(false),92);
         assert.ok(g.technicalTextX(true)<134);
         assert.ok(g.technicalTextX(true)-43>g.technicalPanelBoundary(w,h,first,true)+5);
-        assert.ok(w-g.technicalTextX(true)-72>350);
+        assert.equal(g.RIGHT_TECHNICAL_GUTTER,118);
+        assert.equal(g.technicalTextRightEdge(w,true),w-118);
+        assert.ok(g.technicalTextRightEdge(w,true)-g.technicalTextX(true)>=390);
         console.log('OK: linhas dentro da diagonal e margem lateral à direita');
         """
         subprocess.run(['node','-e',js,target],check=True,cwd=ROOT)
@@ -36,6 +38,6 @@ def test_renderers_use_safe_geometry():
     studio=(ROOT/'src/components/HudShape.svelte').read_text(encoding='utf-8')
     assert 'technicalSeparatorEnds[i]' in legacy
     assert 'technicalTextX(sideRight)' in legacy
-    assert 'w-x-(sideRight?72:50)' in legacy
-    assert 'innerX = isRight ? 136 : 92' in studio
-    assert 'innerRight = isRight ? w - 88 : w - 110' in studio
+    assert 'techRightLimit-x' in legacy
+    assert 'innerX = isRight ? 132 : 92' in studio
+    assert 'innerRight = isRight ? w - 124 : w - 110' in studio

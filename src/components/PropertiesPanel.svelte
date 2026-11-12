@@ -24,6 +24,7 @@
   export let onAnimation: (value: HudElement['animation']) => void;
   export let onShineToggle:(value:boolean)=>void;
   export let onDiagonalGlowToggle:(value:boolean)=>void;
+  export let onDiagonalGlowIntensity:(value:number)=>void;
   export let onRename: (title: string) => void;
   export let onDuplicate: () => void;
   export let onDelete: () => void;
@@ -344,19 +345,26 @@
     {:else if activeTab === 'motion'}
     <section class="property-section"><h3>Animação e rolagem</h3>
       <label class="field"><span>Entrada e saída</span><select value={selected.animation} on:change={(event) => onAnimation(event.currentTarget.value as HudElement['animation'])}><option value="legacy">Animação original 0.14 — por camadas</option><option value="slide">Deslizamento HUD (Studio)</option><option value="fade">Fade suave</option><option value="none">Sem animação</option></select></label>
-      <label class="field"><span>Brilho após a entrada</span>
-        <select value={selected.shineEnabled!==false?'on':'off'} on:change={event=>onShineToggle(event.currentTarget.value==='on')}>
-          <option value="on">Ligado</option><option value="off">Desligado</option>
-        </select>
-      </label>
+      {#if isCompactCartela(selected) || (selected.kind==='freeText' && selected.freeTextStyle==='classic')}
+        <label class="field"><span>Brilho após a entrada (somente cartelas)</span>
+          <select value={selected.shineEnabled!==false?'on':'off'} on:change={event=>onShineToggle(event.currentTarget.value==='on')}>
+            <option value="on">Ligado</option><option value="off">Desligado</option>
+          </select>
+        </label>
+      {/if}
       {#if isBar(selected)}
         <label class="field"><span>Brilho nas linhas diagonais da ficha técnica</span>
           <select value={selected.diagonalGlowEnabled===true?'on':'off'} on:change={event=>onDiagonalGlowToggle(event.currentTarget.value==='on')}>
             <option value="off">Desligado (padrão)</option><option value="on">Ligado</option>
           </select>
         </label>
+        <label class="field">
+          <span>Intensidade do brilho diagonal: {selected.diagonalGlowIntensity ?? 170}%</span>
+          <input type="range" min="50" max="300" step="10" value={selected.diagonalGlowIntensity ?? 170}
+            on:input={event=>onDiagonalGlowIntensity(Number(event.currentTarget.value))}/>
+        </label>
       {/if}
-      <p class="inspector-hint">Efeitos independentes, com uma passagem por animação e recorte vetorial. O brilho nas diagonais é exclusivo das faixas técnicas.</p>
+      <p class="inspector-hint">Brilho de varredura apenas nas cartelas. Nas fichas técnicas, somente as diagonais recebem brilho, com intensidade ajustável.</p>
       {#if selected.kind === 'freeText' && ['legacyLabel','legacyHalfBar','legacyFullBar'].includes(selected.freeTextStyle || '')}
         <div class="rich-tools">
           <h4>Rolagem original — linhas independentes</h4>

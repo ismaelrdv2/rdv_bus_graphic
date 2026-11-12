@@ -2,6 +2,13 @@
 
 > Política de versões: cada lançamento terá uma seção própria neste arquivo, atualizada no mesmo ZIP da versão. Registros estão em ordem decrescente. Atualizações planejadas não são apresentadas como recursos concluídos.
 
+## 0.1.0-alpha.9.3.7 — Correção das margens e brilho restrito às cartelas
+
+- A ficha técnica lateral à direita recebeu maior margem no extremo direito, ajuste dos títulos/valores/rótulos e linhas divisórias terminando antes da borda; a geometria da ficha à esquerda é mantida.
+- O brilho de varredura está restrito às cartelas compactas dos modelos Clássico e Studio. Removido das barras técnicas, barras inferiores, slides de tela cheia e demais telas inteiras.
+- O brilho exclusivo das linhas diagonais permanece disponível nas fichas técnicas laterais e inferiores, com intensidade ampliada: padrão 170% e controle independente de 50% a 300% na aba Animação.
+- Valor persistido nos projetos JSON e preenchido automaticamente ao abrir projetos antigos. Exportadores e demais propriedades preservados.
+
 ## 0.1.0-alpha.9.3.6 — Controle independente de brilho e diagonais
 
 - Aba Animação: liga/desliga brilho de varredura após a entrada e, nas fichas em barra, brilho extra nas linhas diagonais.

@@ -13,10 +13,16 @@ export function technicalPanelBoundary(width: number, height: number, y: number,
 
 /** Termina a linha antes da borda, mesmo quando esta é diagonal. */
 export function technicalSeparatorEnd(width: number, height: number, y: number, right: boolean): number {
-  return right ? width - 64 : technicalPanelBoundary(width, height, y, false) - 24;
+  return right ? technicalTextRightEdge(width, true) : technicalPanelBoundary(width, height, y, false) - 24;
 }
 
 /** Dá à barra da direita mais área útil sem encostar os chevrons na diagonal. */
 export function technicalTextX(right: boolean): number {
   return right ? 118 : 92;
+}
+
+/** Limite de leitura: margem direita ampliada para não encostar nos contornos. */
+export const RIGHT_TECHNICAL_GUTTER = 118;
+export function technicalTextRightEdge(width: number, right: boolean): number {
+  return width - (right ? RIGHT_TECHNICAL_GUTTER : 50);
 }

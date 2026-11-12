@@ -1,4 +1,4 @@
-export const APP_VERSION = '0.1.0-alpha.9.3.6';
+export const APP_VERSION = '0.1.0-alpha.9.3.7';
 export const SCHEMA_VERSION = 1;
 export const DEFAULT_DURATION = 5.3;
 export const MAX_ELEMENTS = 64;
@@ -89,6 +89,8 @@ export interface HudElement {
   shineEnabled?: boolean;
   /** Brilho nas diagonais técnicas, desligado por padrão. */
   diagonalGlowEnabled?: boolean;
+  /** Intensidade do brilho das diagonais em porcentagem (50–300; padrão 170). */
+  diagonalGlowIntensity?: number;
   /** Visual clássico original ou modelo Studio da reconstrução. */
   visualPreset?: VisualPreset;
   imageData?: string;
