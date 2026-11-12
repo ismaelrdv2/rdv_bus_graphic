@@ -73,7 +73,15 @@
   $: clipStart = 32;
   $: clipWidth = Math.max(90, w-64);
   $: bodyTitleSize = Math.min(rich.titleSize*fontScale, fullSlide?95:48);
-  $: bodyFontSize = fitBody(fields.line1, Math.max(120,w-2*margin-130), fullSlide ? Math.max(80,h-(portrait?620:515)-160) : Math.max(50,h*.34), Math.min(rich.bodySize*fontScale, fullSlide?60:44));
+  // Usa uma área de recorte e uma linha de base compartilhadas: o texto não
+  // pode começar acima do clipPath (cortava o topo das letras no slide).
+  $: slideClipTop = portrait ? 595 : 490;
+  $: slideClipHeight = Math.max(55, h - slideClipTop - 175);
+  $: bodyFontSize = fitBody(fields.line1, Math.max(120,w-2*margin-130), fullSlide ? Math.max(40,slideClipHeight-12) : Math.max(50,h*.34), Math.min(rich.bodySize*fontScale, fullSlide?60:44));
+  $: slideBodyBaseline = slideClipTop + bodyFontSize * 1.05 + 8;
+  // A apresentação em barra separa o corpo do divisor e reserva espaço
+  // para uma eventual segunda linha.
+  $: barBodyBaseline = Math.max(h*.66, h*.39 + bodyFontSize*1.16);
   $: line1Text = fields.line1 || '';
   $: line2Text = fields.line2 || '';
   $: speed = rich.scrollPixelsPerSecond || 200;
@@ -122,7 +130,7 @@
       <stop stop-color={BRAND.purpleDeep}/><stop offset="1" stop-color={background}/>
     </linearGradient>
     <clipPath id={contentClipId}><rect x={clipStart} y="0" width={clipWidth} height={h}/></clipPath>
-    <clipPath id={slideBodyClipId}><rect x={margin+55} y={portrait?595:490} width={Math.max(80,w-2*margin-110)} height={Math.max(55,h-(portrait?620:515)-150)}/></clipPath>
+    <clipPath id={slideBodyClipId}><rect x={margin+55} y={slideClipTop} width={Math.max(80,w-2*margin-110)} height={slideClipHeight}/></clipPath>
     <clipPath id={clipId}>
       <path d={sideRight ? `M84 0 H${w} V${h} H0 Z` : `M0 0 H${w-84} L${w} ${h} H0 Z`}/>
     </clipPath>
@@ -202,15 +210,15 @@
       <path d={`M${margin} ${margin+80} V${h-margin-80} M${w-margin} ${margin+80} V${h-margin-80}`} fill="none" stroke={BRAND.purpleEdge} opacity=".55" stroke-width="1.5"/>
     </g>
     <g opacity={pTitle} transform={`translate(0 ${35*(1-pTitle)})`}>
-      <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={margin} y={portrait?235:185} fill={BRAND.text} font-size={fit(fields.heading,bodyTitleSize,w-2*margin)} font-family={fontFamily} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'}>{fields.heading}</text>
+      <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={margin+65} y={portrait?235:185} fill={BRAND.text} font-size={fit(fields.heading,bodyTitleSize,w-2*margin-130)} font-family={fontFamily} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'}>{fields.heading}</text>
     </g>
-    <path d={`M${margin} ${portrait?405:327} h${(w-2*margin)*pRule}`} stroke={accent} stroke-width="3" opacity={pRule}/>
+    <path d={`M${margin+65} ${portrait?405:327} h${(w-2*margin-130)*pRule}`} stroke={accent} stroke-width="3" opacity={pRule}/>
     <g opacity={pBody} transform={`translate(0 ${32*(1-pBody)})`}>
       <rect x={margin} y={portrait?470:375} width={w-2*margin} height={h-(portrait?470:375)-150} rx="20" fill={background} fill-opacity=".65" stroke={BRAND.purpleEdge} stroke-width="2" />
       <path d={`M${margin+34} ${portrait?505:410} v58 h78`} fill="none" stroke={BRAND.purpleEdge} stroke-width="3"/>
       <g clip-path={`url(#${slideBodyClipId})`}>
       {#each bodyLayout.lines as line, i}
-        <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,margin+65,w-2*margin-130)} y={(portrait?620:515) + i*bodyLayout.lineHeight} text-anchor={textAnchor(rich.alignment)} font-family={fontFamily} font-size={bodyFontSize} fill={BRAND.lilac} font-weight={rich.bodyBold?'800':'400'} font-style={rich.bodyItalic?'italic':'normal'} text-decoration={rich.bodyUnderline?'underline':'none'}>
+        <text xml:space="preserve" data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,margin+65,w-2*margin-130)} y={slideBodyBaseline + i*bodyLayout.lineHeight} text-anchor={textAnchor(rich.alignment)} font-family={fontFamily} font-size={bodyFontSize} fill={BRAND.lilac} font-weight={rich.bodyBold?'800':'400'} font-style={rich.bodyItalic?'italic':'normal'} text-decoration={rich.bodyUnderline?'underline':'none'}>
           {#each line.runs as run}<tspan font-weight={run.bold?'800':rich.bodyBold?'800':'400'} font-style={run.italic?'italic':rich.bodyItalic?'italic':'normal'} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}
         </text>
       {/each}
@@ -234,7 +242,7 @@
       <path d={`M38 ${h*.39} h${(w-76)*pRule}`} stroke={accent} stroke-width="2" opacity={pRule}/>
       <g opacity={pBody} transform={`translate(0 ${20*(1-pBody)})`}>
         {#each bodyLayout.lines as line,i}
-          <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,48,w-96)} y={h*.54+i*bodyLayout.lineHeight} text-anchor={textAnchor(rich.alignment)} font-size={bodyFontSize} fill={BRAND.lilac} font-family={fontFamily} font-weight={rich.bodyBold?'800':'400'}>{#each line.runs as run}<tspan font-weight={run.bold?'800':rich.bodyBold?'800':'400'} font-style={run.italic?'italic':rich.bodyItalic?'italic':'normal'} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}</text>
+          <text xml:space="preserve" data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,48,w-96)} y={barBodyBaseline+i*bodyLayout.lineHeight} text-anchor={textAnchor(rich.alignment)} font-size={bodyFontSize} fill={BRAND.lilac} font-family={fontFamily} font-weight={rich.bodyBold?'800':'400'}>{#each line.runs as run}<tspan font-weight={run.bold?'800':rich.bodyBold?'800':'400'} font-style={run.italic?'italic':rich.bodyItalic?'italic':'normal'} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}</text>
         {/each}
       </g>
     {:else if freeLabel}

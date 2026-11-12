@@ -2,14 +2,31 @@
 
 > Política de versões: cada lançamento terá uma seção própria neste arquivo, atualizada no mesmo ZIP da versão. Registros estão em ordem decrescente. Atualizações planejadas não são apresentadas como recursos concluídos.
 
-## 0.1.0-alpha.9.2.1 — Correção de alinhamento da Ficha em tela inteira
+## 0.1.0-alpha.9.2.2 — Texto clássico e pasta padrão do Desktop
 
-- Corrigida a seleção de renderizador: o estilo “Ficha em tela inteira — 6 campos” usa o renderizador Studio, mesmo quando o modo visual clássico foi selecionado anteriormente.
-- A grade de campos preenchidos agora distribui os itens com centralização horizontal e vertical, inclusive quando há menos de seis campos.
-- Mantidos os desenhos dos modos originais 0.14 e a compatibilidade dos projetos JSON anteriores.
-- Incluídos testes de regressão. Sem mudanças no mecanismo de vídeo, no Mobile ou no formato SVG.
+### Corrigido
+- Apresentação em slide Original 0.14: título alinhado à margem de conteúdo; área de recorte e linha de base do corpo sincronizadas, evitando o corte superior de letras.
+- Apresentação em barra Original 0.14: corpo deslocado abaixo da linha divisória, evitando sobreposição.
+- Texto rico SVG: preservação explícita de espaços entre palavras distribuídas em `<tspan>`, tanto na prévia quanto no SVG exportado e no vídeo.
 
-## 0.1.0-alpha.9.2 — 2026-11-11
+### Adicionado
+- Diretório padrão de saída no Desktop: `~/RDV Bus Studio` no Linux e `%USERPROFILE%\RDV Bus Studio` no Windows. A pasta é criada pelo processo nativo na primeira utilização.
+- Opção **Abrir pasta de saída** na barra principal e no diálogo de vídeo, pelo gerenciador de arquivos do sistema.
+- Projetos JSON, quadros SVG e vídeos usam esse diretório como sugestão inicial, respeitando mudanças feitas pelo usuário nos diálogos. A última pasta utilizada é lembrada no aplicativo.
+- Testes estruturais e regressões de geometria e texto, sem alterar renderização Mobile ou pipeline FFmpeg.
+
+### Observações
+- A escolha de pasta continua sendo feita pelo diálogo nativo de salvar; o botão de abrir pasta usa o diretório lembrado.
+- A compilação do GitHub Actions é necessária para validar o aplicativo final Linux e Windows.
+
+## 0.1.0-alpha.9.2.1 — Correção da grade de Texto livre em tela inteira
+
+- Corrigida a seleção de renderizador: “Ficha em tela inteira — 6 campos” utiliza sempre o layout Studio, sem herdar o desenho clássico de outra modalidade.
+- Campos preenchidos na Ficha em tela inteira agora ocupam uma grade equilibrada, com centralização das linhas incompletas e aproveitamento vertical do espaço disponível.
+- Mantidas a geometria e as animações dos modos Original 0.14, incluindo a apresentação clássica em slide.
+- Preservada a compatibilidade com projetos JSON anteriores e a exportação de SVG/vídeo.
+
+## 0.1.0-alpha.9.2.1 — 2026-11-11
 
 ### Corrigido
 - **Ficha técnica inferior 9:16 e Texto livre com faixa inferior:** os seis campos voltam a aparecer no vídeo exportado e passam a acompanhar a entrada e a saída na pré-visualização. O erro era de **reatividade no componente Svelte**: a função auxiliar `rowProgress(i)` lia o tempo indiretamente, fazendo com que os seis progressos fossem calculados apenas no estado inicial. Agora os seis progressos são derivados diretamente de `p` em uma declaração reativa e consumidos por cada linha do SVG.

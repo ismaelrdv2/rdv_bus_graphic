@@ -3,6 +3,7 @@
   import { isTauri } from '@tauri-apps/api/core';
   import { save as nativeSave } from '@tauri-apps/plugin-dialog';
   import { writeTextFile } from '@tauri-apps/plugin-fs';
+  import { getOutputDirectory, joinOutputPath, openOutputDirectory, rememberOutputFile } from './lib/output';
   import Icon from './components/Icon.svelte';
   import LibraryPanel from './components/LibraryPanel.svelte';
   import PropertiesPanel from './components/PropertiesPanel.svelte';
@@ -45,7 +46,11 @@
   let exportTime = 0;
   let selectedVideoName = '';
   let systemFonts: string[] = [...FALLBACK_FONTS];
-  onMount(() => { void getSystemFontFamilies().then(fonts => { systemFonts = fonts; }); });
+  let outputDirectory = '';
+  onMount(() => {
+    void getSystemFontFamilies().then(fonts => { systemFonts = fonts; });
+    if (isDesktop()) void getOutputDirectory().then(path => { outputDirectory = path; }).catch(error => notify(`Pasta de saída indisponível: ${error}`, 'error'));
+  });
 
   $: selected = project.elements.find(element => element.id === selectedId) || null;
   $: autosaveOk = writeAutosave(project);
@@ -372,7 +377,10 @@
 
   async function saveCurrentProject(): Promise<void> {
     try {
-      if (await saveProject(project)) notify(isDesktop() ? 'Projeto salvo no arquivo selecionado.' : 'Download do projeto iniciado.', 'success');
+      if (await saveProject(project)) {
+        if (isDesktop()) outputDirectory = await getOutputDirectory();
+        notify(isDesktop() ? 'Projeto salvo no arquivo selecionado.' : 'Download do projeto iniciado.', 'success');
+      }
     } catch (error) {
       notify(`Não foi possível salvar: ${error instanceof Error ? error.message : String(error)}`, 'error');
     }
@@ -406,6 +414,16 @@
     catch (error) { notify(`Projeto inválido: ${error instanceof Error ? error.message : String(error)}`, 'error'); }
   }
 
+  async function openOutputFolder(): Promise<void> {
+    try {
+      const dir = await openOutputDirectory();
+      outputDirectory = dir;
+      notify(`Pasta de saída aberta: ${dir}`, 'success');
+    } catch (error) {
+      notify(`Erro ao abrir pasta de saída: ${error instanceof Error ? error.message : String(error)}`, 'error');
+    }
+  }
+
   function openVideoDialog(): void {
     showExportVideo = true;
     if (!isDesktop()) notify('Para gerar vídeo, abra o RDV Bus no aplicativo desktop Tauri.', 'info');
@@ -417,7 +435,7 @@
     const preset = VIDEO_FORMATS.find(item => item.value === videoFormat) ?? VIDEO_FORMATS[0];
     const cleanName = project.name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50) || 'rdv_bus';
     try {
-      const output = await nativeSave({ title: 'Exportar vídeo RDV Bus', defaultPath: `${cleanName}.${preset.ext}`, filters: [{ name: preset.label, extensions: [preset.ext] }] });
+      const output = await nativeSave({ title: 'Exportar vídeo RDV Bus', defaultPath: joinOutputPath(await getOutputDirectory(), `${cleanName}.${preset.ext}`), filters: [{ name: preset.label, extensions: [preset.ext] }] });
       if (!output) return;
       stopPlayback();
       exportingVideo = true;
@@ -447,6 +465,7 @@
         }
         await finishVideo(jobId);
         showExportVideo = false;
+        outputDirectory = rememberOutputFile(output);
         notify(`Vídeo exportado: ${output}`, 'success');
       } catch (error) {
         try { await cancelVideo(jobId); } catch { /* O processo pode ter encerrado. */ }
@@ -468,10 +487,11 @@
       const xml = `<?xml version="1.0" encoding="UTF-8"?>\n${exportFrameSvg(svg, project.canvas.width, project.canvas.height)}`;
       const name = `${project.name.replace(/[^\w-]+/g, '_').slice(0, 40) || 'rdv-bus'}_quadro.svg`;
       if (isTauri()) {
-        const path = await nativeSave({ title: 'Exportar quadro SVG', defaultPath: name, filters: [{ name: 'Imagem SVG', extensions: ['svg'] }] });
+        const path = await nativeSave({ title: 'Exportar quadro SVG', defaultPath: joinOutputPath(await getOutputDirectory(), name), filters: [{ name: 'Imagem SVG', extensions: ['svg'] }] });
         if (!path) return;
         await writeTextFile(path, xml);
-        notify('Quadro SVG exportado com transparência.', 'success');
+        outputDirectory = rememberOutputFile(path);
+        notify(`Quadro SVG exportado: ${path}`, 'success');
       } else {
         const url = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml;charset=utf-8' }));
         const a = document.createElement('a');
@@ -516,6 +536,7 @@
       <button class="button ghost-button" on:click={resetProject} title="Criar novo projeto"><Icon name="plus" size={16}/><span>Novo</span></button>
       <button class="button ghost-button" on:click={() => void openCurrentProject()} title="Abrir projeto (Ctrl+O)"><Icon name="folder" size={16}/><span>Abrir</span></button>
       <button class="button secondary-button" on:click={() => void saveCurrentProject()} title="Salvar projeto (Ctrl+S)"><Icon name="save" size={16}/><span>Salvar</span></button>
+      {#if isDesktop()}<button class="button ghost-button" on:click={() => void openOutputFolder()} title={outputDirectory ? `Abrir pasta de saída: ${outputDirectory}` : 'Abrir pasta de saída'}><Icon name="folder" size={16}/><span>Abrir pasta de saída</span></button>{/if}
       <button class="button secondary-button" on:click={() => void exportSvg()} title="Exportar um quadro vetorial SVG"><Icon name="download" size={17}/><span>SVG</span></button>
       <button class="button primary-button" on:click={openVideoDialog} title="Gerar vídeo animado com FFmpeg (desktop)"><Icon name="film" size={17}/><span>Exportar vídeo</span></button>
     </div>
@@ -573,6 +594,7 @@
       <div class="dialog-heading"><div><Icon name="film"/><strong>Exportar vídeo com transparência</strong></div><button class="icon-button" aria-label="Fechar" disabled={exportingVideo} on:click={() => showExportVideo = false}>×</button></div>
       <div class="dialog-content video-export-content">
         <p>Gera {totalFrames} quadros a {project.canvas.fps} FPS em {project.canvas.width} × {project.canvas.height}. O fundo continua transparente; o preto é somente da pré-visualização.</p>
+        {#if isDesktop()}<p class="export-description">Pasta de saída: <code>{outputDirectory || '~/RDV Bus Studio'}</code> <button class="button ghost-button" on:click={() => void openOutputFolder()} disabled={exportingVideo}><Icon name="folder" size={15}/> Abrir pasta</button></p>{/if}
         <label for="video-format">Formato de vídeo</label>
         <select id="video-format" bind:value={videoFormat} disabled={exportingVideo}>
           {#each VIDEO_FORMATS as preset}<option value={preset.value}>{preset.label}</option>{/each}

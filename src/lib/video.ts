@@ -34,6 +34,13 @@ export function exportFrameSvg(svg: SVGSVGElement, width: number, height: number
   clone.removeAttribute('class');
   clone.removeAttribute('role');
   clone.removeAttribute('aria-label');
+  // SVG 1.1 remove espaços em tspans separados sem xml:space="preserve";
+  // mesmo que a prévia os mostre, alguns renderizadores colam as palavras.
+  clone.querySelectorAll('text').forEach(node => {
+    if (node.querySelector('tspan')) {
+      node.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:space', 'preserve');
+    }
+  });
   clone.querySelectorAll('[data-editor-overlay]').forEach(node => node.remove());
   clone.querySelectorAll('[data-edit-field],[data-edit-caption]').forEach(node => {
     node.removeAttribute('data-edit-field'); node.removeAttribute('data-edit-caption');

@@ -1,4 +1,4 @@
-# RDV Bus Studio — 0.1.0-alpha.9.2.1
+# RDV Bus Studio — 0.1.0-alpha.9.2.2
 
 > **Alpha.8:** edição de textos por clique diretamente na pré-visualização, mini-barra flutuante de formatação e ícones clássicos maiores/centralizados. Mantidos os presets e o sistema de exportação 2×. Veja `CHANGELOG.md`.
 
@@ -132,7 +132,7 @@ ffprobe -v error -select_streams v:0 -count_frames \
 
 ## Como executar
 
-Descompacte o ZIP, abra um terminal **dentro da pasta `RDV_Bus_0.1.0-alpha.9.2`** e execute:
+Descompacte o ZIP, abra um terminal **dentro da pasta `RDV_Bus_0.1.0-alpha.9.2.2`** e execute:
 
 ```bash
 npm install
@@ -228,7 +228,7 @@ Atalhos: **Ctrl+S** salvar; **Ctrl+O** abrir; **Espaço** reproduzir/pausar (for
 ## Estrutura
 
 ```text
-RDV_Bus_0.1.0-alpha.9.2/
+RDV_Bus_0.1.0-alpha.9.2.2/
 ├── src/
 │   ├── App.svelte              Editor e comandos
 │   ├── app.css                 Visual do aplicativo
@@ -297,6 +297,6 @@ npm run desktop:build -- --bundles appimage
 ```
 
 
-## Revisão 0.1.0-alpha.9.2
+## Revisão 0.1.0-alpha.9.2.2
 
 Esta revisão corrige o erro de compilação do seletor de fontes na barra flutuante de edição e o aviso de acessibilidade do mesmo componente. Nenhum preset de renderização ou animação foi alterado. Consulte `CHANGELOG.md` para os detalhes.

@@ -4,6 +4,7 @@ import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { newProject } from './templates';
 import type { RDVProject } from './types';
 import { validateProject } from './validation';
+import { getOutputDirectory, joinOutputPath, rememberOutputFile } from './output';
 
 const AUTOSAVE_KEY = 'rdv-bus-studio:autosave:v1';
 const FILE_LIMIT = 40_000_000;
@@ -32,9 +33,10 @@ export async function saveProject(project: RDVProject): Promise<boolean> {
   if (text.length > FILE_LIMIT) throw new Error('Projeto muito grande para exportação (limite de 40 MB).');
   const suggestedName = safeFileName(project.name);
   if (isTauri()) {
-    const path = await save({ defaultPath: suggestedName, title: 'Salvar projeto RDV Bus', filters: [{ name: 'Projeto RDV Bus', extensions: ['json'] }] });
+    const path = await save({ defaultPath: joinOutputPath(await getOutputDirectory(), suggestedName), title: 'Salvar projeto RDV Bus', filters: [{ name: 'Projeto RDV Bus', extensions: ['json'] }] });
     if (!path) return false;
     await writeTextFile(path, text);
+    rememberOutputFile(path);
     return true;
   }
   const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
@@ -51,7 +53,7 @@ export async function saveProject(project: RDVProject): Promise<boolean> {
 
 export async function openProjectNative(): Promise<RDVProject | null> {
   if (!isTauri()) return null;
-  const path = await open({ title: 'Abrir projeto RDV Bus', multiple: false, directory: false, filters: [{ name: 'Projeto RDV Bus', extensions: ['json'] }] });
+  const path = await open({ title: 'Abrir projeto RDV Bus', defaultPath: await getOutputDirectory(), multiple: false, directory: false, filters: [{ name: 'Projeto RDV Bus', extensions: ['json'] }] });
   if (!path || typeof path !== 'string') return null;
   const text = await readTextFile(path);
   if (text.length > FILE_LIMIT) throw new Error('O arquivo do projeto é grande demais (limite de 40 MB).');

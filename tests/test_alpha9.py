@@ -18,7 +18,8 @@ def test_font_backend_and_ui():
     prop=(ROOT/'src/components/PropertiesPanel.svelte').read_text()
     assert 'fontdb = ' in cargo
     assert 'async fn list_system_fonts()' in rust
-    assert 'list_system_fonts])' in rust
+    assert 'list_system_fonts,' in rust
+    assert 'desktop_default_output_directory' in rust
     assert 'getSystemFontFamilies' in app
     assert 'onFontFamily={updateSelectedFontFamily}' in app
     assert 'Fonte do elemento' in prop

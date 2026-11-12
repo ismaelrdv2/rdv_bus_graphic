@@ -164,13 +164,54 @@ fn video_cancel(state: State<'_, VideoState>, job_id: String) -> Result<(), Stri
     Ok(())
 }
 
+// A pasta pública padrão do Desktop fica diretamente no diretório HOME
+// do usuário, não em Downloads. A UI permite selecionar outra pasta no diálogo.
+fn output_directory() -> Result<PathBuf, String> {
+    let home = if cfg!(windows) { env::var_os("USERPROFILE") } else { env::var_os("HOME") }
+        .filter(|s| !s.is_empty())
+        .ok_or("Não foi possível localizar o diretório pessoal do usuário")?;
+    let path = PathBuf::from(home).join("RDV Bus Studio");
+    fs::create_dir_all(&path)
+        .map_err(|e| format!("Não foi possível criar a pasta de saída: {e}"))?;
+    Ok(path)
+}
+
+#[tauri::command]
+fn desktop_default_output_directory() -> Result<String, String> {
+    Ok(output_directory()?.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+fn desktop_open_output_directory(path: Option<String>) -> Result<String, String> {
+    let dir = match path {
+        Some(p) if !p.trim().is_empty() => PathBuf::from(p),
+        _ => output_directory()?,
+    };
+    if !dir.is_dir() { return Err(format!("Pasta de saída não encontrada: {}", dir.display())); }
+    // Argumento separado: evita executar comandos de shell com caminhos de usuário.
+    #[cfg(target_os = "linux")]
+    let mut command = Command::new("xdg-open");
+    #[cfg(target_os = "windows")]
+    let mut command = Command::new("explorer.exe");
+    #[cfg(target_os = "macos")]
+    let mut command = Command::new("open");
+    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
+    return Err("Abertura de pasta não implementada neste sistema".to_owned());
+    #[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]
+    {
+        command.arg(&dir).spawn()
+            .map_err(|e| format!("Não foi possível abrir a pasta: {e}"))?;
+        Ok(dir.to_string_lossy().into_owned())
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(VideoState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![video_begin, video_frame, video_finish, video_cancel, list_system_fonts])
+        .invoke_handler(tauri::generate_handler![video_begin, video_frame, video_finish, video_cancel, list_system_fonts, desktop_default_output_directory, desktop_open_output_directory])
         .run(tauri::generate_context!())
         .expect("Falha ao iniciar o RDV Bus Studio");
 }

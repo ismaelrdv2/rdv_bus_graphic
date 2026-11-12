@@ -1,7 +1,7 @@
 {
   "name": "rdv-bus",
   "private": true,
-  "version": "0.1.0-alpha.9.2.1",
+  "version": "0.1.0-alpha.9.2.2",
   "type": "module",
   "description": "RDV Bus Studio — editor de HUDs para vídeos de ônibus",
   "scripts": {
