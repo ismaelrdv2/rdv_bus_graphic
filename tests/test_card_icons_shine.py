@@ -41,3 +41,11 @@ def test_json_backward_compatibility():
     validation=src("src/lib/validation.ts")
     assert "diagonalGlowIntensity:safeNumber(item.diagonalGlowIntensity,170,50,300)" in validation
     assert "diagonalGlowIntensity:170" in src("src/lib/templates.ts")
+
+def test_card_rule_keeps_clear_of_left_icon():
+    assert "const cardIconX = 18;" in HUD
+    assert "const cardIconSize = 60;" in HUD
+    assert "const cardIconGap = 22;" in HUD
+    assert "studioRuleX = studioCard ? cardIconX + cardIconSize + cardIconGap : 30;" in HUD
+    assert "M${studioRuleX} ${height*.34}" in HUD
+    assert "M30 ${height*.34}" not in HUD
