@@ -1,4 +1,4 @@
-export const APP_VERSION = '0.1.0-alpha.9.3.2';
+export const APP_VERSION = '0.1.0-alpha.9.3.3';
 export const SCHEMA_VERSION = 1;
 export const DEFAULT_DURATION = 5.3;
 export const MAX_ELEMENTS = 64;

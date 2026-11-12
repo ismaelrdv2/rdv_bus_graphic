@@ -2,6 +2,14 @@
 
 > Política de versões: cada lançamento terá uma seção própria neste arquivo, atualizada no mesmo ZIP da versão. Registros estão em ordem decrescente. Atualizações planejadas não são apresentadas como recursos concluídos.
 
+## 0.1.0-alpha.9.3.3 — Margens da ficha técnica lateral
+
+- Linhas separadoras da barra à esquerda terminam antes da linha diagonal, em função da altura de cada campo.
+- Barra à direita: margem de leitura ampliada para os valores e rótulos, sem alterar textos nem ordem de entrada/saída.
+- Ajuste também no alinhamento da barra lateral Studio à direita; a geometria da ficha em tela inteira permanece inalterada.
+- Mantidos formatos de vídeo, transparência, paletas, editor de propriedades e JSON antigos.
+- Testes de regressão geométrica independentes para os dois lados em 1080p.
+
 ## 0.1.0-alpha.9.3.2 — Organização das propriedades e cartelas compactas
 
 - Painel de personalização dividido em seis abas: Conteúdo, Tipografia, Cores, Dimensões, Animação e Paleta.

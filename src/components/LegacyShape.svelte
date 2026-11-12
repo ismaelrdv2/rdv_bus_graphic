@@ -6,6 +6,7 @@
   import { palettePaint, textColor } from '../lib/palette';
   import type { TextColorKey, TextColorRole } from '../lib/types';
   import { elementBaseHeight } from '../lib/geometry';
+  import { technicalSeparatorEnd, technicalTextX } from '../lib/technicalGeometry';
   import { clamp } from '../lib/timing';
   import { legacyPhase, legacyStage, legacyScrollDistance } from '../lib/legacy';
   import { DEFAULT_RICH_TEXT, layoutRichText, alignedX, textAnchor, type MeasureRich } from '../lib/richtext';
@@ -70,6 +71,9 @@
   $: cellH = (h - gridTop - 125 - gap*(rows-1)) / rows;
   $: techRowStart = h * .214;
   $: techRowPitch = Math.min(142, (h - techRowStart - 140) / 6);
+  $: technicalX = technicalTextX(sideRight);
+  $: technicalSeparatorEnds = Array.from({ length: 6 }, (_, i) =>
+    technicalSeparatorEnd(w, h, techRowStart + i*techRowPitch + 70, sideRight));
   $: fontScale = clamp(Math.sqrt(element.style.scaleX * element.style.scaleY), .35, 2.5);
   $: fSize = element.style.fontSize * fontScale;
   $: typeSize = Math.min(34, h * .3, fSize);
@@ -163,15 +167,15 @@
         <path d={`M${sideRight?92:52} ${h*.132} h${(w-170)*pRule}`} stroke={accent} stroke-width="2.5" />
       </g>
       {#each values as value, i}
-        {@const x = sideRight ? 134 : 92}
+        {@const x = technicalX}
         {@const y = techRowStart + i*techRowPitch}
         {@const progress = rowReveals[i]}
         {#if value}
           <g opacity={progress} transform={`translate(${direction*40*(1-progress)} 0)`}>
             <path d={`M${x-43} ${y+6} l11 13 -11 13 M${x-29} ${y+6} l11 13 -11 13`} stroke={accent} stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-            <text data-edit-caption={i} style={fieldTextStyle(element,'caption'+i)} x={x} y={y+10} fill={textColor(element,('caption'+i) as TextColorKey,'secondary')} font-family={fontFamily} font-size={15*fontScale} font-weight="800" letter-spacing="2.7">{captions[i] || ''}</text>
-            <text data-edit-field={'line'+(i+1)} style={fieldTextStyle(element,'line'+(i+1))} x={x} y={y+50} fill={textColor(element,('line'+(i+1)) as TextColorKey,'white')} font-family={fontFamily} font-size={fit(value, Math.min(40*fontScale,techRowPitch*.34), w-x-38)} font-weight="800">{value}</text>
-            <path d={`M${x} ${y+70} H${w-48}`} stroke={paint.edge} stroke-opacity=".65" stroke-width="1.6" />
+            <text data-edit-caption={i} style={fieldTextStyle(element,'caption'+i)} x={x} y={y+10} fill={textColor(element,('caption'+i) as TextColorKey,'secondary')} font-family={fontFamily} font-size={fit(captions[i] || '', 15*fontScale, Math.max(45,w-x-(sideRight?72:50)-(captions[i] || '').length*2.7), false)} font-weight="800" letter-spacing="2.7">{captions[i] || ''}</text>
+            <text data-edit-field={'line'+(i+1)} style={fieldTextStyle(element,'line'+(i+1))} x={x} y={y+50} fill={textColor(element,('line'+(i+1)) as TextColorKey,'white')} font-family={fontFamily} font-size={fit(value, Math.min(40*fontScale,techRowPitch*.34), Math.max(36,w-x-(sideRight?72:50)))} font-weight="800">{value}</text>
+            <path d={`M${x} ${y+70} H${technicalSeparatorEnds[i]}`} stroke={paint.edge} stroke-opacity=".65" stroke-width="1.6" />
           </g>
         {/if}
       {/each}

@@ -1,4 +1,4 @@
-# RDV Bus Studio — 0.1.0-alpha.9.3.2
+# RDV Bus Studio — 0.1.0-alpha.9.3.3
 
 > **Alpha.8:** edição de textos por clique diretamente na pré-visualização, mini-barra flutuante de formatação e ícones clássicos maiores/centralizados. Mantidos os presets e o sistema de exportação 2×. Veja `CHANGELOG.md`.
 

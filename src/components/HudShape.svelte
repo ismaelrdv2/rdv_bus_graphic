@@ -53,9 +53,10 @@
   $: contentClipId = `hud-content-${id}`;
   $: panelPath = isRight ? `M84 0 H${w} V${height} H0 Z` : `M0 0 H${w - 84} L${w} ${height} H0 Z`;
   $: edgePath = isRight ? `M84 0 L0 ${height}` : `M${w - 84} 0 L${w} ${height}`;
-  $: titleX = isRight ? 120 : 52;
-  $: innerX = isRight ? 150 : 92;
-  $: innerRight = isRight ? w - 72 : w - 110;
+  // A barra à direita mantém a mesma margem de leitura da esquerda.
+  $: titleX = isRight ? 116 : 52;
+  $: innerX = isRight ? 136 : 92;
+  $: innerRight = isRight ? w - 88 : w - 110;
   $: contentWidth = Math.max(140, innerRight - innerX);
   $: technicalValues = [fields.line1, fields.line2, fields.line3, fields.line4, fields.line5, fields.line6];
   $: rowStart = Math.max(100, Math.min(340 * sy, canvasHeight * .204 * sy));
