@@ -1,0 +1,20 @@
+[package]
+name = "rdv-bus"
+version = "0.1.0-alpha.9.2"
+description = "RDV Bus Studio"
+authors = ["RDV Bus"]
+edition = "2021"
+
+[lib]
+name = "rdv_bus_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+base64 = "0.22"
+fontdb = "0.24"

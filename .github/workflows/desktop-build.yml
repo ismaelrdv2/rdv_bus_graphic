@@ -1,0 +1,92 @@
+name: RDV Bus Studio Desktop — AppImage e Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-appimage:
+    name: Linux x86_64 — AppImage
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Configurar Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - name: Dependências de sistema do Tauri 2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config libssl-dev \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
+            librsvg2-dev patchelf xdg-utils
+      - name: Instalar dependências JavaScript
+        run: npm install --no-audit --no-fund
+      - name: Verificar Svelte e TypeScript
+        run: npm run check
+      - name: Compilar AppImage
+        run: npm run desktop:build -- --bundles appimage
+      - name: Publicar AppImage de teste
+        uses: actions/upload-artifact@v4
+        with:
+          name: RDV-Bus-Studio-Desktop-alpha9.2-Linux-AppImage
+          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+          retention-days: 14
+
+  windows-exe:
+    name: Windows x64 — NSIS e executável de teste
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Configurar Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - name: Instalar dependências JavaScript
+        run: npm install --no-audit --no-fund
+      - name: Verificar Svelte e TypeScript
+        run: npm run check
+      - name: Compilar instalador NSIS
+        run: npm run desktop:build -- --bundles nsis
+      - name: Publicar instalador Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: RDV-Bus-Studio-Desktop-alpha9.2-Windows-Instalador
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publicar executável Windows sem instalador (experimental)
+        uses: actions/upload-artifact@v4
+        with:
+          name: RDV-Bus-Studio-Desktop-alpha9.2-Windows-EXE-Direto
+          path: src-tauri/target/release/rdv-bus.exe
+          if-no-files-found: warn
+          retention-days: 14

@@ -1,0 +1,282 @@
+<script lang="ts">
+  import type { HudElement } from '../lib/types';
+  import { fieldTextStyle } from '../lib/inlineText';
+  import { fontStack } from '../lib/fonts';
+  import { BRAND, TECHNICAL_CAPTIONS } from '../lib/brand';
+  import { elementBaseHeight } from '../lib/geometry';
+  import { clamp } from '../lib/timing';
+  import { legacyPhase, legacyStage, legacyScrollDistance } from '../lib/legacy';
+  import { DEFAULT_RICH_TEXT, layoutRichText, alignedX, textAnchor, type MeasureRich } from '../lib/richtext';
+
+  export let element: HudElement;
+  export let time = 0;
+  export let duration = 5.3;
+  export let canvasHeight = 1080;
+  export let canvasWidth = 1920;
+
+  $: fontFamily = fontStack(element.style.fontFamily);
+  $: w = element.style.width * element.style.scaleX;
+  $: h = elementBaseHeight(element, canvasHeight) * element.style.scaleY;
+  $: sideRight = element.technicalSide === 'right';
+  $: isTech = element.kind === 'technical' || element.freeTextStyle === 'technicalBar' || element.freeTextStyle === 'fullTechnical';
+  $: fullTech = (element.kind === 'technical' && element.technicalLayout === 'legacyFullscreen') || (element.kind === 'freeText' && element.freeTextStyle === 'fullTechnical');
+  $: fullSlide = element.kind === 'freeText' && element.freeTextStyle === 'legacyPresentationSlide';
+  $: isFull = fullTech || fullSlide;
+  $: isTechSide = isTech && !fullTech;
+  $: freeBarPresentation = element.kind === 'slide' || (element.kind === 'freeText' && element.freeTextStyle === 'legacyPresentationBar');
+  $: freeLabel = element.kind === 'freeText' && ['legacyLabel','legacyHalfBar','legacyFullBar'].includes(element.freeTextStyle || '');
+  // Ícones desenhados no mesmo sistema 24x24; o viewBox garante alinhamento
+  // independente de altura do caminho (o pin antes ultrapassava a moldura).
+  const labelIcons: Record<string,string> = {
+    location:'M12 21s7-5.2 7-11a7 7 0 0 0-14 0c0 5.8 7 11 7 11z M12 7a3 3 0 1 0 0 6a3 3 0 1 0 0-6z',
+    route:'M4 20h5a4 4 0 0 0 0-8H8a4 4 0 0 1 0-8h11m-4-3l4 3-4 3 M4 20a1 1 0 1 0 2 0a1 1 0 1 0-2 0',
+    date:'M4 5h16v16H4z M8 2v6 M16 2v6 M4 11h16',
+    driver:'M12 4a4 4 0 1 0 0 8a4 4 0 1 0 0-8 M4 21c0-9 16-9 16 0',
+    credit:'M3 5h18v14H3z M8 5v14 M16 5v14 M3 10h5 M16 10h5 M3 15h5 M16 15h5',
+    default:'M4 4h16v16H4z',
+  };
+  $: isSmallLabel = !isTech && !fullSlide && !freeBarPresentation && !freeLabel;
+  $: fields = element.fields;
+  $: accent = element.style.accent;
+  $: background = element.style.background;
+  $: rich = element.richText || DEFAULT_RICH_TEXT;
+  $: id = element.id.replace(/[^a-zA-Z0-9_-]/g, '');
+  $: clipId = `old-clip-${id}`;
+  $: gradientId = `old-gradient-${id}`;
+  $: cardGradientId = `old-card-${id}`;
+  $: contentClipId = `old-content-${id}`;
+  $: slideBodyClipId = `old-slide-body-${id}`;
+  $: portrait = canvasHeight > canvasWidth;
+  $: enterDuration = isFull || isTechSide ? 1.43 : .8;
+  $: phase = element.animation === 'legacy' ? legacyPhase(time, duration, enterDuration, isFull || isTechSide ? .65 : .5) : enterDuration;
+  $: stage = (start: number, length: number) => legacyStage(phase, start, length);
+  $: pPanel = stage(0, .55);
+  $: pTitle = stage(isTechSide ? .38 : .22, .34);
+  $: pRule = stage(isTechSide ? .49 : .36, .40);
+  $: pBody = stage(isTechSide ? .54 : .45, .34);
+  $: pFooter = stage(isTechSide ? 1.08 : .63, .25);
+  $: direction = sideRight ? 1 : -1;
+  $: margin = portrait ? 72 : 82;
+  $: columns = portrait ? 2 : 4;
+  $: gap = 24;
+  $: values = [fields.line1, fields.line2, fields.line3, fields.line4, fields.line5, fields.line6];
+  $: captions = element.kind === 'freeText' ? (element.freeTextCaptions || TECHNICAL_CAPTIONS) : (element.technicalCaptions || TECHNICAL_CAPTIONS);
+  $: rows = Math.ceil(values.length / columns);
+  $: gridTop = portrait ? 320 : 230;
+  $: cellW = (w - 2*margin - gap*(columns-1)) / columns;
+  $: cellH = (h - gridTop - 125 - gap*(rows-1)) / rows;
+  $: techRowStart = h * .214;
+  $: techRowPitch = Math.min(142, (h - techRowStart - 140) / 6);
+  $: fontScale = clamp(Math.sqrt(element.style.scaleX * element.style.scaleY), .35, 2.5);
+  $: fSize = element.style.fontSize * fontScale;
+  $: typeSize = Math.min(34, h * .3, fSize);
+  $: clipStart = 32;
+  $: clipWidth = Math.max(90, w-64);
+  $: bodyTitleSize = Math.min(rich.titleSize*fontScale, fullSlide?95:48);
+  $: bodyFontSize = fitBody(fields.line1, Math.max(120,w-2*margin-130), fullSlide ? Math.max(80,h-(portrait?620:515)-160) : Math.max(50,h*.34), Math.min(rich.bodySize*fontScale, fullSlide?60:44));
+  $: line1Text = fields.line1 || '';
+  $: line2Text = fields.line2 || '';
+  $: speed = rich.scrollPixelsPerSecond || 200;
+  $: repeatCount = Math.round(clamp(rich.scrollRepeats || 1, 1, 20));
+  $: scrollGap = rich.scrollGap || 240;
+  $: scrollDistance = legacyScrollDistance(time, speed);
+  $: lineWidth1 = measure(line1Text, typeSize, true, false);
+  $: lineWidth2 = measure(line2Text, typeSize*.68, false, false);
+  $: activeScroll1 = freeLabel && rich.scrollLine1;
+  $: activeScroll2 = freeLabel && rich.scrollLine2;
+  $: startScroll = w - 32;
+  $: bodyLayout = layoutRichText(fields.line1, Math.max(120,w-2*margin-150), bodyFontSize, 1.38, rich.bullets, rich.bodyBold, rich.bodyItalic, measure);
+  let ctx: CanvasRenderingContext2D | null = null;
+  const measure: MeasureRich = (text, size, bold, italic=false) => {
+    if (typeof document === 'undefined') return [...text].length * size * .58;
+    if (!ctx) ctx = document.createElement('canvas').getContext('2d');
+    if (!ctx) return [...text].length * size * .58;
+    ctx.font = `${italic?'italic ':''}${bold?'800':'400'} ${size}px ${fontFamily}`;
+    return ctx.measureText(text).width;
+  };
+  function fit(text: string, wanted: number, max: number, bold=true): number {
+    const width = measure(text, wanted, bold, false);
+    return width > max ? Math.max(10, wanted * max / width * .98) : wanted;
+  }
+  function fitBody(text: string, lineWidth: number, maxHeight: number, initial: number): number {
+    let testSize = initial;
+    while (testSize > 18) {
+      const layout = layoutRichText(text,lineWidth,testSize,1.38,rich.bullets,rich.bodyBold,rich.bodyItalic,measure);
+      if (layout.contentHeight <= maxHeight) break;
+      testSize -= 2;
+    }
+    return testSize;
+  }
+  // Atualiza os progressos de cada campo quando phase muda. A chamada indireta
+  // a rowProgress() dentro de {@const} não é reativa em Svelte.
+  $: rowReveals = Array.from({ length: 6 }, (_, i) => legacyStage(phase, .55 + .09 * i, .32));
+  function lineY(n: number): number { return (freeLabel ? (n === 0 ? h*.47 : h*.78) : h*.67); }
+</script>
+
+<g font-family={fontFamily}>
+  <defs>
+    <linearGradient id={gradientId} x1="0" x2="1" y1="0" y2="0">
+      <stop stop-color={BRAND.purpleDeep}/><stop offset=".7" stop-color={background}/><stop offset="1" stop-color={BRAND.purpleDark}/>
+    </linearGradient>
+    <linearGradient id={cardGradientId} x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color={BRAND.purpleDeep}/><stop offset="1" stop-color={background}/>
+    </linearGradient>
+    <clipPath id={contentClipId}><rect x={clipStart} y="0" width={clipWidth} height={h}/></clipPath>
+    <clipPath id={slideBodyClipId}><rect x={margin+55} y={portrait?595:490} width={Math.max(80,w-2*margin-110)} height={Math.max(55,h-(portrait?620:515)-150)}/></clipPath>
+    <clipPath id={clipId}>
+      <path d={sideRight ? `M84 0 H${w} V${h} H0 Z` : `M0 0 H${w-84} L${w} ${h} H0 Z`}/>
+    </clipPath>
+  </defs>
+
+  {#if element.kind === 'corner'}
+    <!-- O original mostrava o logotipo diretamente, sem a moldura Studio. -->
+    <g opacity={stage(0, .55)} transform={`translate(${w/2} ${h/2}) scale(${.86+.14*stage(0,.55)}) translate(${-w/2} ${-h/2})`}>
+      {#if element.imageData}
+        <image href={element.imageData} x="0" y="0" width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+      {:else}
+        <rect x="1" y="1" width={w-2} height={h-2} rx="12" fill={background} fill-opacity=".75" stroke={accent} stroke-width="2" />
+        <text x={w/2} y={h*.55} font-size={Math.min(20,h*.2)} text-anchor="middle" fill={BRAND.text}>INSERIR LOGOMARCA</text>
+      {/if}
+    </g>
+  {:else if isTechSide}
+    <g opacity={pPanel} transform={`translate(${direction*(1-pPanel)*(w+40)} 0)`}>
+      <path d={sideRight ? `M84 0 H${w} V${h} H0 Z` : `M0 0 H${w-84} L${w} ${h} H0 Z`} fill={`url(#${gradientId})`} fill-opacity=".83" />
+      <path d={sideRight ? `M84 0 L0 ${h}` : `M${w-84} 0 L${w} ${h}`} stroke={accent} stroke-width="4" fill="none"/>
+      <path d={sideRight ? `M101 0 L17 ${h}` : `M${w-101} 0 L${w-17} ${h}`} stroke={BRAND.purpleEdge} stroke-width="2" fill="none"/>
+    </g>
+    <g clip-path={`url(#${clipId})`}>
+      <g opacity={pTitle} transform={`translate(${direction*30*(1-pTitle)} 0)`}>
+        <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={sideRight ? 92 : 52} y={h*.115} fill={accent} font-family={fontFamily} font-size={fit(fields.heading||'FICHA TÉCNICA', 36*fontScale, w-180)} font-weight="800" letter-spacing="4">{fields.heading || 'FICHA TÉCNICA'}</text>
+      </g>
+      <g opacity={pRule}>
+        <path d={`M${sideRight?92:52} ${h*.132} h${(w-170)*pRule}`} stroke={accent} stroke-width="2.5" />
+      </g>
+      {#each values as value, i}
+        {@const x = sideRight ? 134 : 92}
+        {@const y = techRowStart + i*techRowPitch}
+        {@const progress = rowReveals[i]}
+        {#if value}
+          <g opacity={progress} transform={`translate(${direction*40*(1-progress)} 0)`}>
+            <path d={`M${x-43} ${y+6} l11 13 -11 13 M${x-29} ${y+6} l11 13 -11 13`} stroke={accent} stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            <text data-edit-caption={i} style={fieldTextStyle(element,'caption'+i)} x={x} y={y+10} fill={BRAND.lilac} font-family={fontFamily} font-size={15*fontScale} font-weight="800" letter-spacing="2.7">{captions[i] || ''}</text>
+            <text data-edit-field={'line'+(i+1)} style={fieldTextStyle(element,'line'+(i+1))} x={x} y={y+50} fill={BRAND.text} font-family={fontFamily} font-size={fit(value, Math.min(40*fontScale,techRowPitch*.34), w-x-38)} font-weight="800">{value}</text>
+            <path d={`M${x} ${y+70} H${w-48}`} stroke={BRAND.purpleEdge} stroke-opacity=".65" stroke-width="1.6" />
+          </g>
+        {/if}
+      {/each}
+      <g opacity={pFooter}>
+        <text x={sideRight?92:52} y={h-48} font-size={15*fontScale} fill={BRAND.lilac} font-weight="800" letter-spacing="6">RDV BUS</text>
+        <path d={`M${w-133} ${h-40} h35 l22 -18`} stroke={accent} stroke-width="2.5" fill="none"/>
+      </g>
+    </g>
+  {:else if fullTech}
+    <g opacity={pPanel}>
+      <rect width={w} height={h} fill={`url(#${gradientId})`} fill-opacity=".88" />
+      <path d={`M${margin} ${margin+58} V${margin} H${margin+180} M${w-margin-180} ${h-margin} H${w-margin} V${h-margin-58}`} fill="none" stroke={accent} stroke-width="3" />
+      <path d={`M${margin} ${margin+80} V${h-margin-80} M${w-margin} ${margin+80} V${h-margin-80}`} fill="none" stroke={BRAND.purpleEdge} stroke-width="1.5" opacity=".55" />
+    </g>
+    <g opacity={pTitle} transform={`translate(0 ${35*(1-pTitle)})`}>
+      <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={margin} y={portrait?205:152} fill={accent} font-family={fontFamily} font-size={portrait?48:52} font-weight="800" letter-spacing="5">{fields.heading || 'FICHA TÉCNICA'}</text>
+    </g>
+    <path d={`M${margin} ${portrait?238:182} h${(w-2*margin)*pRule}`} fill="none" stroke={accent} stroke-width="2.5" opacity={pRule}/>
+    {#each values as value, i}
+      {@const col = i % columns}
+      {@const row = Math.floor(i / columns)}
+      {@const x = margin + col*(cellW+gap)}
+      {@const y = gridTop + row*(cellH+gap)}
+      {@const p = rowReveals[i]}
+      {#if value}
+        <g opacity={p} transform={`translate(0 ${26*(1-p)})`}>
+          <path d={`M${x+20} ${y} H${x+cellW-20} L${x+cellW} ${y+20} V${y+cellH-20} Q${x+cellW} ${y+cellH} ${x+cellW-20} ${y+cellH} H${x+20} Q${x} ${y+cellH} ${x} ${y+cellH-20} V${y+20} Q${x} ${y} ${x+20} ${y} Z`} fill={`url(#${cardGradientId})`} fill-opacity=".52" stroke={BRAND.purpleEdge} stroke-width="2" />
+          <path d={`M${x+25} ${y+18} v36 h57`} fill="none" stroke={accent} stroke-width="3" />
+          <text x={x+32} y={y+(portrait?110:94)} font-size={portrait?18:19} font-weight="800" fill={BRAND.lilac} letter-spacing="2.2">{(captions[i]||'').toUpperCase()}</text>
+          <text data-edit-field={'line'+(i+1)} style={fieldTextStyle(element,'line'+(i+1))} x={x+32} y={y+(portrait?164:156)} font-family={fontFamily} font-size={fit(value, portrait?43:46,cellW-64)} font-weight="800" fill={BRAND.text}>{value}</text>
+        </g>
+      {/if}
+    {/each}
+    <g opacity={pFooter}><text x={margin} y={h-54} font-size="17" fill={BRAND.lilac} letter-spacing="6" font-weight="800">RDV BUS</text><path d={`M${w-margin-160} ${h-62} H${w-margin-42} L${w-margin} ${h-102}`} stroke={accent} stroke-width="2" fill="none" /></g>
+  {:else if fullSlide}
+    <g opacity={pPanel}>
+      <rect width={w} height={h} fill={`url(#${gradientId})`} fill-opacity=".9" />
+      <path d={`M${margin} ${margin+58} V${margin} H${margin+180} M${w-margin-180} ${h-margin} H${w-margin} V${h-margin-58}`} fill="none" stroke={accent} stroke-width="3"/>
+      <path d={`M${margin} ${margin+80} V${h-margin-80} M${w-margin} ${margin+80} V${h-margin-80}`} fill="none" stroke={BRAND.purpleEdge} opacity=".55" stroke-width="1.5"/>
+    </g>
+    <g opacity={pTitle} transform={`translate(0 ${35*(1-pTitle)})`}>
+      <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={margin} y={portrait?235:185} fill={BRAND.text} font-size={fit(fields.heading,bodyTitleSize,w-2*margin)} font-family={fontFamily} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'}>{fields.heading}</text>
+    </g>
+    <path d={`M${margin} ${portrait?405:327} h${(w-2*margin)*pRule}`} stroke={accent} stroke-width="3" opacity={pRule}/>
+    <g opacity={pBody} transform={`translate(0 ${32*(1-pBody)})`}>
+      <rect x={margin} y={portrait?470:375} width={w-2*margin} height={h-(portrait?470:375)-150} rx="20" fill={background} fill-opacity=".65" stroke={BRAND.purpleEdge} stroke-width="2" />
+      <path d={`M${margin+34} ${portrait?505:410} v58 h78`} fill="none" stroke={BRAND.purpleEdge} stroke-width="3"/>
+      <g clip-path={`url(#${slideBodyClipId})`}>
+      {#each bodyLayout.lines as line, i}
+        <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,margin+65,w-2*margin-130)} y={(portrait?620:515) + i*bodyLayout.lineHeight} text-anchor={textAnchor(rich.alignment)} font-family={fontFamily} font-size={bodyFontSize} fill={BRAND.lilac} font-weight={rich.bodyBold?'800':'400'} font-style={rich.bodyItalic?'italic':'normal'} text-decoration={rich.bodyUnderline?'underline':'none'}>
+          {#each line.runs as run}<tspan font-weight={run.bold?'800':rich.bodyBold?'800':'400'} font-style={run.italic?'italic':rich.bodyItalic?'italic':'normal'} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}
+        </text>
+      {/each}
+      </g>
+    </g>
+    <g opacity={pFooter}><text x={margin} y={h-54} font-size="17" fill={BRAND.lilac} letter-spacing="6" font-weight="800">RDV BUS</text><path d={`M${w-margin-160} ${h-62} H${w-margin-42} L${w-margin} ${h-102}`} stroke={accent} stroke-width="2" fill="none" /></g>
+  {:else}
+    <!-- Etiquetas / barras antigas: o painel e os detalhes entram por revelação,
+         os textos chegam em tempos diferentes e podem rolar separadamente. -->
+    <g opacity={pPanel}>
+      <path d={`M16 0 H${w-22} L${w} 22 V${h-20} Q${w} ${h} ${w-20} ${h} H16 Q0 ${h} 0 ${h-16} V16 Q0 0 16 0Z`} fill={background} fill-opacity=".87" stroke={BRAND.purpleEdge} stroke-width="2" />
+    </g>
+    <g opacity={pRule}>
+      <path d={`M0 12 L16 0 H${Math.min(w*.4,165)}`} stroke={accent} stroke-width="3" fill="none" />
+      <path d={`M${w-90} ${h-1} h45 l25 -18`} fill="none" stroke={accent} stroke-width="2.2" />
+    </g>
+    {#if freeBarPresentation}
+      <g opacity={pTitle} transform={`translate(0 ${16*(1-pTitle)})`}>
+        <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="46" y={h*.31} fill={BRAND.text} font-size={fit(fields.heading,Math.max(25,bodyTitleSize),w-92)} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'}>{fields.heading}</text>
+      </g>
+      <path d={`M38 ${h*.39} h${(w-76)*pRule}`} stroke={accent} stroke-width="2" opacity={pRule}/>
+      <g opacity={pBody} transform={`translate(0 ${20*(1-pBody)})`}>
+        {#each bodyLayout.lines as line,i}
+          <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,48,w-96)} y={h*.54+i*bodyLayout.lineHeight} text-anchor={textAnchor(rich.alignment)} font-size={bodyFontSize} fill={BRAND.lilac} font-family={fontFamily} font-weight={rich.bodyBold?'800':'400'}>{#each line.runs as run}<tspan font-weight={run.bold?'800':rich.bodyBold?'800':'400'} font-style={run.italic?'italic':rich.bodyItalic?'italic':'normal'} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}</text>
+        {/each}
+      </g>
+    {:else if freeLabel}
+      <g clip-path={`url(#${contentClipId})`} opacity={pBody}>
+        {#if activeScroll1}
+          {#each Array.from({length:repeatCount},(_,i)=>i) as i}
+            <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={startScroll-scrollDistance+i*(lineWidth1+scrollGap)} y={lineY(0)} fill={BRAND.text} font-size={typeSize} font-family={fontFamily} font-weight="800">{line1Text}</text>
+          {/each}
+        {:else}
+          <g transform={`translate(${-26*(1-pBody)} 0)`}>
+            <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={clipStart+2} y={lineY(0)} fill={BRAND.text} font-size={fit(line1Text,typeSize,clipWidth-6)} font-family={fontFamily} font-weight="800">{line1Text}</text>
+          </g>
+        {/if}
+        {#if fields.line2}
+          {#if activeScroll2}
+            {#each Array.from({length:repeatCount},(_,i)=>i) as i}
+              <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={startScroll-scrollDistance+i*(lineWidth2+scrollGap)} y={lineY(1)} fill={BRAND.lilac} font-size={typeSize*.68} font-family={fontFamily}>{line2Text}</text>
+            {/each}
+          {:else}
+            <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={clipStart+2} y={lineY(1)} fill={BRAND.lilac} font-size={fit(line2Text,typeSize*.68,clipWidth-6,false)} font-family={fontFamily}>{line2Text}</text>
+          {/if}
+        {/if}
+      </g>
+    {:else}
+      <g opacity={stage(.28,.35)} transform={`translate(48 49) scale(${.65+.35*stage(.28,.35)}) translate(-48 -49)`}>
+        <rect x="18" y="18" width="60" height="60" rx="12" fill={BRAND.purpleEdge} fill-opacity=".32" stroke={accent} stroke-width="1.7" />
+        <svg x="27" y="27" width="42" height="42" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <path d={labelIcons[element.kind] || labelIcons.default} fill="none" stroke={accent} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </g>
+      <g opacity={pTitle} transform={`translate(${-26*(1-pTitle)} 0)`}>
+        <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="100" y={h*.36} fill={BRAND.lilac} font-size={Math.min(17*fontScale,h*.21)} font-weight="800" letter-spacing="2.7">{fields.heading}</text>
+      </g>
+      <g opacity={pBody} transform={`translate(${-26*(1-pBody)} 0)`}>
+        <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x="100" y={h*.70} fill={BRAND.text} font-family={fontFamily} font-size={fit(fields.line1, Math.min(fSize,h*.32), w-134)} font-weight="800">{fields.line1}</text>
+        {#if fields.line2}<text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x="100" y={h*.87} fill={BRAND.lilac} font-family={fontFamily} font-size={fit(fields.line2, Math.min(18*fontScale,h*.15), w-134,false)}>{fields.line2}</text>{/if}
+      </g>
+    {/if}
+    {#if element.animation === 'legacy' && time >= .55 && time < 1.15}
+      <g opacity={.15 * Math.sin(Math.PI*(time-.55)/.6)}>
+        <path d={`M${-80+(time-.55)/.6*(w+160)} 0 l65 ${h} h18 l-65 -${h} Z`} fill="#fff" />
+      </g>
+    {/if}
+  {/if}
+</g>
