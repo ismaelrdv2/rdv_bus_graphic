@@ -6,6 +6,7 @@
   import { CARD_ICONS } from '../lib/cardIcons';
   import ShineOverlay from './ShineOverlay.svelte';
   import DiagonalGlow from './DiagonalGlow.svelte';
+  import SocialIcon from './SocialIcon.svelte';
   import { palettePaint, textColor } from '../lib/palette';
   import type { TextColorKey, TextColorRole } from '../lib/types';
   import { elementBaseHeight, compactCardTextBaselines, isCompactCartela } from '../lib/geometry';
@@ -81,8 +82,9 @@
   $: fontScale = clamp(Math.sqrt(element.style.scaleX * element.style.scaleY), .35, 2.5);
   $: fSize = element.style.fontSize * fontScale;
   $: typeSize = Math.min(34, h * .3, fSize);
-  $: clipStart = 32;
-  $: clipWidth = Math.max(90, w-64);
+  $: freeSocial = element.kind === 'freeText' && (element.freeTextIcon || 'none') !== 'none' && (freeLabel || freeBarPresentation);
+  $: clipStart = freeSocial ? 92 : 32;
+  $: clipWidth = Math.max(45, w-clipStart-32);
   $: bodyTitleSize = Math.min(rich.titleSize*fontScale, fullSlide?95:48);
   // Usa uma área de recorte e uma linha de base compartilhadas: o texto não
   // pode começar acima do clipPath (cortava o topo das letras no slide).
@@ -247,14 +249,17 @@
       <path d={`M0 12 L16 0 H${Math.min(w*.4,165)}`} stroke={accent} stroke-width="3" fill="none" />
       <path d={`M${w-90} ${h-1} h45 l25 -18`} fill="none" stroke={accent} stroke-width="2.2" />
     </g>
+    {#if freeSocial}
+      <g opacity={pBody}><SocialIcon icon={element.freeTextIcon || 'none'} x={22} y={Math.max(12,h/2-24)} size={48} color={accent} framed={false}/></g>
+    {/if}
     {#if freeBarPresentation}
       <g opacity={pTitle} transform={`translate(0 ${16*(1-pTitle)})`}>
-        <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="46" y={h*.31} fill={textColor(element,'heading','white')} font-size={fit(fields.heading,Math.max(25,bodyTitleSize),w-92)} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'}>{fields.heading}</text>
+        <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={freeSocial?104:46} y={h*.31} fill={textColor(element,'heading','white')} font-size={fit(fields.heading,Math.max(25,bodyTitleSize),w-92)} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'}>{fields.heading}</text>
       </g>
-      <path d={`M38 ${h*.39} h${(w-76)*pRule}`} stroke={accent} stroke-width="2" opacity={pRule}/>
+      <path d={`M${freeSocial?100:38} ${h*.39} h${(w-(freeSocial?138:76))*pRule}`} stroke={accent} stroke-width="2" opacity={pRule}/>
       <g opacity={pBody} transform={`translate(0 ${20*(1-pBody)})`}>
         {#each bodyLayout.lines as line,i}
-          <text xml:space="preserve" data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,48,w-96)} y={barBodyBaseline+i*bodyLayout.lineHeight} text-anchor={textAnchor(rich.alignment)} font-size={bodyFontSize} fill={textColor(element,'line1','secondary')} font-family={fontFamily} font-weight={rich.bodyBold?'800':'400'}>{#each line.runs as run}<tspan font-weight={run.bold?'800':rich.bodyBold?'800':'400'} font-style={run.italic?'italic':rich.bodyItalic?'italic':'normal'} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}</text>
+          <text xml:space="preserve" data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,freeSocial?104:48,w-(freeSocial?152:96))} y={barBodyBaseline+i*bodyLayout.lineHeight} text-anchor={textAnchor(rich.alignment)} font-size={bodyFontSize} fill={textColor(element,'line1','secondary')} font-family={fontFamily} font-weight={rich.bodyBold?'800':'400'}>{#each line.runs as run}<tspan font-weight={run.bold?'800':rich.bodyBold?'800':'400'} font-style={run.italic?'italic':rich.bodyItalic?'italic':'normal'} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}</text>
         {/each}
       </g>
     {:else if freeLabel}

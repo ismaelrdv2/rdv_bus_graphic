@@ -2,6 +2,8 @@ name: RDV Bus Studio Desktop — AppImage e Windows EXE
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
     paths-ignore:

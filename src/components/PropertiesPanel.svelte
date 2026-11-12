@@ -32,6 +32,7 @@
   export let onCanvas: (key: 'fps' | 'duration' | 'orientation', value: number | string) => void;
   export let onTechnicalSide: (side: 'left' | 'right') => void;
   export let onFreeTextStyle: (style: FreeTextStyle) => void;
+  export let onFreeTextIcon: (icon: HudElement['freeTextIcon']) => void;
   export let onTechnicalLayout: (layout: TechnicalLayout) => void;
   export let onVisualPreset: (preset: VisualPreset) => void;
   export let onFitScrollDuration: () => void;
@@ -144,6 +145,15 @@
             <option value="legacyFullBar">Original 0.14 · Barra larga</option>
             <option value="legacyPresentationBar">Original 0.14 · Apresentação em barra</option>
             <option value="legacyPresentationSlide">Original 0.14 · Apresentação em slide (tela inteira)</option>
+          </select>
+        </label>
+      {/if}
+      {#if selected.kind === 'freeText' && ['legacyLabel','legacyHalfBar','legacyFullBar','legacyPresentationBar','classic'].includes(selected.freeTextStyle || 'classic')}
+        <label class="field"><span>Ícone social opcional</span>
+          <select value={selected.freeTextIcon || 'none'} on:change={(event) => onFreeTextIcon(event.currentTarget.value as HudElement['freeTextIcon'])}>
+            {#each ['none','facebook','instagram','x','tiktok','twitch','whatsapp','telegram','discord'] as social}
+              <option value={social}>{social === 'none' ? 'Nenhum' : social === 'x' ? 'X (Twitter)' : social.charAt(0).toUpperCase()+social.slice(1)}</option>
+            {/each}
           </select>
         </label>
       {/if}
