@@ -1,6 +1,7 @@
 import type { AnimationStyle, ElementKind, HudElement, HudStyle, RDVProject, TextField } from './types';
 import { APP_VERSION, DEFAULT_DURATION, SCHEMA_VERSION } from './types';
 import { BRAND } from './brand';
+import { DEFAULT_PALETTE, DEFAULT_COLORS } from './palette';
 import { DEFAULT_RICH_TEXT } from './richtext';
 
 export const FIELD_LABELS: Record<ElementKind, Partial<Record<TextField, string>>> = {
@@ -31,7 +32,7 @@ export const KINDS: ElementKind[] = ['technical', 'location', 'date', 'route', '
 
 const baseStyle: HudStyle = {
   x: 74, y: 816, width: 850, fontSize: 50, fontFamily: 'Inter',
-  accent: BRAND.gold, background: BRAND.purpleDeep, opacity: 100, scaleX: 1, scaleY: 1,
+  accent: BRAND.gold, secondary: BRAND.lilac, background: BRAND.purpleDeep, opacity: 100, scaleX: 1, scaleY: 1,
 };
 
 function uniqueId(): string {
@@ -93,6 +94,7 @@ export function newProject(): RDVProject {
     createdAt: now,
     updatedAt: now,
     canvas: { width: 1920, height: 1080, fps: 60, duration: DEFAULT_DURATION },
+    palette: { preset: DEFAULT_PALETTE.preset, colors: {...DEFAULT_COLORS} },
     elements: [makeElement('route'), makeElement('credit')],
   };
 }
@@ -103,6 +105,7 @@ export function duplicateElement(original: HudElement): HudElement {
     id: uniqueId(),
     title: `${original.title} (cópia)`,
     fields: { ...original.fields },
+    ...(original.textColors ? { textColors: {...original.textColors} } : {}),
     ...(original.textFormatting ? { textFormatting: Object.fromEntries(Object.entries(original.textFormatting).map(([k,v]) => [k,{...v}])) } : {}),
     ...(original.technicalCaptions ? {technicalCaptions: [...original.technicalCaptions]} : {}),
     ...(original.richText ? {richText: {...original.richText}} : {}),

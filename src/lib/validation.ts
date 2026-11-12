@@ -1,7 +1,8 @@
-import type { AnimationStyle, ElementKind, HudElement, RDVProject, TextField } from './types';
+import type { AnimationStyle, ElementKind, HudElement, RDVProject, TextField, TextColorRole, PaletteId } from './types';
 import { MAX_ELEMENTS, SCHEMA_VERSION } from './types';
 import { KINDS } from './templates';
 import { BRAND } from './brand';
+import { DEFAULT_COLORS, DEFAULT_PALETTE, PALETTE_PRESETS, parseColor } from './palette';
 import { clamp } from './timing';
 import { normalizeFontName } from './fonts';
 import { PORTRAIT_BAR_HEIGHT } from './geometry';
@@ -10,7 +11,7 @@ import { DEFAULT_RICH_TEXT } from './richtext';
 const isObject = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
 const safeString = (value: unknown, max = 500) => typeof value === 'string' ? value.slice(0, max) : '';
 const safeNumber = (v: unknown, fallback: number, min: number, max: number) => typeof v === 'number' && Number.isFinite(v) ? clamp(v, min, max) : fallback;
-const safeColor = (v: unknown, fallback: string) => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : fallback;
+const safeColor = (v: unknown, fallback: string) => typeof v === 'string' ? (parseColor(v) || fallback) : fallback;
 const keys: TextField[] = ['heading', 'line1', 'line2', 'line3', 'line4', 'line5', 'line6'];
 
 export function validateProject(raw: unknown): RDVProject {
@@ -60,6 +61,10 @@ export function validateProject(raw: unknown): RDVProject {
       if (typeof v.family === 'string') formatting.family = normalizeFontName(v.family);
       return Object.keys(formatting).length ? [[key, formatting]] : [];
     }));
+    const rawRoles = isObject(item.textColors) ? item.textColors : {};
+    const validTextRoles = Object.fromEntries(Object.entries(rawRoles).filter(([key,role]) =>
+      /^(heading|line[1-6]|caption[0-5]|footer)$/.test(key) && ['white','primary','secondary','original'].includes(String(role))
+    )) as Record<string, TextColorRole>;
     const technicalCaptions = Array.isArray(item.technicalCaptions)
       ? ['CARROCERIA','MODELO','CHASSI','MODELO','EMPRESA','PREFIXO'].map((label, i) => typeof item.technicalCaptions === 'object' &&
           Array.isArray(item.technicalCaptions) && typeof item.technicalCaptions[i] === 'string' ? safeString(item.technicalCaptions[i],80) : label)
@@ -68,6 +73,7 @@ export function validateProject(raw: unknown): RDVProject {
       id,
       ...(Object.keys(formats).length ? { textFormatting: formats } : {}),
       ...(technicalCaptions ? { technicalCaptions } : {}),
+      ...(Object.keys(validTextRoles).length ? { textColors: validTextRoles } : {}),
       kind: item.kind as ElementKind,
       title: safeString(item.title, 80) || 'Elemento',
       visible: item.visible !== false,
@@ -103,6 +109,7 @@ export function validateProject(raw: unknown): RDVProject {
         fontSize: safeNumber(style.fontSize, 48, 16, 110),
         fontFamily: normalizeFontName(style.fontFamily),
         accent: safeColor(style.accent, BRAND.gold),
+        secondary: safeColor(style.secondary, BRAND.lilac),
         background: safeColor(style.background, BRAND.purpleDeep),
         opacity: safeNumber(style.opacity, 100, 0, 100),
         scaleX: fullscreen || bottomBar ? 1 : safeNumber(style.scaleX, 1, 0.2, 4),
@@ -111,6 +118,17 @@ export function validateProject(raw: unknown): RDVProject {
       ...(imageData ? { imageData } : {}),
     };
   });
+  const paletteRaw = isObject(raw.palette) ? raw.palette : {};
+  const paletteRawColors = isObject(paletteRaw.colors) ? paletteRaw.colors : {};
+  const palettePreset = PALETTE_PRESETS.find(p => p.id === paletteRaw.preset);
+  const palette: import('./types').ProjectPalette = {
+    preset: paletteRaw.preset === 'custom' ? 'custom' as PaletteId : palettePreset?.id || DEFAULT_PALETTE.preset,
+    colors: {
+      primary: safeColor(paletteRawColors.primary, palettePreset?.colors.primary || DEFAULT_COLORS.primary),
+      secondary: safeColor(paletteRawColors.secondary, palettePreset?.colors.secondary || DEFAULT_COLORS.secondary),
+      background: safeColor(paletteRawColors.background, palettePreset?.colors.background || DEFAULT_COLORS.background),
+    },
+  };
   return {
     schemaVersion: 1,
     appVersion: safeString(raw.appVersion, 40) || 'desconhecida',
@@ -123,6 +141,7 @@ export function validateProject(raw: unknown): RDVProject {
       fps: canvas.fps === 30 ? 30 : 60,
       duration: safeNumber(canvas.duration, 5.3, 1, 30),
     },
+    palette,
     elements,
   };
 }

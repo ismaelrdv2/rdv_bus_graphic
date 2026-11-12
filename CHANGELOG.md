@@ -2,6 +2,23 @@
 
 > Política de versões: cada lançamento terá uma seção própria neste arquivo, atualizada no mesmo ZIP da versão. Registros estão em ordem decrescente. Atualizações planejadas não são apresentadas como recursos concluídos.
 
+## 0.1.0-alpha.9.3 — Paletas e cores de texto (Desktop)
+
+### Adicionado
+- Paletas predefinidas: roxo/dourado, azul/laranja, verde/amarelo, vermelho/dourado e rosa/ciano.
+- Paleta personalizada com ajuste por seletor de cor, código hexadecimal HTML (`#RRGGBB` / `#RGB`) ou canais RGB (0–255).
+- Cores principal, secundária e de fundo compartilhadas por todos os elementos do projeto e ajustáveis por elemento.
+- Cor de cada campo de texto, rótulo e rodapé: branco, destaque, secundária ou estilo original.
+- Controles para aplicar a cor a todo o texto do elemento selecionado ou a todos os textos do projeto.
+- Cores e escolhas de texto persistidas no projeto JSON, com validação e compatibilidade com versões anteriores.
+
+### Preservado
+- Os modos originais 0.14, o posicionamento corrigido na alpha.9.2.2, a transparência SVG e o pipeline de vídeo Tauri/FFmpeg.
+- A versão Mobile continua independente e não foi alterada.
+
+### Validação
+- Os novos recursos serão verificados no GitHub Actions e no AppImage antes da confirmação funcional final.
+
 ## 0.1.0-alpha.9.2.2 — Texto clássico e pasta padrão do Desktop
 
 ### Corrigido

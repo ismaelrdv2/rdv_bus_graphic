@@ -91,3 +91,18 @@ select:disabled { opacity: .62; }
 .format-toggle-set button:hover {background:#4b3057;border-color:#c89c55}
 .format-toggle-set button.format-active {background:#80622f;border-color:#e2ba5a;color:#fff7d5}
 .rich-tools .inspector-hint {margin:0}
+
+/* RDV Bus — edição de paletas predefinidas, HTML hexadecimal e RGB. */
+.palette-options{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:8px 0 12px}
+.palette-options button{border:2px solid #39445b;background:transparent;padding:3px;border-radius:8px;cursor:pointer;min-height:38px}
+.palette-options button.palette-active,.palette-options button:hover{border-color:#e2ba5a}
+.palette-options button>span{height:28px;display:flex;align-items:center;justify-content:center;gap:4px;border-radius:4px}
+.palette-options i{display:block;height:13px;width:13px;border-radius:50%;border:1px solid #fff8}
+.palette-color-group{border:1px solid #3b3650;border-radius:9px;padding:9px;margin-bottom:12px;background:#211b30}
+.palette-hex-input{display:flex;align-items:center;gap:8px}
+.palette-hex-input input[type='color']{width:44px;height:34px;padding:3px;background:transparent;border:1px solid #625275;border-radius:6px;cursor:pointer;flex:0 0 auto}
+.palette-hex-input input[type='text']{flex:1;min-width:0}
+.palette-rgb-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.palette-rgb-row .field{margin:0}
+.text-role-picker{margin-top:-6px!important;margin-bottom:14px!important;padding-left:12px;border-left:2px solid #aa89cf}
+.text-role-picker>span{color:#c5a1e8!important}

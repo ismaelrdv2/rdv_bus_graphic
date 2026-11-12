@@ -1,9 +1,11 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import PalettePanel from './PalettePanel.svelte';
+  import { DEFAULT_PALETTE, colorAsSelected } from '../lib/palette';
   import { FIELD_LABELS, KIND_INFO } from '../lib/templates';
   import { DEFAULT_RICH_TEXT } from '../lib/richtext';
   import { isBottomBar } from '../lib/geometry';
-  import type { FreeTextStyle, RichTextSettings, TechnicalLayout, VisualPreset, HudElement, HudStyle, RDVProject, TextField } from '../lib/types';
+  import type { FreeTextStyle, RichTextSettings, TechnicalLayout, VisualPreset, HudElement, HudStyle, RDVProject, TextField, TextColorKey, TextColorRole, PaletteColors, PaletteId } from '../lib/types';
 
   export let project: RDVProject;
   export let systemFonts: string[] = [];
@@ -11,6 +13,12 @@
   export let selected: HudElement | null;
   export let onField: (key: TextField, value: string) => void;
   export let onStyle: (key: keyof HudStyle, value: number | string) => void;
+  export let onTextColor: (key: TextColorKey, role: TextColorRole) => void;
+  export let onAllSelectedText: (role: TextColorRole) => void;
+  export let onAllProjectText: (role: TextColorRole) => void;
+  export let onPalettePreset: (preset: PaletteId) => void;
+  export let onPaletteColor: (key: keyof PaletteColors, color: string) => void;
+
   export let onAnimation: (value: HudElement['animation']) => void;
   export let onRename: (title: string) => void;
   export let onDuplicate: () => void;
@@ -28,6 +36,7 @@
   export let onSelectNone: () => void;
 
   let imageInput: HTMLInputElement;
+  let allSelectedRole: TextColorRole = 'white';
   let bodyEditor: HTMLTextAreaElement;
   $: richText = selected?.richText || DEFAULT_RICH_TEXT;
   $: bottomBar = selected ? isBottomBar(selected,project.canvas.width,project.canvas.height) : false;
@@ -140,12 +149,36 @@
             <input type="text" maxlength="500" value={selected.fields[field as TextField]} on:input={(event) => onField(field as TextField, event.currentTarget.value)}/>
           {/if}
         </label>
+        <label class="field text-role-picker"><span>Cor de {label.toLowerCase()}</span>
+          <select value={colorAsSelected(selected,field)} on:change={(event)=>onTextColor(field,event.currentTarget.value as TextColorRole)}>
+            <option value="original">Padrão original do estilo</option>
+            <option value="white">Branco</option>
+            <option value="primary">Cor principal (destaque)</option>
+            <option value="secondary">Cor secundária</option>
+          </select>
+        </label>
       {/each}
-      {#if selected.kind === 'freeText' && ['technicalBar','technicalAlpha1','fullTechnical'].includes(selected.freeTextStyle || 'classic')}
+      <div class="palette-color-group">
+        <label class="field"><span>Cor de todos os textos deste elemento</span>
+          <select bind:value={allSelectedRole}>
+            <option value="white">Branco</option>
+            <option value="primary">Cor principal (destaque)</option>
+            <option value="secondary">Cor secundária</option>
+            <option value="original">Restaurar padrão original</option>
+          </select>
+        </label>
+        <button type="button" class="button secondary-button fill" on:click={()=>onAllSelectedText(allSelectedRole)}>Aplicar a todos os textos deste elemento</button>
+      </div>
+      {#if selected.kind === 'technical' || (selected.kind === 'freeText' && ['technicalBar','technicalAlpha1','fullTechnical'].includes(selected.freeTextStyle || 'classic'))}
         <div class="caption-fields">
           <h4>Rótulos acima dos valores</h4>
-          {#each Array.from({ length: selected.freeTextStyle === 'technicalBar' || selected.freeTextStyle === 'fullTechnical' ? 6 : 4 }, (_, i) => i) as index}
-            <label class="field"><span>Rótulo {index+1}</span><input type="text" maxlength="80" value={selected.freeTextCaptions?.[index] || ''} on:input={(event) => onFreeTextCaption(index, event.currentTarget.value)}/></label>
+          {#each Array.from({ length: selected.kind === 'technical' || selected.freeTextStyle === 'technicalBar' || selected.freeTextStyle === 'fullTechnical' ? 6 : 4 }, (_, i) => i) as index}
+            <label class="field"><span>Rótulo {index+1}</span><input type="text" maxlength="80" value={(selected.kind === 'technical' ? selected.technicalCaptions : selected.freeTextCaptions)?.[index] || ''} on:input={(event) => onFreeTextCaption(index, event.currentTarget.value)}/></label>
+            <label class="field text-role-picker"><span>Cor do rótulo {index+1}</span>
+              <select value={colorAsSelected(selected,('caption'+index) as TextColorKey)} on:change={event=>onTextColor(('caption'+index) as TextColorKey,event.currentTarget.value as TextColorRole)}>
+                <option value="original">Padrão original</option><option value="white">Branco</option><option value="primary">Destaque</option><option value="secondary">Secundária</option>
+              </select>
+            </label>
           {/each}
         </div>
       {/if}
@@ -218,10 +251,10 @@
         </select>
       </label>
       <p class="inspector-hint">A fonte selecionada vale para todos os textos do elemento; uma fonte aplicada na barra flutuante tem prioridade apenas naquele campo. O projeto guarda o nome da fonte, não seus arquivos.</p>
-      <div class="two-fields">
-        <label class="field"><span>Cor principal</span><div class="color-control"><input type="color" value={selected.style.accent} on:input={(event) => onStyle('accent', event.currentTarget.value)}/><code>{selected.style.accent}</code></div></label>
-        <label class="field"><span>Fundo</span><div class="color-control"><input type="color" value={selected.style.background} on:input={(event) => onStyle('background', event.currentTarget.value)}/><code>{selected.style.background}</code></div></label>
-      </div>
+      <label class="field"><span>Cor principal deste elemento</span><div class="color-control"><input type="color" value={selected.style.accent} on:input={(event) => onStyle('accent', event.currentTarget.value)}/><code>{selected.style.accent}</code></div></label>
+      <label class="field"><span>Cor secundária deste elemento</span><div class="color-control"><input type="color" value={selected.style.secondary || DEFAULT_PALETTE.colors.secondary} on:input={(event) => onStyle('secondary', event.currentTarget.value)}/><code>{selected.style.secondary || DEFAULT_PALETTE.colors.secondary}</code></div></label>
+      <label class="field"><span>Fundo deste elemento</span><div class="color-control"><input type="color" value={selected.style.background} on:input={(event) => onStyle('background', event.currentTarget.value)}/><code>{selected.style.background}</code></div></label>
+      <p class="inspector-hint">Estas alterações afetam apenas o elemento selecionado. Use a paleta do projeto para atualizar todas as seções simultaneamente, inclusive por RGB e HEX.</p>
       <div class="two-fields">
         <label class="field"><span>Tamanho texto</span><input type="number" min="16" max="110" step="1" value={selected.style.fontSize} on:change={(event) => onStyle('fontSize', Number(event.currentTarget.value))}/></label>
         <label class="field"><span>Largura</span><input disabled={isFullscreen || bottomBar} type="number" min={selected.kind === 'technical' || (selected.kind === 'freeText' && selected.freeTextStyle === 'technicalBar') ? 640 : 140} max="1600" step="1" value={selected.style.width} on:change={(event) => onStyle('width', Number(event.currentTarget.value))}/></label>
@@ -259,6 +292,9 @@
       <label class="field"><span>Taxa de quadros</span><select value={project.canvas.fps} on:change={(event) => onCanvas('fps', Number(event.currentTarget.value))}><option value="60">60 FPS</option><option value="30">30 FPS</option></select></label>
       <label class="field"><span>Duração (segundos)</span><input type="number" min="1" max="30" step="0.1" value={project.canvas.duration} on:change={(event) => onCanvas('duration', Number(event.currentTarget.value))}/></label>
     </section>
+  {/if}
+  <PalettePanel palette={project.palette || DEFAULT_PALETTE} onPreset={onPalettePreset} onColor={onPaletteColor} onAllText={onAllProjectText} />
+  {#if !selected}
     <section class="property-section"><h3>Sobre esta versão</h3><p class="info-copy">Os templates clássicos são vetoriais. A exportação de vídeo está disponível no Tauri; o renderizador nativo Rust/resvg continua planejado.</p></section>
   {/if}
 </div>

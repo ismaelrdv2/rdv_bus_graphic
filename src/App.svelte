@@ -16,10 +16,11 @@
   import { FALLBACK_FONTS, fontStack, normalizeFontName } from './lib/fonts';
   import { getSystemFontFamilies } from './lib/systemFonts';
   import { DEFAULT_RICH_TEXT } from './lib/richtext';
+  import { DEFAULT_PALETTE, PALETTE_PRESETS, parseColor } from './lib/palette';
   import type { EditableTextKey } from './lib/inlineText';
   import { legacyScrollRecommendedDuration } from './lib/legacy';
   import { beginVideo, pushVideoFrame, finishVideo, cancelVideo, exportFrameSvg, svgToPngBase64, VIDEO_FORMATS, type VideoFormat, type RasterQuality, type ExportBackground } from './lib/video';
-  import { MAX_ELEMENTS, type TextFormatting, type TextAlign, type BulletMode, type ElementKind, type FreeTextStyle, type RichTextSettings, type TechnicalLayout, type HudElement, type HudStyle, type RDVProject, type TextField, type UiStatus } from './lib/types';
+  import { MAX_ELEMENTS, type TextFormatting, type TextAlign, type BulletMode, type ElementKind, type FreeTextStyle, type RichTextSettings, type TechnicalLayout, type HudElement, type HudStyle, type RDVProject, type TextField, type TextColorKey, type TextColorRole, type PaletteColors, type PaletteId, type UiStatus } from './lib/types';
   import { isDesktop, loadAutosave, openProjectBrowser, openProjectNative, saveProject, writeAutosave } from './lib/projects';
 
   let project: RDVProject = loadAutosave();
@@ -73,6 +74,8 @@
   function addElement(kind: ElementKind): void {
     if (project.elements.length >= MAX_ELEMENTS) return notify(`Limite de ${MAX_ELEMENTS} elementos atingido.`, 'error');
     const element = makeElement(kind);
+    const colors = project.palette?.colors || DEFAULT_PALETTE.colors;
+    element.style = {...element.style,accent:colors.primary,secondary:colors.secondary,background:colors.background};
     if (project.canvas.width === 1080) {
       element.style.width = Math.min(element.style.width, 960);
       if (isBar(element)) { element.style = { ...element.style, x:0, y:project.canvas.height-PORTRAIT_BAR_HEIGHT, width:1080, scaleX:1, scaleY:1 }; }
@@ -93,6 +96,50 @@
   }
 
   /** Aplicado pelo editor de texto sobre a prévia, preservando o painel de propriedades. */
+  const COLOR_KEYS: TextColorKey[] = ['heading','line1','line2','line3','line4','line5','line6',
+    'caption0','caption1','caption2','caption3','caption4','caption5','footer'];
+
+  function changeSelectedTextColor(key: TextColorKey, role: TextColorRole): void {
+    if (!selectedId) return;
+    changeElement(selectedId, element => ({...element,textColors:{...(element.textColors || {}),[key]:role}}));
+  }
+
+  function textRolesForAll(role: TextColorRole): Record<TextColorKey,TextColorRole> {
+    return Object.fromEntries(COLOR_KEYS.map(key=>[key,role])) as Record<TextColorKey,TextColorRole>;
+  }
+
+  function changeAllSelectedTextColor(role: TextColorRole): void {
+    if (!selectedId) return;
+    changeElement(selectedId, element=>({...element,textColors:textRolesForAll(role)}));
+  }
+
+  function changeAllProjectTextColor(role: TextColorRole): void {
+    applyChange({...project,elements:project.elements.map(element=>({...element,textColors:textRolesForAll(role)}))});
+    notify('Cores dos textos atualizadas em todos os elementos.', 'success');
+  }
+
+  function applyPalette(preset: PaletteId, colors: PaletteColors): void {
+    applyChange({
+      ...project,
+      palette:{preset,colors:{...colors}},
+      elements:project.elements.map(element=>({...element,style:{...element.style,
+        accent:colors.primary,secondary:colors.secondary,background:colors.background}})),
+    });
+  }
+
+  function changeProjectPalettePreset(id: PaletteId): void {
+    if(id==='custom') { applyPalette('custom',project.palette?.colors || DEFAULT_PALETTE.colors);return; }
+    const p = PALETTE_PRESETS.find(x=>x.id===id);
+    if (p) applyPalette(p.id,p.colors);
+  }
+
+  function changeProjectPaletteColor(key: keyof PaletteColors, raw: string): void {
+    const value=parseColor(raw);
+    if (!value) { notify('Cor inválida. Use #RRGGBB ou rgb(R,G,B).','error');return; }
+    const colors = {...(project.palette?.colors || DEFAULT_PALETTE.colors),[key]:value};
+    applyPalette('custom',colors);
+  }
+
   function editTextDirect(id: string, field: TextField, value: string): void {
     changeElement(id, element => ({ ...element, fields: {
       ...element.fields, [field]: value.slice(0, element.kind === 'freeText' && field === 'line1' ? 6000 : 500),
@@ -575,7 +622,7 @@
       <div class="timeline-panel"><Timeline {project} {selectedId} {time} {playing} onTogglePlay={togglePlayback} onStop={stopAndRewind} onSeek={seek} onSelect={(id) => selectedId = id}/></div>
     </main>
 
-    <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onAnimation={updateSelectedAnimation} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onTechnicalLayout={updateTechnicalLayout}
+    <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onTechnicalLayout={updateTechnicalLayout}
       {systemFonts} onFontFamily={updateSelectedFontFamily} onVisualPreset={updateSelectedVisualPreset} onFitScrollDuration={fitSelectedScrollDuration} onRichText={updateRichText} onFreeTextStyle={changeFreeTextStyle} onFreeTextCaption={updateFreeTextCaption} onResetScale={resetSelectedScale} onSelectNone={() => selectedId = null}/></aside>
   </div>
 
