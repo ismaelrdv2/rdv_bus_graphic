@@ -4,6 +4,7 @@
   import { DEFAULT_PALETTE, colorAsSelected, textGroupAsSelected } from '../lib/palette';
   import { FIELD_LABELS, KIND_INFO } from '../lib/templates';
   import { DEFAULT_RICH_TEXT } from '../lib/richtext';
+  import { singleLineText } from '../lib/compactText';
   import { isBottomBar, isBar, isCompactCartela, CREDIT_CARD_WIDTH, CREDIT_CARD_HEIGHT } from '../lib/geometry';
   import type { FreeTextStyle, RichTextSettings, TechnicalLayout, VisualPreset, HudElement, HudStyle, RDVProject, TextField, TextColorKey, TextColorRole, TextColorGroup, PaletteColors, PaletteId } from '../lib/types';
 
@@ -33,6 +34,7 @@
   export let onTechnicalSide: (side: 'left' | 'right') => void;
   export let onFreeTextStyle: (style: FreeTextStyle) => void;
   export let onFreeTextIcon: (icon: HudElement['freeTextIcon']) => void;
+  export let onFreeTextDisplay: (mode: HudElement['freeTextDisplay']) => void;
   export let onTechnicalLayout: (layout: TechnicalLayout) => void;
   export let onVisualPreset: (preset: VisualPreset) => void;
   export let onFitScrollDuration: () => void;
@@ -157,6 +159,17 @@
           </select>
         </label>
       {/if}
+      {#if selected.kind === 'freeText' && selected.freeTextStyle === 'legacyLabel'}
+        <label class="field"><span>Apresentação dos textos da etiqueta</span>
+          <select value={selected.freeTextDisplay || 'both'} on:change={(event)=>onFreeTextDisplay(event.currentTarget.value as HudElement['freeTextDisplay'])}>
+            <option value="both">Texto 1 e Texto 2 — duas linhas</option>
+            <option value="first">Somente Texto 1 — centralizado</option>
+            <option value="second">Somente Texto 2 — centralizado</option>
+            <option value="alternate">Alternar Texto 1 / Texto 2 durante o vídeo</option>
+          </select>
+        </label>
+        <p class="inspector-hint">Etiqueta compacta: cada campo ocupa uma linha, sem quebra. Para parágrafos, use a cartela ou o slide.</p>
+      {/if}
       {#if selected.kind === 'technical'}
         <label class="field"><span>Apresentação da ficha</span>
           <select value={selected.technicalLayout || 'side'} on:change={(event) => onTechnicalLayout(event.currentTarget.value as TechnicalLayout)}>
@@ -181,7 +194,9 @@
           : richEditor && field === 'line1' ? 'Corpo do texto' : labels[field] || field}
         <label class="field">
           <span>{label}</span>
-          {#if field === 'line1' && richEditor}
+          {#if selected.kind === 'freeText' && selected.freeTextStyle === 'legacyLabel' && (field === 'line1' || field === 'line2')}
+            <input type="text" maxlength="500" value={singleLineText(selected.fields[field as TextField])} on:input={(event) => onField(field as TextField, singleLineText(event.currentTarget.value))}/>
+          {:else if field === 'line1' && richEditor}
             <textarea rows="7" maxlength="6000" bind:this={bodyEditor} value={selected.fields.line1} on:input={(event) => onField('line1', event.currentTarget.value)}></textarea>
           {:else if field === 'line1' && (selected.kind === 'freeText' || selected.kind === 'slide')}
             <textarea rows="2" maxlength="500" value={selected.fields[field as TextField]} on:input={(event) => onField(field as TextField, event.currentTarget.value)}></textarea>
