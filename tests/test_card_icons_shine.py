@@ -34,6 +34,8 @@ def test_safe_right_margin_and_legacy_left():
     assert "technicalTextRightEdge" in OLD
     assert "techRightLimit-x" in OLD
     assert "innerRight = isRight ? w - 124 : w - 110" in HUD
+    assert "technicalRowTextX(w,height,y+26,true)" in HUD
+    assert "technicalRowTextX(w,h,y+32,true)" in OLD
     assert "technicalPanelBoundary(width, height, y, false)" in GEO
 def test_json_backward_compatibility():
     validation=src("src/lib/validation.ts")

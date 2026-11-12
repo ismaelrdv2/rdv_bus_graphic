@@ -12,6 +12,7 @@
   import { fieldTextStyle } from '../lib/inlineText';
   import { elementBaseHeight, isBar, isCompactCartela, compactCardTextBaselines } from '../lib/geometry';
   import { clamp } from '../lib/timing';
+  import { technicalRowTextX, technicalTextAvailableWidth } from '../lib/technicalGeometry';
   import { DEFAULT_RICH_TEXT, layoutRichText, parseRuns, alignedX, textAnchor, type MeasureRich } from '../lib/richtext';
 
   export let element: HudElement;
@@ -67,8 +68,8 @@
   $: panelPath = isRight ? `M84 0 H${w} V${height} H0 Z` : `M0 0 H${w - 84} L${w} ${height} H0 Z`;
   $: edgePath = isRight ? `M84 0 L0 ${height}` : `M${w - 84} 0 L${w} ${height}`;
   // A barra à direita mantém a mesma margem de leitura da esquerda.
-  $: titleX = isRight ? 132 : 52;
-  $: innerX = isRight ? 132 : 92;
+  $: titleX = isRight ? technicalRowTextX(w,height,111*sy,true) : 52;
+  $: innerX = isRight ? technicalRowTextX(w,height,rowStart+32,true) : 92;
   $: innerRight = isRight ? w - 124 : w - 110;
   $: contentWidth = Math.max(140, innerRight - innerX);
   $: technicalValues = [fields.line1, fields.line2, fields.line3, fields.line4, fields.line5, fields.line6];
@@ -141,16 +142,18 @@
     <path d={edgePath} stroke={accent} stroke-width="5" fill="none"/>
     <path d={isRight ? `M104 0 L20 ${height}` : `M${w-105} 0 L${w-20} ${height}`} stroke={paint.edge} stroke-width="2" fill="none"/>
     <g clip-path={`url(#${clipId})`}>
-      <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={titleX} y={111*sy} fill={textColor(element,'heading','primary')} font-family={fontFamily} font-weight="800" font-size={scaledText(fields.heading, (isRight?32:36) * textFactor, Math.max(80,contentWidth - fields.heading.length*5))} letter-spacing="5">{fields.heading}</text>
+      <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={titleX} y={111*sy} fill={textColor(element,'heading','primary')} font-family={fontFamily} font-weight="800" font-size={scaledText(fields.heading, (isRight?32:36) * textFactor, Math.max(80,(isRight?innerRight-titleX:contentWidth) - fields.heading.length*5-14))} letter-spacing="5">{fields.heading}</text>
       <path d={`M${titleX} ${132*sy} H${innerRight}`} stroke={paint.edge} stroke-width="2"/>
       <path d={`M${titleX} ${132*sy} H${titleX + Math.min(115, contentWidth*.35)}`} stroke={accent} stroke-width="3"/>
       {#each technicalValues as value, index}
         {#if value}
           {@const y = rowStart + index * rowStep}
-          <path d={`M${innerX - 44} ${y + 3} l12 13 -12 13 M${innerX - 30} ${y+3} l12 13 -12 13`} stroke={accent} stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <text data-edit-caption={index} style={fieldTextStyle(element,'caption'+index)} x={innerX} y={y+3} fill={textColor(element,('caption'+index) as TextColorKey,'secondary')} font-family={fontFamily} font-weight="800" font-size={scaledText(captions[index] || '', Math.min((isRight?15:17)*textFactor, rowStep*.21), Math.max(60,contentWidth-(captions[index] || '').length*3))} letter-spacing="3">{captions[index] || ''}</text>
-          <text data-edit-field={'line'+(index+1)} style={fieldTextStyle(element,'line'+(index+1))} x={innerX} y={y+Math.min(42*sy,rowStep*.52)} fill={textColor(element,('line'+(index+1)) as TextColorKey,'white')} font-family={fontFamily} font-weight="800" font-size={scaledText(value, Math.min(size, rowStep*.43, isRight?34*textFactor:1000), contentWidth)}>{value}</text>
-          <path d={`M${innerX} ${y + rowStep*.7} H${innerRight}`} stroke={paint.edge} stroke-width="2"/>
+          {@const rowX = isRight ? technicalRowTextX(w,height,y+26,true) : innerX}
+          {@const rowWidth = isRight ? technicalTextAvailableWidth(w,height,y+26,true)-6 : contentWidth}
+          <path d={`M${rowX - 44} ${y + 3} l12 13 -12 13 M${rowX - 30} ${y+3} l12 13 -12 13`} stroke={accent} stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <text data-edit-caption={index} style={fieldTextStyle(element,'caption'+index)} x={rowX} y={y+3} fill={textColor(element,('caption'+index) as TextColorKey,'secondary')} font-family={fontFamily} font-weight="800" font-size={scaledText(captions[index] || '', Math.min((isRight?15:17)*textFactor, rowStep*.21), Math.max(60,rowWidth-(captions[index] || '').length*3))} letter-spacing="3">{captions[index] || ''}</text>
+          <text data-edit-field={'line'+(index+1)} style={fieldTextStyle(element,'line'+(index+1))} x={rowX} y={y+Math.min(42*sy,rowStep*.52)} fill={textColor(element,('line'+(index+1)) as TextColorKey,'white')} font-family={fontFamily} font-weight="800" font-size={scaledText(value, Math.min(size, rowStep*.43, isRight?34*textFactor:1000), rowWidth)}>{value}</text>
+          <path d={`M${rowX} ${y + rowStep*.7} H${innerRight}`} stroke={paint.edge} stroke-width="2"/>
         {/if}
       {/each}
       <text x={titleX} y={height - 39*sy} fill={textColor(element,'footer','secondary')} font-size={16*textFactor} font-weight="800" font-family={fontFamily} letter-spacing="7">RDV BUS</text>

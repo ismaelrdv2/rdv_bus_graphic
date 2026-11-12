@@ -9,7 +9,7 @@
   import { palettePaint, textColor } from '../lib/palette';
   import type { TextColorKey, TextColorRole } from '../lib/types';
   import { elementBaseHeight, compactCardTextBaselines, isCompactCartela } from '../lib/geometry';
-  import { technicalSeparatorEnd, technicalTextX, technicalTextRightEdge } from '../lib/technicalGeometry';
+  import { technicalSeparatorEnd, technicalTextX, technicalTextRightEdge, technicalRowTextX, technicalTextAvailableWidth } from '../lib/technicalGeometry';
   import { clamp } from '../lib/timing';
   import { legacyPhase, legacyStage, legacyScrollDistance } from '../lib/legacy';
   import { DEFAULT_RICH_TEXT, layoutRichText, alignedX, textAnchor, type MeasureRich } from '../lib/richtext';
@@ -73,6 +73,8 @@
   $: techRowStart = h * .214;
   $: techRowPitch = Math.min(142, (h - techRowStart - 140) / 6);
   $: technicalX = technicalTextX(sideRight);
+  $: technicalTitleX = sideRight ? technicalRowTextX(w,h,h*.115,true) : 52;
+  $: technicalFooterX = sideRight ? technicalRowTextX(w,h,h-48,true) : 52;
   $: techRightLimit = technicalTextRightEdge(w, sideRight);
   $: technicalSeparatorEnds = Array.from({ length: 6 }, (_, i) =>
     technicalSeparatorEnd(w, h, techRowStart + i*techRowPitch + 70, sideRight));
@@ -163,26 +165,27 @@
     </g>
     <g clip-path={`url(#${clipId})`}>
       <g opacity={pTitle} transform={`translate(${direction*30*(1-pTitle)} 0)`}>
-        <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={sideRight ? 120 : 52} y={h*.115} fill={textColor(element,'heading','primary')} font-family={fontFamily} font-size={fit(fields.heading||'FICHA TÉCNICA', (sideRight?32:36)*fontScale, sideRight ? Math.max(60,techRightLimit-120-(fields.heading||'FICHA TÉCNICA').length*4) : w-180)} font-weight="800" letter-spacing="4">{fields.heading || 'FICHA TÉCNICA'}</text>
+        <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={technicalTitleX} y={h*.115} fill={textColor(element,'heading','primary')} font-family={fontFamily} font-size={fit(fields.heading||'FICHA TÉCNICA', (sideRight?32:36)*fontScale, sideRight ? Math.max(60,techRightLimit-technicalTitleX-(fields.heading||'FICHA TÉCNICA').length*4-14) : w-180)} font-weight="800" letter-spacing="4">{fields.heading || 'FICHA TÉCNICA'}</text>
       </g>
       <g opacity={pRule}>
-        <path d={`M${sideRight?120:52} ${h*.132} h${(sideRight?techRightLimit-120:w-170)*pRule}`} stroke={accent} stroke-width="2.5" />
+        <path d={`M${technicalTitleX} ${h*.132} h${(sideRight?techRightLimit-technicalTitleX-14:w-170)*pRule}`} stroke={accent} stroke-width="2.5" />
       </g>
       {#each values as value, i}
-        {@const x = technicalX}
         {@const y = techRowStart + i*techRowPitch}
+        {@const x = sideRight ? technicalRowTextX(w,h,y+32,true) : technicalX}
+        {@const safeWidth = sideRight ? technicalTextAvailableWidth(w,h,y+32,true) : Math.max(36,w-x-50)}
         {@const progress = rowReveals[i]}
         {#if value}
           <g opacity={progress} transform={`translate(${direction*40*(1-progress)} 0)`}>
             <path d={`M${x-43} ${y+6} l11 13 -11 13 M${x-29} ${y+6} l11 13 -11 13`} stroke={accent} stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-            <text data-edit-caption={i} style={fieldTextStyle(element,'caption'+i)} x={x} y={y+10} fill={textColor(element,('caption'+i) as TextColorKey,'secondary')} font-family={fontFamily} font-size={fit(captions[i] || '', (sideRight?14:15)*fontScale, Math.max(45,techRightLimit-x-(captions[i] || '').length*2.7), false)} font-weight="800" letter-spacing="2.7">{captions[i] || ''}</text>
-            <text data-edit-field={'line'+(i+1)} style={fieldTextStyle(element,'line'+(i+1))} x={x} y={y+50} fill={textColor(element,('line'+(i+1)) as TextColorKey,'white')} font-family={fontFamily} font-size={fit(value, Math.min((sideRight?34:40)*fontScale,techRowPitch*.34), Math.max(36,techRightLimit-x))} font-weight="800">{value}</text>
+            <text data-edit-caption={i} style={fieldTextStyle(element,'caption'+i)} x={x} y={y+10} fill={textColor(element,('caption'+i) as TextColorKey,'secondary')} font-family={fontFamily} font-size={fit(captions[i] || '', (sideRight?14:15)*fontScale, Math.max(45,safeWidth-(captions[i] || '').length*2.7), false)} font-weight="800" letter-spacing="2.7">{captions[i] || ''}</text>
+            <text data-edit-field={'line'+(i+1)} style={fieldTextStyle(element,'line'+(i+1))} x={x} y={y+50} fill={textColor(element,('line'+(i+1)) as TextColorKey,'white')} font-family={fontFamily} font-size={fit(value, Math.min((sideRight?34:40)*fontScale,techRowPitch*.34), safeWidth)} font-weight="800">{value}</text>
             <path d={`M${x} ${y+70} H${technicalSeparatorEnds[i]}`} stroke={paint.edge} stroke-opacity=".65" stroke-width="1.6" />
           </g>
         {/if}
       {/each}
       <g opacity={pFooter}>
-        <text x={sideRight?120:52} y={h-48} font-size={15*fontScale} fill={textColor(element,'footer','secondary')} font-weight="800" letter-spacing="6">RDV BUS</text>
+        <text x={technicalFooterX} y={h-48} font-size={15*fontScale} fill={textColor(element,'footer','secondary')} font-weight="800" letter-spacing="6">RDV BUS</text>
         <path d={`M${w-133} ${h-40} h35 l22 -18`} stroke={accent} stroke-width="2.5" fill="none"/>
       </g>
     </g>

@@ -1,4 +1,4 @@
-# RDV Bus Studio — 0.1.0-alpha.9.3.7
+# RDV Bus Studio — 0.1.0-alpha.9.3.8
 
 > **Alpha.8:** edição de textos por clique diretamente na pré-visualização, mini-barra flutuante de formatação e ícones clássicos maiores/centralizados. Mantidos os presets e o sistema de exportação 2×. Veja `CHANGELOG.md`.
 
@@ -6,6 +6,10 @@
 **Nova geração do RDV Bus, reconstruída do zero.** Editor desktop de elementos HUD para vídeos de ônibus, com interface Svelte 5 + TypeScript, Vite e Tauri 2 (Rust).
 
 > Estado: **alpha experimental**, ainda não substitui a versão 0.13.x. A exportação de vídeo usa **FFmpeg pelo aplicativo Tauri**, com renderização de quadros pelo Canvas do WebView; o renderizador nativo **resvg ainda não está implementado**. No navegador a exportação de vídeo não é suportada.
+
+## Alinhamento adaptativo da ficha à direita (alpha.9.3.8)
+
+A ficha técnica lateral direita usa agora uma **margem móvel em relação à diagonal**, calculada em cada categoria da ficha. O título e os textos acompanham a inclinação do painel, com chevrons afastados da borda e largura de leitura protegida. Não há alteração na ficha lateral esquerda. Este ajuste foi baseado no SVG de 1920 × 1080 exportado pelo usuário (projeto 4129).
 
 ## Brilho em cartelas e diagonais (alpha.9.3.7)
 

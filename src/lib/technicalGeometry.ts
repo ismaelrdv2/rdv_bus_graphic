@@ -26,3 +26,20 @@ export const RIGHT_TECHNICAL_GUTTER = 118;
 export function technicalTextRightEdge(width: number, right: boolean): number {
   return width - (right ? RIGHT_TECHNICAL_GUTTER : 50);
 }
+
+// A borda inclinada da ficha direita recua 84 px de cima para baixo.
+// O início de cada linha deve acompanhar esse limite, não ficar em um x fixo.
+export const RIGHT_TECHNICAL_TEXT_PADDING = 84;
+/** Início dinâmico dos textos da ficha, mantendo distância constante da diagonal. */
+export function technicalRowTextX(width: number, height: number, y: number, right: boolean): number {
+  if (!right) return technicalTextX(false);
+  const leftBoundary = technicalPanelBoundary(width, height, y, true);
+  const rightEdge = technicalTextRightEdge(width, true);
+  return clamp(leftBoundary + RIGHT_TECHNICAL_TEXT_PADDING, 70, Math.max(70, rightEdge - 240));
+}
+/** Espaço real até a borda direita, incluindo respiro de 14 px nas letras. */
+export function technicalTextAvailableWidth(width: number, height: number, y: number, right: boolean): number {
+  const start = technicalRowTextX(width, height, y, right);
+  const rightEdge = technicalTextRightEdge(width, right);
+  return Math.max(36, rightEdge - start - 14);
+}

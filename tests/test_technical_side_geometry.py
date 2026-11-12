@@ -29,6 +29,16 @@ def test_technical_geometry_real_calculation():
         assert.equal(g.RIGHT_TECHNICAL_GUTTER,118);
         assert.equal(g.technicalTextRightEdge(w,true),w-118);
         assert.ok(g.technicalTextRightEdge(w,true)-g.technicalTextX(true)>=390);
+        const xs = [first,first+120,first+240,last].map(y=>g.technicalRowTextX(w,h,y,true));
+        assert.ok(xs.every((x,i)=>i===0 || x<xs[i-1]),'x acompanha a inclinação decrescente');
+        for(const y of [first,first+120,first+240,last]){
+          const x=g.technicalRowTextX(w,h,y,true);
+          const boundary=g.technicalPanelBoundary(w,h,y,true);
+          assert.ok(x-boundary>=g.RIGHT_TECHNICAL_TEXT_PADDING-.1);
+          assert.ok(x-43>boundary+25, 'chevrons afastados da diagonal');
+          assert.ok(x+g.technicalTextAvailableWidth(w,h,y,true)<=g.technicalTextRightEdge(w,true)-13);
+        }
+        assert.equal(g.technicalRowTextX(w,h,first,false),92);
         console.log('OK: linhas dentro da diagonal e margem lateral à direita');
         """
         subprocess.run(['node','-e',js,target],check=True,cwd=ROOT)
@@ -39,5 +49,7 @@ def test_renderers_use_safe_geometry():
     assert 'technicalSeparatorEnds[i]' in legacy
     assert 'technicalTextX(sideRight)' in legacy
     assert 'techRightLimit-x' in legacy
-    assert 'innerX = isRight ? 132 : 92' in studio
+    assert 'technicalRowTextX(w,height,rowStart+32,true) : 92' in studio
+    assert 'rowWidth = isRight ? technicalTextAvailableWidth' in studio
+    assert 'technicalRowTextX(w,h,y+32,true)' in legacy
     assert 'innerRight = isRight ? w - 124 : w - 110' in studio

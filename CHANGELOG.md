@@ -2,6 +2,14 @@
 
 > Política de versões: cada lançamento terá uma seção própria neste arquivo, atualizada no mesmo ZIP da versão. Registros estão em ordem decrescente. Atualizações planejadas não são apresentadas como recursos concluídos.
 
+## 0.1.0-alpha.9.3.8 — Ficha técnica à direita alinhada à diagonal
+
+- Agora cada linha da ficha lateral direita acompanha a borda inclinada: texto, rótulo, chevrons e separador usam uma posição horizontal calculada pela altura da linha.
+- Margem constante de 84 px a partir do limite diagonal, e espaço de segurança até a borda direita, substituindo o alinhamento fixo x=118.
+- O título acompanha a diagonal e considera o espaçamento entre letras na largura disponível; valores longos continuam dimensionados pela medida real do texto.
+- Ficha lateral esquerda e animações/brilhos da alpha.9.3.7 preservados.
+- Corrige o desalinhamento comprovado no SVG do projeto 4129 enviado pelo usuário. Controles de brilho e exportação permanecem inalterados.
+
 ## 0.1.0-alpha.9.3.7 — Correção das margens e brilho restrito às cartelas
 
 - A ficha técnica lateral à direita recebeu maior margem no extremo direito, ajuste dos títulos/valores/rótulos e linhas divisórias terminando antes da borda; a geometria da ficha à esquerda é mantida.
