@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
-  import { isTauri } from '@tauri-apps/api/core';
+  import { invoke, isTauri } from '@tauri-apps/api/core';
   import { save as nativeSave } from '@tauri-apps/plugin-dialog';
   import { writeTextFile } from '@tauri-apps/plugin-fs';
   import { getOutputDirectory, joinOutputPath, openOutputDirectory, rememberOutputFile } from './lib/output';
+  import { WORKSPACE_CATEGORIES, projectForCategory, populatedCategories, type WorkspaceMode } from './lib/workspace';
   import Icon from './components/Icon.svelte';
   import LibraryPanel from './components/LibraryPanel.svelte';
   import PropertiesPanel from './components/PropertiesPanel.svelte';
@@ -35,6 +36,10 @@
   let showHelp = false;
   let showSettings = false;
   let showLibrary = true;
+  let workspaceMode: WorkspaceMode = 'layers';
+  let activeCategory: ElementKind = 'technical';
+  let exportScope: 'current' | 'all' = 'current';
+  let batchPreviewCategory: ElementKind | null = null;
   let previewBackground: 'black' | 'checker' = 'black';
   let autosaveOk = true;
   let showExportVideo = false;
@@ -53,7 +58,9 @@
     if (isDesktop()) void getOutputDirectory().then(path => { outputDirectory = path; }).catch(error => notify(`Pasta de saída indisponível: ${error}`, 'error'));
   });
 
-  $: selected = project.elements.find(element => element.id === selectedId) || null;
+  $: visibleProject = workspaceMode === 'tabs' ? projectForCategory(project,activeCategory) : project;
+  $: exportProject = batchPreviewCategory ? projectForCategory(project,batchPreviewCategory) : visibleProject;
+  $: selected = visibleProject.elements.find(element => element.id === selectedId) || null;
   $: autosaveOk = writeAutosave(project);
   $: totalFrames = Math.round(project.canvas.duration * project.canvas.fps);
 
@@ -85,6 +92,7 @@
       }
     }
     applyChange({ ...project, elements: [...project.elements, element] });
+    if (workspaceMode === 'tabs') activeCategory = kind;
     selectedId = element.id;
     time = Math.min(1.65, project.canvas.duration / 2);
     notify(`${element.title} adicionado ao projeto.`, 'success');
@@ -511,13 +519,78 @@
     }
   }
 
-  function openVideoDialog(): void {
+  function openVideoDialog(scope: 'current' | 'all' = 'current'): void {
+    exportScope = scope;
     showExportVideo = true;
     if (!isDesktop()) notify('Para gerar vídeo, abra o RDV Bus no aplicativo desktop Tauri.', 'info');
   }
 
+  /** Renderiza cada categoria separadamente em um arquivo de vídeo e empacota sem reter vídeos na memória. */
+  async function exportAllTabs(): Promise<void> {
+    if (exportingVideo) return;
+    if (!isDesktop()) return notify('Geração em lote disponível somente no aplicativo Desktop.','error');
+    const categories = populatedCategories(project);
+    if (!categories.length) return notify('Adicione elementos visíveis antes de gerar as abas.','info');
+    const preset = VIDEO_FORMATS.find(item=>item.value===videoFormat) ?? VIDEO_FORMATS[0];
+    const cleanName = project.name.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,50) || 'rdv_bus';
+    const zipPath = await nativeSave({title:'Gerar todas as abas — RDV Bus Studio',defaultPath:joinOutputPath(await getOutputDirectory(),`${cleanName}_todas_as_abas.zip`),filters:[{name:'Pacote ZIP por abas',extensions:['zip']}]});
+    if (!zipPath) return;
+    let tempCreated = false;
+    let currentJob: string | null = null;
+    try {
+      stopPlayback();
+      exportingVideo = true;
+      cancelRequested = false;
+      exportProgress = 0;
+      selectedVideoName = zipPath;
+      const root = await invoke<string>('batch_export_begin');
+      tempCreated = true;
+      const frames = Math.round(project.canvas.duration * project.canvas.fps);
+      const total = frames * categories.length;
+      const canvas = document.createElement('canvas');
+      for (const [categoryIndex, category] of categories.entries()) {
+        if (cancelRequested) throw new Error('Geração de todas as abas cancelada.');
+        batchPreviewCategory = category.kind;
+        exportTime = 0;
+        await tick();
+        const target = joinOutputPath(joinOutputPath(root,category.folder),`${category.folder}.${preset.ext}`);
+        currentJob = await beginVideo(target,project.canvas.width,project.canvas.height,project.canvas.fps,frames,videoFormat);
+        for (let index = 0; index < frames; index++) {
+          if (cancelRequested) throw new Error('Geração de todas as abas cancelada.');
+          exportTime = exportFrameTime(index,frames,project.canvas.duration);
+          await tick();
+          const svg = document.querySelector<SVGSVGElement>('.export-render-stage .scene-svg');
+          if (!svg) throw new Error(`Quadro SVG da aba ${category.label} não encontrado.`);
+          const xml = exportFrameSvg(svg,project.canvas.width*rasterQuality,project.canvas.height*rasterQuality);
+          const png = await svgToPngBase64(xml,project.canvas.width,project.canvas.height,canvas,rasterQuality,exportBackground);
+          await pushVideoFrame(currentJob,png);
+          exportProgress = (categoryIndex*frames + index + 1)/total;
+          if (index%8 === 0) await new Promise<void>(resolve=>setTimeout(resolve,0));
+        }
+        await finishVideo(currentJob);
+        currentJob = null;
+      }
+      if (cancelRequested) throw new Error('Geração de todas as abas cancelada.');
+      const archive = await invoke<string>('batch_export_archive',{path:zipPath});
+      tempCreated = false;
+      showExportVideo = false;
+      outputDirectory = rememberOutputFile(archive);
+      notify(`Pacote com ${categories.length} abas gerado: ${archive}`,'success');
+    } catch (error) {
+      if (currentJob) { try { await cancelVideo(currentJob); } catch { /* processo já finalizado */ } }
+      if (tempCreated) { try { await invoke('batch_export_cancel'); } catch { /* limpeza auxiliar */ } }
+      notify(`Falha ao gerar abas: ${error instanceof Error ? error.message : String(error)}`,'error');
+    } finally {
+      batchPreviewCategory = null;
+      exportingVideo = false;
+      cancelRequested = false;
+      exportProgress = 0;
+    }
+  }
+
   async function exportVideo(): Promise<void> {
     if (exportingVideo) return;
+    if (exportScope === 'all') return exportAllTabs();
     if (!isDesktop()) return notify('Exportação de vídeo disponível somente no aplicativo desktop Tauri. Use npm run desktop:dev.', 'error');
     const preset = VIDEO_FORMATS.find(item => item.value === videoFormat) ?? VIDEO_FORMATS[0];
     const cleanName = project.name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50) || 'rdv_bus';
@@ -625,7 +698,8 @@
       <button class="button secondary-button" on:click={() => void saveCurrentProject()} title="Salvar projeto (Ctrl+S)"><Icon name="save" size={16}/><span>Salvar</span></button>
       {#if isDesktop()}<button class="button ghost-button" on:click={() => void openOutputFolder()} title={outputDirectory ? `Abrir pasta de saída: ${outputDirectory}` : 'Abrir pasta de saída'}><Icon name="folder" size={16}/><span>Abrir pasta de saída</span></button>{/if}
       <button class="button secondary-button" on:click={() => void exportSvg()} title="Exportar um quadro vetorial SVG"><Icon name="download" size={17}/><span>SVG</span></button>
-      <button class="button primary-button" on:click={openVideoDialog} title="Gerar vídeo animado com FFmpeg (desktop)"><Icon name="film" size={17}/><span>Exportar vídeo</span></button>
+      <button class="button primary-button" on:click={() => openVideoDialog("current")} title="Gerar vídeo com a composição ou aba atual"><Icon name="film" size={17}/><span>{workspaceMode === "tabs" ? "Gerar desta aba" : "Exportar vídeo"}</span></button>
+      {#if workspaceMode === "tabs" && isDesktop()}<button class="button secondary-button" on:click={() => openVideoDialog("all")}><Icon name="layers" size={16}/><span>Gerar todas as abas</span></button>{/if}
     </div>
   </header>
 
@@ -639,19 +713,37 @@
     </nav>
 
     {#if showLibrary}
-      <aside class="library-panel"><LibraryPanel {project} {selectedId} onAdd={addElement} onSelect={(id) => selectedId = id} onToggleVisible={toggleVisible}/></aside>
+      <aside class="library-panel"><LibraryPanel project={visibleProject} {selectedId} onAdd={addElement} onSelect={(id) => selectedId = id} onToggleVisible={toggleVisible}/></aside>
     {/if}
 
     <main class="editor-main">
       <div class="canvas-toolbar">
-        <div class="canvas-title"><Icon name="layout" size={17}/><strong>Editor de cena</strong><span class="breadcrumb-separator">/</span><span>Composição principal</span></div>
+        <div class="canvas-title"><Icon name="layout" size={17}/><strong>Editor de cena</strong><span class="breadcrumb-separator">/</span><span>{workspaceMode === 'tabs' ? WORKSPACE_CATEGORIES.find(c=>c.kind===activeCategory)?.label : 'Composição principal'}</span></div>
+        <div class="workspace-switch" aria-label="Modo de edição">
+          <button class:current={workspaceMode==='layers'} aria-pressed={workspaceMode==='layers'} on:click={()=>{workspaceMode='layers';selectedId=project.elements[0]?.id||null;}}>Camadas</button>
+          <button class:current={workspaceMode==='tabs'} aria-pressed={workspaceMode==='tabs'} on:click={()=>{workspaceMode='tabs';selectedId=project.elements.find(e=>e.kind===activeCategory)?.id||null;}}>Abas</button>
+        </div>
         <div class="canvas-toolbar-right"><button class="canvas-chip preview-toggle" class:preview-toggle-active={previewBackground === 'black'} aria-pressed={previewBackground === 'black'} title="Alternar fundo preto e transparência quadriculada" on:click={() => previewBackground = previewBackground === 'black' ? 'checker' : 'black'}><Icon name="layers" size={13}/> {previewBackground === 'black' ? 'Fundo preto' : 'Quadriculado'}</button><span class="canvas-chip"><span class="chip-dot"></span>Pré-visualização SVG</span><span class="canvas-chip resolution-chip">{project.canvas.width} × {project.canvas.height}</span></div>
       </div>
+      {#if workspaceMode === 'tabs'}
+        <nav class="workspace-category-tabs" aria-label="Abas de edição de categorias">
+          {#each WORKSPACE_CATEGORIES as category}
+            <button class:current={activeCategory===category.kind} aria-current={activeCategory===category.kind?'page':undefined}
+              on:click={()=>{activeCategory=category.kind;selectedId=project.elements.find(e=>e.kind===category.kind)?.id||null;}}>
+              {category.label}<span>{project.elements.filter(e=>e.kind===category.kind).length}</span>
+            </button>
+          {/each}
+        </nav>
+        <div class="workspace-category-actions">
+          <span>Composição independente desta categoria · {visibleProject.elements.length} elemento(s)</span>
+          <button class="button secondary-button" on:click={()=>addElement(activeCategory)}><Icon name="plus" size={15}/> Novo elemento nesta aba</button>
+        </div>
+      {/if}
       <div class="canvas-main-area">
         <div class="canvas-stack">
           <div class="canvas-top-caption"><span><Icon name="maximize" size={15}/> Monitor de pré-visualização</span><span>{project.canvas.width === 1080 ? '9:16' : '16:9'} · SVG com transparência</span></div>
           <div class="canvas-bezel">
-            <div class="stage-checker" class:stage-black={previewBackground === 'black'} class:portrait-stage={project.canvas.width === 1080} style={`aspect-ratio: ${project.canvas.width} / ${project.canvas.height}`}><ScenePreview {project} {selectedId} {time} onSelect={(id) => selectedId = id} onMove={moveElement} onResize={resizeElement}
+            <div class="stage-checker" class:stage-black={previewBackground === 'black'} class:portrait-stage={project.canvas.width === 1080} style={`aspect-ratio: ${project.canvas.width} / ${project.canvas.height}`}><ScenePreview project={visibleProject} {selectedId} {time} onSelect={(id) => selectedId = id} onMove={moveElement} onResize={resizeElement}
               onBeginEdit={stopPlayback} onEditField={editTextDirect} onEditCaption={editCaptionDirect}
               onTextFormat={editTextFormatting} onParagraphFormat={editParagraphDirect} {systemFonts}/>
 </div>
@@ -659,7 +751,7 @@
           <div class="canvas-bottom-bar"><span><span class="live-indicator"></span> Cena editável</span><span>Clique no texto para editar · arraste o painel para mover · alças para redimensionar</span><span>{project.elements.filter(e => e.visible).length} visíveis de {project.elements.length}</span></div>
         </div>
       </div>
-      <div class="timeline-panel"><Timeline {project} {selectedId} {time} {playing} onTogglePlay={togglePlayback} onStop={stopAndRewind} onSeek={seek} onSelect={(id) => selectedId = id}/></div>
+      <div class="timeline-panel"><Timeline project={visibleProject} {selectedId} {time} {playing} onTogglePlay={togglePlayback} onStop={stopAndRewind} onSeek={seek} onSelect={(id) => selectedId = id}/></div>
     </main>
 
     <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onShineToggle={updateSelectedShine} onDiagonalGlowToggle={updateSelectedDiagonalGlow} onDiagonalGlowIntensity={updateSelectedDiagonalIntensity} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onTechnicalLayout={updateTechnicalLayout}
@@ -671,7 +763,7 @@
 
 {#if exportingVideo}
   <div class="export-render-stage" aria-hidden="true" style={`width:${project.canvas.width}px;height:${project.canvas.height}px`}>
-    <ScenePreview {project} selectedId={null} time={exportTime} onSelect={() => {}} onMove={() => {}} />
+    <ScenePreview project={exportProject} selectedId={null} time={exportTime} onSelect={() => {}} onMove={() => {}} />
   </div>
 {/if}
 
@@ -680,7 +772,7 @@
     <div class="help-dialog" role="dialog" aria-modal="true" aria-label="Exportar vídeo animado">
       <div class="dialog-heading"><div><Icon name="film"/><strong>Exportar vídeo com transparência</strong></div><button class="icon-button" aria-label="Fechar" disabled={exportingVideo} on:click={() => showExportVideo = false}>×</button></div>
       <div class="dialog-content video-export-content">
-        <p>Gera {totalFrames} quadros a {project.canvas.fps} FPS em {project.canvas.width} × {project.canvas.height}. O fundo continua transparente; o preto é somente da pré-visualização.</p>
+        <p>{exportScope === "all" ? `Gera vídeos separados para ${populatedCategories(project).length} abas e os reúne em um ZIP, com uma subpasta por categoria.` : `Gera ${totalFrames} quadros a ${project.canvas.fps} FPS em ${project.canvas.width} × ${project.canvas.height}.`} O fundo continua transparente; o preto é somente da pré-visualização.</p>
         {#if isDesktop()}<p class="export-description">Pasta de saída: <code>{outputDirectory || '~/RDV Bus Studio'}</code> <button class="button ghost-button" on:click={() => void openOutputFolder()} disabled={exportingVideo}><Icon name="folder" size={15}/> Abrir pasta</button></p>{/if}
         <label for="video-format">Formato de vídeo</label>
         <select id="video-format" bind:value={videoFormat} disabled={exportingVideo}>

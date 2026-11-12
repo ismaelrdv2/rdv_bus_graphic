@@ -3,7 +3,7 @@ use std::{
     collections::BTreeSet,
     env,
     fs,
-    io::Write,
+    io::{self, Write},
     path::{Path, PathBuf},
     process::{Child, ChildStdin, Command, Stdio},
     sync::Mutex,
@@ -205,13 +205,96 @@ fn desktop_open_output_directory(path: Option<String>) -> Result<String, String>
     }
 }
 
+
+// Exportação em lote: somente pastas internas controladas pelo aplicativo.
+#[derive(Default)]
+struct BatchState(Mutex<Option<PathBuf>>);
+
+const BATCH_CATEGORIES: [&str; 9] = [
+    "01_ficha_tecnica", "02_localizacao", "03_data", "04_linha_onibus",
+    "05_motorista", "06_credito_filmagem", "07_texto_livre",
+    "08_slide", "09_imagem_canto",
+];
+
+#[tauri::command]
+fn batch_export_begin(state: State<'_, BatchState>) -> Result<String, String> {
+    let mut guard = state.0.lock().map_err(|_| "Exportação em lote indisponível")?;
+    if guard.is_some() {
+        return Err("Já existe uma exportação por abas em andamento".into());
+    }
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_nanos();
+    let root = env::temp_dir().join(format!("rdv-studio-batch-{}-{stamp}", std::process::id()));
+    fs::create_dir(&root).map_err(|e| format!("Não foi possível preparar arquivos temporários: {e}"))?;
+    for folder in BATCH_CATEGORIES {
+        if let Err(e) = fs::create_dir(root.join(folder)) {
+            let _ = fs::remove_dir_all(&root);
+            return Err(format!("Erro ao preparar aba {folder}: {e}"));
+        }
+    }
+    *guard = Some(root.clone());
+    Ok(root.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+fn batch_export_archive(state: State<'_, BatchState>, path: String) -> Result<String, String> {
+    let mut guard = state.0.lock().map_err(|_| "Exportação em lote indisponível")?;
+    let root = guard.as_ref().ok_or("Não existe exportação por abas ativa")?.clone();
+    let target = PathBuf::from(path);
+    if target.extension().and_then(|e|e.to_str()).map(|e|e.to_ascii_lowercase()) != Some("zip".into()) {
+        return Err("A exportação por abas exige um arquivo .zip".into());
+    }
+    if !target.parent().map(|p|p.is_dir()).unwrap_or(false) || target.starts_with(&root) {
+        return Err("Escolha uma pasta de destino válida e fora dos arquivos temporários".into());
+    }
+    let target_file = fs::File::create(&target).map_err(|e|format!("Falha ao criar ZIP: {e}"))?;
+    let mut writer = zip::ZipWriter::new(target_file);
+    let options = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
+    let mut count = 0;
+    let result = (|| -> Result<(), String> {
+        for folder in BATCH_CATEGORIES {
+            for entry in fs::read_dir(root.join(folder)).map_err(|e|e.to_string())? {
+                let entry = entry.map_err(|e|e.to_string())?;
+                let file_type = entry.file_type().map_err(|e|e.to_string())?;
+                if !file_type.is_file() || file_type.is_symlink() { continue; }
+                let name = entry.file_name().to_string_lossy().to_string();
+                if !["mov","mkv","webm"].iter().any(|ext| name.to_ascii_lowercase().ends_with(&format!(".{ext}"))) { continue; }
+                writer.start_file(format!("{folder}/{name}"), options).map_err(|e|e.to_string())?;
+                let mut input = fs::File::open(entry.path()).map_err(|e|e.to_string())?;
+                io::copy(&mut input, &mut writer).map_err(|e|e.to_string())?;
+                count += 1;
+            }
+        }
+        if count == 0 { return Err("Nenhum vídeo foi gerado pelas abas".into()); }
+        writer.finish().map_err(|e|e.to_string())?;
+        Ok(())
+    })();
+    if let Err(error) = result {
+        let _ = fs::remove_file(&target);
+        return Err(format!("Falha ao empacotar abas: {error}"));
+    }
+    let _ = fs::remove_dir_all(root);
+    *guard = None;
+    Ok(target.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+fn batch_export_cancel(state: State<'_, BatchState>) -> Result<(), String> {
+    let mut guard = state.0.lock().map_err(|_| "Exportação em lote indisponível")?;
+    if let Some(root) = guard.take() {
+        fs::remove_dir_all(root).map_err(|e|format!("Falha ao limpar arquivos temporários: {e}"))?;
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(VideoState::default())
+        .manage(BatchState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![video_begin, video_frame, video_finish, video_cancel, list_system_fonts, desktop_default_output_directory, desktop_open_output_directory])
+        .invoke_handler(tauri::generate_handler![video_begin, video_frame, video_finish, video_cancel, list_system_fonts, desktop_default_output_directory, desktop_open_output_directory, batch_export_begin, batch_export_archive, batch_export_cancel])
         .run(tauri::generate_context!())
         .expect("Falha ao iniciar o RDV Bus Studio");
 }
