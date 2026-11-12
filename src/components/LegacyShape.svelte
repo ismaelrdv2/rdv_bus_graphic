@@ -250,7 +250,7 @@
       <path d={`M${w-90} ${h-1} h45 l25 -18`} fill="none" stroke={accent} stroke-width="2.2" />
     </g>
     {#if freeSocial}
-      <g opacity={pBody}><SocialIcon icon={element.freeTextIcon} x={22} y={Math.max(12,h/2-24)} size={48} color={accent} framed={false}/></g>
+      <g opacity={pBody}><SocialIcon icon={element.freeTextIcon || 'none'} x={22} y={Math.max(12,h/2-24)} size={48} color={accent} framed={false}/></g>
     {/if}
     {#if freeBarPresentation}
       <g opacity={pTitle} transform={`translate(0 ${16*(1-pTitle)})`}>
