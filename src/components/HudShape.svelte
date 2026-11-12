@@ -240,7 +240,7 @@
     <path d={`M14 0 H${w-32} L${w} 26 V${height-20} Q${w} ${height} ${w-20} ${height} H16 Q0 ${height} 0 ${height-16} V14 Q0 0 14 0Z`} fill={bg} fill-opacity=".97" stroke={paint.edge} stroke-width="3"/>
     <path d={`M16 1 H${Math.min(w*.38,230)}`} stroke={accent} stroke-width="5"/>
     <path d={`M${w-120} ${height-1} h82 l25 -21`} stroke={accent} stroke-width="3" fill="none"/>
-    {#if freeSocial}<SocialIcon icon={element.freeTextIcon} x={20} y={Math.max(12,height/2-28)} size={56} color={accent} framed={true}/>{/if}
+    {#if freeSocial}<SocialIcon icon={element.freeTextIcon || 'none'} x={20} y={Math.max(12,height/2-28)} size={56} color={accent} framed={true}/>{/if}
     <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={freeSocial?100:34} y={42*sy} font-size={scaledText(fields.heading,Math.min(headingSize,height*.24),w-70)} fill={textColor(element,'heading','secondary')} font-family={fontFamily} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'} letter-spacing="3">{fields.heading}</text>
     <path d={`M${freeSocial?100:34} ${58*sy} H${Math.min(w-38,520)}`} stroke={paint.edge} stroke-width="2"/>
     <g clip-path={`url(#${contentClipId})`}>
