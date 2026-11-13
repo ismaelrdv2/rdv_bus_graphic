@@ -188,6 +188,8 @@
     <path d={edgePath} stroke={accent} opacity={studioGold} stroke-width="5" fill="none"/>
     <path d={isRight ? `M104 0 L20 ${height}` : `M${w-105} 0 L${w-20} ${height}`} stroke={paint.edge} stroke-width="2" fill="none"/>
     <g clip-path={`url(#${clipId})`}>
+      <rect x={Math.max(12,titleX-12)} y={Math.max(13,73*sy)} width={Math.max(40,innerRight-titleX+13)} height={Math.max(25,53*sy)} rx="12"
+        fill={paint.edge} fill-opacity=".16" opacity={studioHeadingAlpha}/>
       <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={titleX} y={111*sy} fill={textColor(element,'heading','primary')} font-family={fontFamily} font-weight="800" font-size={scaledText(fields.heading, (isRight?32:36) * textFactor, Math.max(80,(isRight?innerRight-titleX:contentWidth) - fields.heading.length*5-14))} letter-spacing="5">{fields.heading}</text>
       <path d={`M${titleX} ${132*sy} H${innerRight}`} stroke={paint.edge} stroke-width="2"/>
       <path d={`M${titleX} ${132*sy} H${titleX + Math.min(115, contentWidth*.35)}`} stroke={accent} opacity={studioGold} stroke-width="3"/>
@@ -347,10 +349,17 @@
       {/if}
     </g>
   {:else if freeText && (element.freeTextStyle === 'classic' || studioPresentationBar)}
-    <defs><clipPath id={contentClipId}><rect x="30" y={bodyStart} width={w-60} height={bodyAreaHeight}/></clipPath></defs>
-    <path d={`M14 0 H${w-32} L${w} 26 V${height-20} Q${w} ${height} ${w-20} ${height} H16 Q0 ${height} 0 ${height-16} V14 Q0 0 14 0Z`} fill={bg} fill-opacity=".97" stroke={paint.edge} stroke-width="3"/>
-    <path d={`M16 1 H${Math.min(w*.38,230)}`} stroke={accent} opacity={studioGold} stroke-width="5"/>
-    <path d={`M${w-120} ${height-1} h82 l25 -21`} stroke={accent} opacity={studioGold} stroke-width="3" fill="none"/>
+    <defs>
+      <clipPath id={contentClipId}><rect x={freeSocial?104:34} y={bodyStart} width={Math.max(45,w-(freeSocial?138:68))} height={bodyAreaHeight}/></clipPath>
+      <linearGradient id={gradId} x1="0" x2="1" y1="0" y2="1">
+        <stop stop-color={paint.background}/><stop offset="1" stop-color={bg}/>
+      </linearGradient>
+    </defs>
+    <rect x="2" y="2" width={Math.max(1,w-4)} height={Math.max(1,height-4)} rx={studioPresentationBar?20:16}
+      fill={`url(#${gradId})`} fill-opacity=".98" stroke={paint.edge} stroke-width="2.5"/>
+    <rect x="10" y={height*.20} width="5" height={height*.60} rx="2.5" fill={accent} opacity={studioGold}/>
+    <path d={`M25 2 H${Math.min(w*.38,230)}`} stroke={accent} opacity={studioGold} stroke-width="4"/>
+    <path d={`M${w-120} ${height-4} h82 l25 -21`} stroke={paint.edge} stroke-width="2.5" fill="none"/>
     {#if freeSocial}
       <g opacity={studioMotion.iconOpacity} transform={`translate(48 ${height/2}) scale(${studioMotion.iconScale}) translate(-48 ${-height/2})`}>
         <SocialIcon icon={element.freeTextIcon || 'none'} x={20} y={Math.max(12,height/2-28)} size={56} color={accent} framed={true}/>
