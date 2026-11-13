@@ -39,7 +39,12 @@ export function elementBaseHeight(element: HudElement, canvasHeight: number): nu
     if (element.freeTextStyle === 'newsLabel') return CREDIT_CARD_HEIGHT;
     if (element.freeTextStyle === 'technicalAlpha1') return 480;
     if (element.freeTextStyle === 'legacyPresentationBar') return 222;
-    if (element.freeTextStyle === 'legacyLabel') return CREDIT_CARD_HEIGHT;
+    if (element.freeTextStyle === 'legacyLabel') {
+      if(element.richText?.scrollLine1||element.richText?.scrollLine2){
+        return element.scrollBarSize==='large'?152:element.scrollBarSize==='medium'?128:CREDIT_CARD_HEIGHT;
+      }
+      return CREDIT_CARD_HEIGHT;
+    }
     if (['legacyHalfBar','legacyFullBar'].includes(element.freeTextStyle || '')) return 128;
     return 165;
   }
