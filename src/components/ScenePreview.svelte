@@ -242,6 +242,10 @@
          O movimento da cena serve apenas aos demais tipos de transição. -->
     {@const motion = motionAt(time, project.canvas.duration, element.animation)}
     {@const totalAlpha = (element.style.opacity / 100) * motion.alpha}
+    {@const motionWidth = element.style.width*element.style.scaleX}
+    {@const motionHeight = elementBaseHeight(element,project.canvas.height)*element.style.scaleY}
+    {@const motionClipId = `rdv-motion-${element.id.replace(/[^a-zA-Z0-9_-]/g,'')}`}
+    {@const clipped = element.animation === 'curtain' || element.animation === 'split'}
     <g
       transform={`translate(${element.style.x + (isBottomBar(element,project.canvas.width,project.canvas.height) ? 0 : motion.shiftX * (isBar(element) && element.technicalSide === 'right' ? -1 : 1))} ${element.style.y + (isBottomBar(element,project.canvas.width,project.canvas.height) ? Math.abs(motion.shiftX) : 0)})`}
       opacity={totalAlpha}
@@ -252,7 +256,14 @@
       aria-label={`Selecionar ${element.title}`}
       on:keydown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelect(element.id); }}
     >
-      <HudShape {element} canvasHeight={project.canvas.height} {time} duration={project.canvas.duration} canvasWidth={project.canvas.width}/>
+      <defs><clipPath id={motionClipId}><rect
+        x={element.animation==='split'?(motionWidth*(1-motion.reveal))/2:0}
+        y="0" width={motionWidth*motion.reveal} height={motionHeight}/></clipPath></defs>
+      <g transform={`translate(${motionWidth/2} ${motionHeight/2}) scale(${motion.scale}) translate(${-motionWidth/2} ${-motionHeight/2})`}>
+        <g clip-path={clipped?`url(#${motionClipId})`:undefined}>
+          <HudShape {element} canvasHeight={project.canvas.height} {time} duration={project.canvas.duration} canvasWidth={project.canvas.width}/>
+        </g>
+      </g>
       {#if selectedId === element.id}
         {@const baseH = elementBaseHeight(element, project.canvas.height)}
         <rect data-editor-overlay="true" x="0" y="0"
