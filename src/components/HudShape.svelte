@@ -135,7 +135,7 @@
     return runs.reduce((sum,run) => sum + measureRich(run.text,font,baseBold||run.bold,baseItalic||run.italic),0);
   }
   $: motionVariant = technical || technicalAlpha1 ? 'technical' : fullTech || fullPage ? 'fullscreen' : corner ? 'corner' : 'label';
-  $: studioMotion = visualMotionFrame(element.animation,time,duration,motionVariant,activeTechnical.length);
+  $: studioMotion = visualMotionFrame(element.animation,time,duration,motionVariant as 'label' | 'technical' | 'fullscreen' | 'corner',activeTechnical.length);
   $: studioGold = studioMotion.gold;
   $: studioHeadingAlpha = studioMotion.title;
   $: studioValueAlpha = studioMotion.value;
