@@ -45,6 +45,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Testar curvas de animação originais aprovadas
         run: npm run test:legacy
+      - name: Testar formatos TV e rodapés editáveis
+        run: npm run test:broadcast
       - name: Verificar Svelte e TypeScript
         run: npm run check
       - name: Compilar AppImage
@@ -78,6 +80,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Testar curvas de animação originais aprovadas
         run: npm run test:legacy
+      - name: Testar formatos TV e rodapés editáveis
+        run: npm run test:broadcast
       - name: Verificar Svelte e TypeScript
         run: npm run check
       - name: Compilar instalador NSIS
