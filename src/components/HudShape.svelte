@@ -185,33 +185,33 @@
       <clipPath id={clipId}><path d={panelPath}/></clipPath>
     </defs>
     <path d={panelPath} fill={`url(#${gradId})`}/>
-    <path d={edgePath} stroke={accent} stroke-width="5" fill="none"/>
+    <path d={edgePath} stroke={accent} opacity={studioGold} stroke-width="5" fill="none"/>
     <path d={isRight ? `M104 0 L20 ${height}` : `M${w-105} 0 L${w-20} ${height}`} stroke={paint.edge} stroke-width="2" fill="none"/>
     <g clip-path={`url(#${clipId})`}>
-      <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={titleX} y={111*sy} fill={textColor(element,'heading','primary')} font-family={fontFamily} font-weight="800" font-size={scaledText(fields.heading, (isRight?32:36) * textFactor, Math.max(80,(isRight?innerRight-titleX:contentWidth) - fields.heading.length*5-14))} letter-spacing="5">{fields.heading}</text>
+      <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={titleX} y={111*sy} fill={textColor(element,'heading','primary')} font-family={fontFamily} font-weight="800" font-size={scaledText(fields.heading, (isRight?32:36) * textFactor, Math.max(80,(isRight?innerRight-titleX:contentWidth) - fields.heading.length*5-14))} letter-spacing="5">{fields.heading}</text>
       <path d={`M${titleX} ${132*sy} H${innerRight}`} stroke={paint.edge} stroke-width="2"/>
-      <path d={`M${titleX} ${132*sy} H${titleX + Math.min(115, contentWidth*.35)}`} stroke={accent} stroke-width="3"/>
+      <path d={`M${titleX} ${132*sy} H${titleX + Math.min(115, contentWidth*.35)}`} stroke={accent} opacity={studioGold} stroke-width="3"/>
       {#each technicalValues as value, index}
         {#if value}
           {@const y = rowStart + index * rowStep}
           {@const rowX = isRight ? technicalRowTextX(w,height,y+26,true) : innerX}
           {@const rowWidth = isRight ? technicalTextAvailableWidth(w,height,y+26,true)-6 : contentWidth}
-          <path d={`M${rowX - 44} ${y + 3} l12 13 -12 13 M${rowX - 30} ${y+3} l12 13 -12 13`} stroke={accent} stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path d={`M${rowX - 44} ${y + 3} l12 13 -12 13 M${rowX - 30} ${y+3} l12 13 -12 13`} stroke={accent} opacity={studioGold} stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           <text data-edit-caption={index} style={fieldTextStyle(element,'caption'+index)} x={rowX} y={y+3} fill={textColor(element,('caption'+index) as TextColorKey,'secondary')} font-family={fontFamily} font-weight="800" font-size={scaledText(captions[index] || '', Math.min((isRight?15:17)*textFactor, rowStep*.21), Math.max(60,rowWidth-(captions[index] || '').length*3))} letter-spacing="3">{captions[index] || ''}</text>
           <text data-edit-field={'line'+(index+1)} style={fieldTextStyle(element,'line'+(index+1))} x={rowX} y={y+Math.min(42*sy,rowStep*.52)} fill={textColor(element,('line'+(index+1)) as TextColorKey,'white')} font-family={fontFamily} font-weight="800" font-size={scaledText(value, Math.min(size, rowStep*.43, isRight?34*textFactor:1000), rowWidth)}>{value}</text>
           <path d={`M${rowX} ${y + rowStep*.7} H${innerRight}`} stroke={paint.edge} stroke-width="2"/>
         {/if}
       {/each}
       <text x={titleX} y={height - 39*sy} fill={textColor(element,'footer','secondary')} font-size={16*textFactor} font-weight="800" font-family={fontFamily} letter-spacing="7">RDV BUS</text>
-      <path d={`M${innerRight-42} ${height-36*sy} h31 l22 -22`} fill="none" stroke={accent} stroke-width="2"/>
+      <path d={`M${innerRight-42} ${height-36*sy} h31 l22 -22`} fill="none" stroke={accent} opacity={studioGold} stroke-width="2"/>
     </g>
   {:else if fullTech}
     <!-- Ficha técnica em tela inteira, com campos organizados em grade. -->
     <defs><linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1"><stop stop-color={paint.background}/><stop offset=".75" stop-color={bg}/><stop offset="1" stop-color={paint.dark}/></linearGradient></defs>
     <rect width={w} height={height} fill={`url(#${gradId})`} fill-opacity=".96"/>
     <path d={`M${fullMargin} ${height*.118} H${w-fullMargin}`} stroke={paint.edge} stroke-width="3"/>
-    <path d={`M${fullMargin} ${height*.118} H${fullMargin+Math.min(260,w*.21)}`} stroke={accent} stroke-width="5"/>
-    <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={fullMargin} y={height*.104} fill={textColor(element,'heading','primary')} font-family={fontFamily} font-weight="800" font-size={scaledText(fields.heading,fullTitleSize,w-2*fullMargin)} letter-spacing="5">{fields.heading}</text>
+    <path d={`M${fullMargin} ${height*.118} H${fullMargin+Math.min(260,w*.21)}`} stroke={accent} opacity={studioGold} stroke-width="5"/>
+    <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={fullMargin} y={height*.104} fill={textColor(element,'heading','primary')} font-family={fontFamily} font-weight="800" font-size={scaledText(fields.heading,fullTitleSize,w-2*fullMargin)} letter-spacing="5">{fields.heading}</text>
     {#each activeTechnical as item, position (item.index)}
       {@const index = item.index}
       {@const value = item.value}
@@ -220,17 +220,17 @@
       {@const countInRow = Math.min(fullColumns, activeTechnical.length - row * fullColumns)}
       {@const x = fullMargin + (fullColumns - countInRow) * (fullCellWidth + 60) / 2 + col * (fullCellWidth + 60)}
       {@const y = fullGridStartY + row * (fullRowHeight + fullGridGap)}
-      <path d={`M${x} ${y+9} l15 17 -15 17 M${x+16} ${y+9} l15 17 -15 17`} stroke={accent} stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d={`M${x} ${y+9} l15 17 -15 17 M${x+16} ${y+9} l15 17 -15 17`} stroke={accent} opacity={studioGold} stroke-width="4" fill="none" stroke-linecap="round"/>
       <text data-edit-caption={index} style={fieldTextStyle(element,'caption'+index)} x={x+48} y={y+16} font-family={fontFamily} font-size={Math.min(21,fullRowHeight*.19)} fill={textColor(element,('caption'+index) as TextColorKey,'secondary')} font-weight="800" letter-spacing="3">{captions[index] || ''}</text>
       <text data-edit-field={'line'+(index+1)} style={fieldTextStyle(element,'line'+(index+1))} x={x+48} y={y+Math.min(76,fullRowHeight*.64)} font-family={fontFamily} font-size={scaledText(value,fullFont,fullCellWidth-58)} fill={textColor(element,('line'+(index+1)) as TextColorKey,'white')} font-weight="800">{value}</text>
       <path d={`M${x+48} ${y+fullRowHeight*.78} H${x+fullCellWidth}`} stroke={paint.edge} stroke-width="2"/>
     {/each}
     <text x={fullMargin} y={height-38} font-size="16" fill={textColor(element,'footer','secondary')} letter-spacing="8" font-weight="800">RDV BUS</text>
-    <path d={`M${w-fullMargin-70} ${height-36} h45 l24 -24`} stroke={accent} stroke-width="3" fill="none"/>
+    <path d={`M${w-fullMargin-70} ${height-36} h45 l24 -24`} stroke={accent} opacity={studioGold} stroke-width="3" fill="none"/>
   {:else if technicalAlpha1}
     <rect width={w} height={height} rx="16" fill={bg} fill-opacity="0.95"/>
     <rect width="7" height={height} rx="3" fill={accent}/>
-    <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="33" y={53*sy} fill={textColor(element,'heading','primary')} font-size={scaledText(fields.heading,25*textFactor,w-66)} letter-spacing="3" font-weight="700" font-family={fontFamily}>{fields.heading}</text>
+    <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="33" y={53*sy} fill={textColor(element,'heading','primary')} font-size={scaledText(fields.heading,25*textFactor,w-66)} letter-spacing="3" font-weight="700" font-family={fontFamily}>{fields.heading}</text>
     <path d={`M33 ${77*sy} H${w-30}`} stroke="#39445a" stroke-width="2"/>
     {#each [fields.line1,fields.line2,fields.line3,fields.line4] as value, index}
       {#if value}
@@ -244,36 +244,36 @@
     </defs>
     <rect width={w} height={height} fill={`url(#${gradId})`} fill-opacity=".96"/>
     <path d={`M${fullMargin} ${height*.15} H${w-fullMargin}`} stroke={paint.edge} stroke-width="3"/>
-    <path d={`M${fullMargin} ${height*.15} H${fullMargin+Math.min(250,w*.25)}`} stroke={accent} stroke-width="5"/>
-    <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={fullMargin} y={height*.128} fill={textColor(element,'heading','primary')} font-family={fontFamily} font-size={scaledText(fields.heading, headingSize, w-2*fullMargin)} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'} letter-spacing="2">{fields.heading}</text>
+    <path d={`M${fullMargin} ${height*.15} H${fullMargin+Math.min(250,w*.25)}`} stroke={accent} opacity={studioGold} stroke-width="5"/>
+    <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={fullMargin} y={height*.128} fill={textColor(element,'heading','primary')} font-family={fontFamily} font-size={scaledText(fields.heading, headingSize, w-2*fullMargin)} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'} letter-spacing="2">{fields.heading}</text>
     <g clip-path={`url(#${contentClipId})`}>
       <g transform={rich.scroll==='vertical' ? `translate(0 ${scrollOffset-bodyStart})` : ''}>
         {#each bodyLayout.lines as line, index}
-          <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,bodyLeft,bodyWidth)} y={bodyStart + (index+1)*bodyLayout.lineHeight} text-anchor={textAnchor(rich.alignment)} textLength={rich.alignment === 'justify' && !line.lastInParagraph ? bodyWidth : undefined} lengthAdjust="spacing" xml:space="preserve" fill={textColor(element,'line1','white')} font-family={fontFamily} font-size={bodySize} font-weight={rich.bodyBold?'800':'400'} font-style={rich.bodyItalic?'italic':'normal'} text-decoration={rich.bodyUnderline?'underline':'none'}>
+          <text opacity={studioValueAlpha} data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,bodyLeft,bodyWidth)} y={bodyStart + (index+1)*bodyLayout.lineHeight} text-anchor={textAnchor(rich.alignment)} textLength={rich.alignment === 'justify' && !line.lastInParagraph ? bodyWidth : undefined} lengthAdjust="spacing" xml:space="preserve" fill={textColor(element,'line1','white')} font-family={fontFamily} font-size={bodySize} font-weight={rich.bodyBold?'800':'400'} font-style={rich.bodyItalic?'italic':'normal'} text-decoration={rich.bodyUnderline?'underline':'none'}>
             {#each line.runs as run}<tspan font-weight={run.bold?'800':(rich.bodyBold?'800':'400')} font-style={run.italic?'italic':(rich.bodyItalic?'italic':'normal')} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}
           </text>
         {/each}
       </g>
     </g>
     <text x={fullMargin} y={height-34} font-size="16" fill={textColor(element,'footer','secondary')} font-weight="800" letter-spacing="7">RDV BUS</text>
-    <path d={`M${w-fullMargin-65} ${height-34} h44 l19 -19`} fill="none" stroke={accent} stroke-width="3"/>
+    <path d={`M${w-fullMargin-65} ${height-34} h44 l19 -19`} fill="none" stroke={accent} opacity={studioGold} stroke-width="3"/>
   {:else if corner}
     <rect width={w} height={height} rx="15" fill={bg} fill-opacity="0.96" stroke={paint.edge} stroke-width="3"/>
-    <path d={`M12 1 H${Math.min(w/2,120)}`} stroke={accent} stroke-width="4"/>
+    <path d={`M12 1 H${Math.min(w/2,120)}`} stroke={accent} opacity={studioGold} stroke-width="4"/>
     <path d={`M${w-85} ${height-2} h62 l15 -14`} stroke={paint.edge} stroke-width="3" fill="none"/>
     {#if element.imageData}
       <image href={element.imageData} x="7" y="7" width={w-14} height={height-14} preserveAspectRatio="xMidYMid meet"/>
     {:else}
-      <path d={`M${w/2-36} ${height*.24} h72 v${height*.34} h-72z`} fill="none" stroke={accent} stroke-width="3"/>
+      <path d={`M${w/2-36} ${height*.24} h72 v${height*.34} h-72z`} fill="none" stroke={accent} opacity={studioGold} stroke-width="3"/>
       <text x={w/2} y={height*.74} font-family={fontFamily} font-size={Math.min(15*textFactor,w/16)} fill={paint.muted} text-anchor="middle">ESCOLHA UMA IMAGEM</text>
     {/if}
   {:else if credit}
     <rect width={w} height={height} rx="15" fill={bg} fill-opacity="0.98" stroke={paint.edge} stroke-width="3"/>
-    <path d={`M13 2 H${Math.min(w*.5,198)}`} stroke={accent} stroke-width="5"/>
-    <path d={`M${w-115} ${height-2} h80 l22 -20`} stroke={accent} stroke-width="3" fill="none"/>
-    <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={studioTextX} y={height*.30} font-family={fontFamily} font-weight="800" font-size={Math.min(15*textFactor,height*.2)} fill={textColor(element,'heading','secondary')} letter-spacing="2.8">{fields.heading}</text>
-    <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={studioTextX} y={cardTextY.main} font-family={fontFamily} font-weight="800" font-size={scaledText(fields.line1,Math.min(size,height*.37),studioTextWidth)} fill={textColor(element,'line1','white')}>{fields.line1}</text>
-    <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={studioTextX} y={cardTextY.secondary} font-family={fontFamily} font-size={Math.min(17*textFactor,height*.17)} fill={textColor(element,'line2','secondary')}>{fields.line2}</text>
+    <path d={`M13 2 H${Math.min(w*.5,198)}`} stroke={accent} opacity={studioGold} stroke-width="5"/>
+    <path d={`M${w-115} ${height-2} h80 l22 -20`} stroke={accent} opacity={studioGold} stroke-width="3" fill="none"/>
+    <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={studioTextX} y={height*.30} font-family={fontFamily} font-weight="800" font-size={Math.min(15*textFactor,height*.2)} fill={textColor(element,'heading','secondary')} letter-spacing="2.8">{fields.heading}</text>
+    <text opacity={studioValueAlpha} data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={studioTextX} y={cardTextY.main} font-family={fontFamily} font-weight="800" font-size={scaledText(fields.line1,Math.min(size,height*.37),studioTextWidth)} fill={textColor(element,'line1','white')}>{fields.line1}</text>
+    <text opacity={studioValueAlpha} data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={studioTextX} y={cardTextY.secondary} font-family={fontFamily} font-size={Math.min(17*textFactor,height*.17)} fill={textColor(element,'line2','secondary')}>{fields.line2}</text>
   {:else if freeText && element.freeTextStyle === 'legacyLabel'}
     <!-- Modelo Studio da etiqueta: mantém dois campos de uma linha e espaço próprio para o ícone. -->
     <defs>
@@ -283,16 +283,20 @@
       <clipPath id={contentClipId}><rect x={compactLabelX} y="6" width={compactLabelWidth} height={Math.max(12,height-12)}/></clipPath>
     </defs>
     <rect x="1.5" y="1.5" width={Math.max(1,w-3)} height={Math.max(1,height-3)} rx="15" fill={`url(#${gradId})`} fill-opacity=".98" stroke={paint.edge} stroke-width="2.5"/>
-    <path d={`M13 1.5 H${Math.min(w*.42,230)}`} stroke={accent} stroke-width="4"/>
+    <path d={`M13 1.5 H${Math.min(w*.42,230)}`} stroke={accent} opacity={studioGold} stroke-width="4"/>
     <rect x="9" y={height*.25} width="4" height={height*.5} rx="2" fill={accent} fill-opacity=".9"/>
     {#if compactWeights.stacked}
-      <path d={`M${compactLabelX} ${height*.54} H${w-24}`} stroke={accent} stroke-width="1" stroke-opacity=".4"/>
+      <path d={`M${compactLabelX} ${height*.54} H${w-24}`} stroke={accent} opacity={studioGold} stroke-width="1" stroke-opacity=".4"/>
     {/if}
-    {#if freeSocial}<SocialIcon icon={element.freeTextIcon || 'none'} x={24} y={Math.max(10,height/2-26)} size={52} color={accent} framed={true}/>{/if}
+    {#if freeSocial}
+      <g opacity={studioMotion.iconOpacity} transform={`translate(50 ${height/2}) scale(${studioMotion.iconScale}) translate(-50 ${-height/2})`}>
+        <SocialIcon icon={element.freeTextIcon || 'none'} x={24} y={Math.max(10,height/2-26)} size={52} color={accent} framed={true}/>
+      </g>
+    {/if}
     <g clip-path={`url(#${contentClipId})`}>
-      <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={compactLabelX} y={compactWeights.stacked?height*.42:height*.66} opacity={compactWeights.first} fill={textColor(element,'line1','white')} font-family={fontFamily} font-weight="800" font-size={scaledText(compactLine1,Math.min(size,height*(compactWeights.stacked ? .32 : .42)),compactLabelWidth)}>{compactLine1}</text>
+      <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={compactLabelX} y={compactWeights.stacked?height*.42:height*.66} opacity={compactWeights.first * studioValueAlpha} fill={textColor(element,'line1','white')} font-family={fontFamily} font-weight="800" font-size={scaledText(compactLine1,Math.min(size,height*(compactWeights.stacked ? .32 : .42)),compactLabelWidth)}>{compactLine1}</text>
       {#if compactLine2}
-        <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={compactLabelX} y={compactWeights.stacked?height*.86:height*.66} opacity={compactWeights.second} fill={textColor(element,'line2','secondary')} font-family={fontFamily} font-size={scaledText(compactLine2,Math.min(size*(compactWeights.stacked ? .75 : 1),height*(compactWeights.stacked ? .22 : .40)),compactLabelWidth)}>{compactLine2}</text>
+        <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={compactLabelX} y={compactWeights.stacked?height*.86:height*.66} opacity={compactWeights.second * studioValueAlpha} fill={textColor(element,'line2','secondary')} font-family={fontFamily} font-size={scaledText(compactLine2,Math.min(size*(compactWeights.stacked ? .75 : 1),height*(compactWeights.stacked ? .22 : .40)),compactLabelWidth)}>{compactLine2}</text>
       {/if}
     </g>
   {:else if studioWideBar}
@@ -306,7 +310,7 @@
     <rect x="2" y="2" width={Math.max(1,w-4)} height={Math.max(1,height-4)} rx="20"
       fill={`url(#${gradId})`} stroke={paint.edge} stroke-width="2.5" fill-opacity=".97"/>
     <rect x="9" y={height*.20} width="5" height={height*.60} rx="2.5" fill={accent}/>
-    <path d={`M28 2 H${Math.min(w*.38,290)}`} stroke={accent} stroke-width="4" fill="none"/>
+    <path d={`M28 2 H${Math.min(w*.38,290)}`} stroke={accent} opacity={studioGold} stroke-width="4" fill="none"/>
     <path d={`M${w-110} ${height-4} h79 l18 -17`} stroke={paint.edge} stroke-width="2.5" fill="none"/>
     {#if freeSocial}
       <g opacity={studioMotion.iconOpacity} transform={`translate(49 ${height/2}) scale(${studioMotion.iconScale}) translate(-49 ${-height/2})`}>
@@ -339,26 +343,30 @@
   {:else if freeText && (element.freeTextStyle === 'classic' || studioPresentationBar)}
     <defs><clipPath id={contentClipId}><rect x="30" y={bodyStart} width={w-60} height={bodyAreaHeight}/></clipPath></defs>
     <path d={`M14 0 H${w-32} L${w} 26 V${height-20} Q${w} ${height} ${w-20} ${height} H16 Q0 ${height} 0 ${height-16} V14 Q0 0 14 0Z`} fill={bg} fill-opacity=".97" stroke={paint.edge} stroke-width="3"/>
-    <path d={`M16 1 H${Math.min(w*.38,230)}`} stroke={accent} stroke-width="5"/>
-    <path d={`M${w-120} ${height-1} h82 l25 -21`} stroke={accent} stroke-width="3" fill="none"/>
-    {#if freeSocial}<SocialIcon icon={element.freeTextIcon || 'none'} x={20} y={Math.max(12,height/2-28)} size={56} color={accent} framed={true}/>{/if}
-    <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={freeSocial?100:34} y={42*sy} font-size={scaledText(fields.heading,Math.min(headingSize,height*.24),w-70)} fill={textColor(element,'heading','secondary')} font-family={fontFamily} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'} letter-spacing="3">{fields.heading}</text>
+    <path d={`M16 1 H${Math.min(w*.38,230)}`} stroke={accent} opacity={studioGold} stroke-width="5"/>
+    <path d={`M${w-120} ${height-1} h82 l25 -21`} stroke={accent} opacity={studioGold} stroke-width="3" fill="none"/>
+    {#if freeSocial}
+      <g opacity={studioMotion.iconOpacity} transform={`translate(48 ${height/2}) scale(${studioMotion.iconScale}) translate(-48 ${-height/2})`}>
+        <SocialIcon icon={element.freeTextIcon || 'none'} x={20} y={Math.max(12,height/2-28)} size={56} color={accent} framed={true}/>
+      </g>
+    {/if}
+    <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={freeSocial?100:34} y={42*sy} font-size={scaledText(fields.heading,Math.min(headingSize,height*.24),w-70)} fill={textColor(element,'heading','secondary')} font-family={fontFamily} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'} letter-spacing="3">{fields.heading}</text>
     <path d={`M${freeSocial?100:34} ${58*sy} H${Math.min(w-38,520)}`} stroke={paint.edge} stroke-width="2"/>
     <g clip-path={`url(#${contentClipId})`}>
       {#if rich.scroll === 'horizontal'}
-        <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={marqueeX} y={bodyStart + bodyAreaHeight*.66} font-family={fontFamily} xml:space="preserve" font-size={bodySize} fill={textColor(element,'line1','white')} font-weight={rich.bodyBold?'800':'400'} font-style={rich.bodyItalic?'italic':'normal'} text-decoration={rich.bodyUnderline?'underline':'none'}>
+        <text opacity={studioValueAlpha} data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={marqueeX} y={bodyStart + bodyAreaHeight*.66} font-family={fontFamily} xml:space="preserve" font-size={bodySize} fill={textColor(element,'line1','white')} font-weight={rich.bodyBold?'800':'400'} font-style={rich.bodyItalic?'italic':'normal'} text-decoration={rich.bodyUnderline?'underline':'none'}>
           {#each marquee as run}<tspan font-weight={run.bold?'800':(rich.bodyBold?'800':'400')} font-style={run.italic?'italic':(rich.bodyItalic?'italic':'normal')} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}
         </text>
       {:else if rich.scroll === 'none' && fields.line2 && !fields.line1.includes('\n') && rich.bullets === 'none'}
         <!-- Compatibilidade com a cartela da alpha.5: título, mensagem e subtítulo. -->
-        <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,bodyLeft,bodyWidth)} y={height*.63} text-anchor={textAnchor(rich.alignment)} xml:space="preserve" font-family={fontFamily} font-size={scaledText(fields.line1,Math.min(bodySize,height*.35),bodyWidth)} fill={textColor(element,'line1','white')} font-weight={rich.bodyBold?'800':'400'} font-style={rich.bodyItalic?'italic':'normal'} text-decoration={rich.bodyUnderline?'underline':'none'}>
+        <text opacity={studioValueAlpha} data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,bodyLeft,bodyWidth)} y={height*.63} text-anchor={textAnchor(rich.alignment)} xml:space="preserve" font-family={fontFamily} font-size={scaledText(fields.line1,Math.min(bodySize,height*.35),bodyWidth)} fill={textColor(element,'line1','white')} font-weight={rich.bodyBold?'800':'400'} font-style={rich.bodyItalic?'italic':'normal'} text-decoration={rich.bodyUnderline?'underline':'none'}>
           {#each parseRuns(fields.line1) as run}<tspan font-weight={run.bold?'800':(rich.bodyBold?'800':'400')} font-style={run.italic?'italic':(rich.bodyItalic?'italic':'normal')} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}
         </text>
-        <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={alignedX(rich.alignment,bodyLeft,bodyWidth)} y={height*.92} text-anchor={textAnchor(rich.alignment)} font-family={fontFamily} font-size={scaledText(fields.line2,Math.min(23*textFactor,height*.17),bodyWidth)} fill={textColor(element,'line2','secondary')}>{fields.line2}</text>
+        <text opacity={studioValueAlpha} data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={alignedX(rich.alignment,bodyLeft,bodyWidth)} y={height*.92} text-anchor={textAnchor(rich.alignment)} font-family={fontFamily} font-size={scaledText(fields.line2,Math.min(23*textFactor,height*.17),bodyWidth)} fill={textColor(element,'line2','secondary')}>{fields.line2}</text>
       {:else}
         <g transform={rich.scroll==='vertical' ? `translate(0 ${scrollOffset-bodyStart})` : ''}>
           {#each bodyLayout.lines as line, index}
-            <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,bodyLeft,bodyWidth)} y={bodyStart+(index+1)*bodyLayout.lineHeight} text-anchor={textAnchor(rich.alignment)} textLength={rich.alignment === 'justify' && !line.lastInParagraph ? bodyWidth : undefined} lengthAdjust="spacing" xml:space="preserve" font-family={fontFamily} font-size={bodySize} fill={textColor(element,'line1','white')} font-weight={rich.bodyBold?'800':'400'} font-style={rich.bodyItalic?'italic':'normal'} text-decoration={rich.bodyUnderline?'underline':'none'}>
+            <text opacity={studioValueAlpha} data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,bodyLeft,bodyWidth)} y={bodyStart+(index+1)*bodyLayout.lineHeight} text-anchor={textAnchor(rich.alignment)} textLength={rich.alignment === 'justify' && !line.lastInParagraph ? bodyWidth : undefined} lengthAdjust="spacing" xml:space="preserve" font-family={fontFamily} font-size={bodySize} fill={textColor(element,'line1','white')} font-weight={rich.bodyBold?'800':'400'} font-style={rich.bodyItalic?'italic':'normal'} text-decoration={rich.bodyUnderline?'underline':'none'}>
               {#each line.runs as run}<tspan font-weight={run.bold?'800':(rich.bodyBold?'800':'400')} font-style={run.italic?'italic':(rich.bodyItalic?'italic':'normal')} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}
             </text>
           {/each}
@@ -367,30 +375,30 @@
     </g>
   {:else if slide}
     <path d={`M14 0 H${w-32} L${w} 26 V${height-20} Q${w} ${height} ${w-20} ${height} H16 Q0 ${height} 0 ${height-16} V14 Q0 0 14 0Z`} fill={bg} fill-opacity=".97" stroke={paint.edge} stroke-width="3"/>
-    <path d={`M16 1 H${Math.min(w*.38,230)}`} stroke={accent} stroke-width="5"/>
-    <path d={`M${w-120} ${height-1} h82 l25 -21`} stroke={accent} stroke-width="3" fill="none"/>
-    <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="34" y={height*.2} font-size={Math.min(20*textFactor,height*.14)} fill={textColor(element,'heading','secondary')} font-weight="800" letter-spacing="3">{fields.heading}</text>
+    <path d={`M16 1 H${Math.min(w*.38,230)}`} stroke={accent} opacity={studioGold} stroke-width="5"/>
+    <path d={`M${w-120} ${height-1} h82 l25 -21`} stroke={accent} opacity={studioGold} stroke-width="3" fill="none"/>
+    <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="34" y={height*.2} font-size={Math.min(20*textFactor,height*.14)} fill={textColor(element,'heading','secondary')} font-weight="800" letter-spacing="3">{fields.heading}</text>
     <path d={`M34 ${height*.27} H${Math.min(w-38,520)}`} stroke={paint.edge} stroke-width="2"/>
-    <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x="34" y={height*.59} font-size={scaledText(fields.line1,Math.min(size,height*.35),w-70)} fill={textColor(element,'line1','white')} font-weight="800">{fields.line1}</text>
-    <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x="34" y={height*.90} font-size={Math.min(23*textFactor,height*.14)} fill={textColor(element,'line2','secondary')}>{fields.line2}</text>
+    <text opacity={studioValueAlpha} data-edit-field="line1" style={fieldTextStyle(element,'line1')} x="34" y={height*.59} font-size={scaledText(fields.line1,Math.min(size,height*.35),w-70)} fill={textColor(element,'line1','white')} font-weight="800">{fields.line1}</text>
+    <text opacity={studioValueAlpha} data-edit-field="line2" style={fieldTextStyle(element,'line2')} x="34" y={height*.90} font-size={Math.min(23*textFactor,height*.14)} fill={textColor(element,'line2','secondary')}>{fields.line2}</text>
   {:else}
     <path d={`M14 0 H${w-28} L${w} 25 V${height-17} Q${w} ${height} ${w-17} ${height} H14 Q0 ${height} 0 ${height-14} V14 Q0 0 14 0Z`} fill={bg} fill-opacity=".98" stroke={paint.edge} stroke-width="2.5"/>
-    <path d={`M14 1 H${Math.min(w*.4,185)}`} stroke={accent} stroke-width="5"/>
-    <path d={`M${w-95} ${height-1} h55 l20 -18`} stroke={accent} stroke-width="2.5" fill="none"/>
-    <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={studioTextX} y={height*.25} fill={textColor(element,'heading','secondary')} font-family={fontFamily} font-size={Math.min(20*textFactor,height*.18)} font-weight="800" letter-spacing="2.5">{fields.heading}</text>
+    <path d={`M14 1 H${Math.min(w*.4,185)}`} stroke={accent} opacity={studioGold} stroke-width="5"/>
+    <path d={`M${w-95} ${height-1} h55 l20 -18`} stroke={accent} opacity={studioGold} stroke-width="2.5" fill="none"/>
+    <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={studioTextX} y={height*.25} fill={textColor(element,'heading','secondary')} font-family={fontFamily} font-size={Math.min(20*textFactor,height*.18)} font-weight="800" letter-spacing="2.5">{fields.heading}</text>
     <path d={`M${studioRuleX} ${height*.34} H${Math.max(studioRuleX,Math.min(w-48,440))}`} stroke={paint.edge} stroke-width="2"/>
-    <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={studioTextX} y={cardTextY.main} fill={textColor(element,'line1','white')} font-family={fontFamily} font-size={scaledText(fields.line1,Math.min(size,height*.36),studioTextWidth)} font-weight="800">{fields.line1}</text>
-    {#if fields.line2}<text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={studioTextX} y={cardTextY.secondary} fill={textColor(element,'line2','secondary')} font-size={Math.min(21*textFactor,height*.17)}>{fields.line2}</text>{/if}
+    <text opacity={studioValueAlpha} data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={studioTextX} y={cardTextY.main} fill={textColor(element,'line1','white')} font-family={fontFamily} font-size={scaledText(fields.line1,Math.min(size,height*.36),studioTextWidth)} font-weight="800">{fields.line1}</text>
+    {#if fields.line2}<text opacity={studioValueAlpha} data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={studioTextX} y={cardTextY.secondary} fill={textColor(element,'line2','secondary')} font-size={Math.min(21*textFactor,height*.17)}>{fields.line2}</text>{/if}
   {/if}
   {#if studioCard}
     <!-- Reaproveita o desenho dos ícones 0.14; fica dentro da área reservada à esquerda. -->
-    <g transform={`translate(${cardIconX} ${Math.max(8,(height-cardIconSize)/2)})`} pointer-events="none">
+    <g opacity={studioMotion.iconOpacity} transform={`translate(${cardIconX + cardIconSize/2} ${Math.max(8,(height-cardIconSize)/2)+cardIconSize/2}) scale(${studioMotion.iconScale}) translate(${-cardIconSize/2} ${-cardIconSize/2})`} pointer-events="none">
       <rect x="0" y="0" width={cardIconSize} height={cardIconSize} rx="12"
         fill={paint.edge} fill-opacity=".32" stroke={accent} stroke-width="1.7"/>
       <svg x="9" y="9" width="42" height="42" viewBox="0 0 24 24"
         preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <path d={CARD_ICONS[element.kind] || CARD_ICONS.default} fill="none"
-          stroke={accent} stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          stroke={accent} opacity={studioGold} stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </g>
   {/if}
