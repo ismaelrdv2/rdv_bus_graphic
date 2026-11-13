@@ -223,6 +223,8 @@
       if (svg.hasPointerCapture(event.pointerId)) svg.releasePointerCapture(event.pointerId);
     }
   }
+  // IDs de clip únicos por instância: preview e exportação coexistem no DOM.
+  const clipInstanceId = Math.random().toString(36).slice(2);
 </script>
 
 <div class="scene-edit-container" bind:this={container}>
@@ -244,7 +246,7 @@
     {@const totalAlpha = (element.style.opacity / 100) * motion.alpha}
     {@const motionWidth = element.style.width*element.style.scaleX}
     {@const motionHeight = elementBaseHeight(element,project.canvas.height)*element.style.scaleY}
-    {@const motionClipId = `rdv-motion-${element.id.replace(/[^a-zA-Z0-9_-]/g,'')}`}
+    {@const motionClipId = `rdv-motion-${clipInstanceId}-${element.id.replace(/[^a-zA-Z0-9_-]/g,'')}`}
     {@const clipped = element.animation === 'curtain' || element.animation === 'split'}
     <g
       transform={`translate(${element.style.x + (isBottomBar(element,project.canvas.width,project.canvas.height) ? 0 : motion.shiftX * (isBar(element) && element.technicalSide === 'right' ? -1 : 1))} ${element.style.y + (isBottomBar(element,project.canvas.width,project.canvas.height) ? Math.abs(motion.shiftX) : 0)})`}
