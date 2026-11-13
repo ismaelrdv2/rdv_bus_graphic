@@ -317,9 +317,25 @@
       </g>
     {/if}
     <g clip-path={`url(#${contentClipId})`}>
-      <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={centeredCompactText?compactCenterX:compactLabelX} text-anchor={centeredCompactText?'middle':'start'} dominant-baseline={centeredCompactText?'middle':undefined} y={centeredCompactText?height/2:height*.42} opacity={compactWeights.first * studioValueAlpha} fill={textColor(element,'line1','white')} font-family={fontFamily} font-weight="800" font-size={scaledText(compactLine1,Math.min(size,height*(compactWeights.stacked ? .32 : .42)),compactLabelWidth)}>{compactLine1}</text>
+      {#if rich.scrollLine1 && compactWeights.stacked}
+        {#each Array.from({length:Math.max(1,Math.min(20,rich.scrollRepeats||1))},(_,i)=>i) as i}
+          <text data-edit-field="line1" x={w-24-studioScrollDistance+i*(studioLineWidth1+(rich.scrollGap||240))}
+            y={height*.43} opacity={studioValueAlpha} fill={textColor(element,'line1','white')}
+            font-family={fontFamily} font-weight="800" font-size={Math.min(size,height*.32)}>{compactLine1}</text>
+        {/each}
+      {:else}
+        <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={centeredCompactText?compactCenterX:compactLabelX} text-anchor={centeredCompactText?'middle':'start'} dominant-baseline={centeredCompactText?'middle':undefined} y={centeredCompactText?height/2:height*.42} opacity={compactWeights.first * studioValueAlpha} fill={textColor(element,'line1','white')} font-family={fontFamily} font-weight="800" font-size={scaledText(compactLine1,Math.min(size,height*(compactWeights.stacked ? .32 : .42)),compactLabelWidth)}>{compactLine1}</text>
+      {/if}
       {#if compactLine2}
-        <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={centeredCompactText?compactCenterX:compactLabelX} text-anchor={centeredCompactText?'middle':'start'} dominant-baseline={centeredCompactText?'middle':undefined} y={centeredCompactText?height/2:height*.86} opacity={compactWeights.second * studioValueAlpha} fill={textColor(element,'line2','secondary')} font-family={fontFamily} font-size={scaledText(compactLine2,Math.min(size*(compactWeights.stacked ? .75 : 1),height*(compactWeights.stacked ? .22 : .40)),compactLabelWidth)}>{compactLine2}</text>
+        {#if rich.scrollLine2 && compactWeights.stacked}
+          {#each Array.from({length:Math.max(1,Math.min(20,rich.scrollRepeats||1))},(_,i)=>i) as i}
+            <text data-edit-field="line2" x={w-24-studioScrollDistance+i*(studioLineWidth2+(rich.scrollGap||240))}
+              y={height*.86} opacity={studioValueAlpha} fill={textColor(element,'line2','secondary')}
+              font-family={fontFamily} font-size={Math.min(size*.68,height*.23)}>{compactLine2}</text>
+          {/each}
+        {:else}
+          <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={centeredCompactText?compactCenterX:compactLabelX} text-anchor={centeredCompactText?'middle':'start'} dominant-baseline={centeredCompactText?'middle':undefined} y={centeredCompactText?height/2:height*.86} opacity={compactWeights.second * studioValueAlpha} fill={textColor(element,'line2','secondary')} font-family={fontFamily} font-size={scaledText(compactLine2,Math.min(size*(compactWeights.stacked ? .75 : 1),height*(compactWeights.stacked ? .22 : .40)),compactLabelWidth)}>{compactLine2}</text>
+        {/if}
       {/if}
     </g>
   {:else if studioWideBar}
