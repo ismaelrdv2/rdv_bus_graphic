@@ -44,5 +44,5 @@ assert(bottom.includes('legacyTechnicalEntrance(visibleFields)'),
   'Ficha inferior precisa acompanhar quantidade de campos');
 assert(bottom.includes('legacyStage(p, .55 + .09 * i, .32)'),
   'Campos da ficha inferior não obedecem ao v6');
-assert(read('src-tauri/tauri.conf.json').includes('com.rdvbus.studio.animationtest'), 'Identificador experimental ausente');
+assert(read('src-tauri/tauri.conf.json').includes('com.rdvbus.studio'), 'Identificador original do aplicativo ausente');
 console.log('Curvas v6, estágios SVG e identidade experimental: OK');
