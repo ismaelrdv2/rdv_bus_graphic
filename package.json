@@ -11,6 +11,7 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test:legacy": "node tests/check-legacy-v6.mjs && node tests/check-visual-presets.mjs",
     "test:broadcast": "node tests/check-broadcast.mjs",
+    "test:updates": "node tests/check-updates.mjs",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
     "desktop:build:linux": "tauri build --bundles appimage",
