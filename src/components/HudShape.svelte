@@ -16,6 +16,7 @@
   import { technicalRowTextX, technicalTextAvailableWidth } from '../lib/technicalGeometry';
   import { DEFAULT_RICH_TEXT, layoutRichText, parseRuns, alignedX, textAnchor, type MeasureRich } from '../lib/richtext';
   import { compactTextWeights, singleLineText } from '../lib/compactText';
+  import { visualMotionFrame } from '../lib/visualAnimation';
 
   export let element: HudElement;
   export let canvasHeight = 1080;
@@ -25,12 +26,9 @@
 
   $: portraitBottom = canvasHeight > canvasWidth && isBar(element);
   $: fontFamily = fontStack(element.style.fontFamily);
-  $: shouldUseLegacy = element.kind === 'technical'
-    ? (element.technicalLayout === 'legacyFullscreen' || (element.technicalLayout !== 'fullscreen' && element.visualPreset === 'legacy'))
-    : element.kind === 'freeText'
-      ? (element.freeTextStyle === 'legacyLabel' ? element.visualPreset !== 'studio' : ['legacyHalfBar', 'legacyFullBar', 'legacyPresentationBar', 'legacyPresentationSlide'].includes(element.freeTextStyle || ''))
-        || (element.visualPreset === 'legacy' && element.freeTextStyle === 'technicalBar')
-      : element.visualPreset === 'legacy';
+  // Formato e aparência são independentes: o seletor Studio/Clássico decide o renderizador
+  // para TODAS as categorias, inclusive barras, tela cheia e texto livre legado.
+  $: shouldUseLegacy = element.visualPreset === 'legacy';
   $: sx = element.style.scaleX;
   $: sy = element.style.scaleY;
   // A caixa é redimensionada, mas o texto NÃO sofre transform(scaleX, scaleY).
@@ -44,8 +42,10 @@
   $: size = element.style.fontSize * textFactor;
   $: fields = element.fields;
   $: technical = isBar(element);
-  $: fullTech = (element.kind === 'technical' && element.technicalLayout === 'fullscreen') || (element.kind === 'freeText' && element.freeTextStyle === 'fullTechnical');
-  $: fullPage = element.kind === 'freeText' && element.freeTextStyle === 'fullPage';
+  $: fullTech = (element.kind === 'technical' && ['fullscreen','legacyFullscreen'].includes(element.technicalLayout || '')) || (element.kind === 'freeText' && element.freeTextStyle === 'fullTechnical');
+  $: fullPage = element.kind === 'freeText' && ['fullPage','legacyPresentationSlide'].includes(element.freeTextStyle || '');
+  $: studioWideBar = element.kind === 'freeText' && ['legacyHalfBar','legacyFullBar'].includes(element.freeTextStyle || '');
+  $: studioPresentationBar = element.kind === 'freeText' && element.freeTextStyle === 'legacyPresentationBar';
   $: isRight = (element.technicalSide || 'left') === 'right';
   $: credit = element.kind === 'credit';
   // As cartelas compactas Studio reutilizam os ícones vetoriais originais.
@@ -103,7 +103,7 @@
   $: fullTitleSize = Math.min(57, Math.max(25, w * .043));
   $: bodySize = clamp(rich.bodySize * textFactor, 12, 170);
   $: headingSize = clamp(rich.titleSize * textFactor, 12, 170);
-  $: freeSocial = freeText && (element.freeTextIcon || 'none') !== 'none' && ['classic','legacyLabel'].includes(element.freeTextStyle || '');
+  $: freeSocial = freeText && (element.freeTextIcon || 'none') !== 'none' && ['classic','legacyLabel','legacyHalfBar','legacyFullBar','legacyPresentationBar'].includes(element.freeTextStyle || '');
   $: compactWeights = compactTextWeights(element.freeTextDisplay, time, duration);
   $: compactLine1 = singleLineText(fields.line1);
   $: compactLine2 = singleLineText(fields.line2);
@@ -134,6 +134,24 @@
   function lineWidth(runs: {text:string;bold:boolean;italic:boolean}[], font:number, baseBold:boolean, baseItalic:boolean):number {
     return runs.reduce((sum,run) => sum + measureRich(run.text,font,baseBold||run.bold,baseItalic||run.italic),0);
   }
+  $: motionVariant = technical || technicalAlpha1 ? 'technical' : fullTech || fullPage ? 'fullscreen' : corner ? 'corner' : 'label';
+  $: studioMotion = visualMotionFrame(element.animation,time,duration,motionVariant,activeTechnical.length);
+  $: studioGold = studioMotion.gold;
+  $: studioHeadingAlpha = studioMotion.title;
+  $: studioValueAlpha = studioMotion.value;
+  $: studioRowReveals = studioMotion.rows;
+  $: studioMaskId = `studio-motion-mask-${id}`;
+  $: studioMaskGradientId = `studio-motion-gradient-${id}`;
+  $: studioFront = -38 + studioMotion.panel * (w+76);
+  $: studioStop1 = clamp((studioFront-26)/Math.max(1,w)*100,0,100);
+  $: studioStop2 = clamp((studioFront+26)/Math.max(1,w)*100,studioStop1,100);
+  $: studioUseWipe = studioMotion.active && motionVariant === 'label';
+  $: studioWrapperOpacity = studioMotion.active && motionVariant !== 'label' ? Math.min(1,studioMotion.panel*3) : 1;
+  $: studioWrapperTransform = studioMotion.active && motionVariant === 'technical'
+    ? `translate(${(isRight?1:-1)*(1-studioMotion.panel)*(w+40)} 0)`
+    : studioMotion.active && motionVariant === 'corner'
+      ? `translate(${w/2+studioMotion.corner.offset} ${height/2}) scale(${studioMotion.corner.scale}) translate(${-w/2} ${-height/2})`
+      : undefined;
   $: marquee = parseRuns(fields.line1.replace(/\n/g, ' · '));
   $: marqueeWidth = lineWidth(marquee,bodySize,rich.bodyBold,rich.bodyItalic);
   $: marqueeX = w - bodyLeft - scrollProgress * (marqueeWidth + w);
@@ -144,7 +162,19 @@
     <BottomTechnical {element} {time} {duration}/>
   {:else if shouldUseLegacy}
     <LegacyShape {element} {time} {duration} {canvasWidth} {canvasHeight}/>
-  {:else if technical}
+  {:else}
+    <defs>
+      <linearGradient id={studioMaskGradientId} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={w} y2="0">
+        <stop offset={`${studioStop1}%`} stop-color="white"/>
+        <stop offset={`${studioStop2}%`} stop-color="black"/>
+      </linearGradient>
+      <mask id={studioMaskId} maskUnits="userSpaceOnUse" x="-40" y="-40" width={w+80} height={height+80}>
+        <rect width={w} height={height} fill={`url(#${studioMaskGradientId})`}/>
+      </mask>
+    </defs>
+    <g mask={studioUseWipe?`url(#${studioMaskId})`:undefined}
+       opacity={studioWrapperOpacity} transform={studioWrapperTransform}>
+      {#if technical}
     <defs>
       <linearGradient id={gradId} x1="0" x2="1" y1="0" y2="0">
         <stop offset="0" stop-color={paint.background}/><stop offset="0.67" stop-color={bg}/><stop offset="1" stop-color={paint.dark}/>
@@ -308,6 +338,7 @@
     <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={studioTextX} y={cardTextY.main} fill={textColor(element,'line1','white')} font-family={fontFamily} font-size={scaledText(fields.line1,Math.min(size,height*.36),studioTextWidth)} font-weight="800">{fields.line1}</text>
     {#if fields.line2}<text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={studioTextX} y={cardTextY.secondary} fill={textColor(element,'line2','secondary')} font-size={Math.min(21*textFactor,height*.17)}>{fields.line2}</text>{/if}
   {/if}
+    {/if}
   {#if studioCard}
     <!-- Reaproveita o desenho dos ícones 0.14; fica dentro da área reservada à esquerda. -->
     <g transform={`translate(${cardIconX} ${Math.max(8,(height-cardIconSize)/2)})`} pointer-events="none">
@@ -333,5 +364,6 @@
         enabled={element.diagonalGlowEnabled===true}
         intensity={element.diagonalGlowIntensity ?? 170}/>
     {/if}
+    </g>
   {/if}
 </g>
