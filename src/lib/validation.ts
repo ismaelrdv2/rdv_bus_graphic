@@ -32,14 +32,14 @@ export function validateProject(raw: unknown): RDVProject {
     const fields = item.fields;
     const technical = item.kind === 'technical';
     const freeText = item.kind === 'freeText';
-    const freeTextStyle = ['technicalBar', 'technicalAlpha1', 'fullTechnical', 'fullPage', 'legacyLabel', 'legacyHalfBar', 'legacyFullBar', 'legacyPresentationBar', 'legacyPresentationSlide'].includes(String(item.freeTextStyle))
+    const freeTextStyle = ['technicalBar', 'technicalAlpha1', 'fullTechnical', 'fullPage', 'legacyLabel', 'legacyHalfBar', 'legacyFullBar', 'legacyPresentationBar', 'legacyPresentationSlide', 'newsLabel', 'newsTicker', 'newsLowerThird', 'newsSlide'].includes(String(item.freeTextStyle))
       ? item.freeTextStyle as HudElement['freeTextStyle'] : 'classic';
     const rawCaptions = Array.isArray(item.freeTextCaptions) ? item.freeTextCaptions : [];
     const captions = ['CARROCERIA', 'MODELO', 'CHASSI', 'MODELO', 'EMPRESA', 'PREFIXO']
       .map((defaultLabel, labelIndex) => typeof rawCaptions[labelIndex] === 'string'
         ? safeString(rawCaptions[labelIndex], 80) : defaultLabel);
     const technicalSide = item.technicalSide === 'right' || (item.technicalSide !== 'left' && typeof style.x === 'number' && style.x > canvasWidth / 2) ? 'right' : 'left';
-    const fullscreen = (technical && ['fullscreen','legacyFullscreen'].includes(String(item.technicalLayout))) || (freeText && ['fullTechnical','fullPage','legacyPresentationSlide'].includes(freeTextStyle || ''));
+    const fullscreen = (technical && ['fullscreen','legacyFullscreen'].includes(String(item.technicalLayout))) || (freeText && ['fullTechnical','fullPage','legacyPresentationSlide','newsSlide'].includes(freeTextStyle || ''));
     const requestedWidth = safeNumber(style.width, technical ? 640 : 850, 140, 1920);
     const bar = (technical && !fullscreen) || (freeText && freeTextStyle === 'technicalBar');
     const bottomBar = portrait && bar;
@@ -47,7 +47,7 @@ export function validateProject(raw: unknown): RDVProject {
     let id = safeString(item.id, 100) || `importado-${index}`;
     if (usedIds.has(id)) id += `-${index}`;
     usedIds.add(id);
-    const animation: AnimationStyle = ['fade', 'none', 'legacy'].includes(String(item.animation)) ? item.animation as AnimationStyle : 'slide';
+    const animation: AnimationStyle = ['fade', 'none', 'legacy', 'curtain', 'zoom', 'split'].includes(String(item.animation)) ? item.animation as AnimationStyle : 'slide';
     const imageData = typeof item.imageData === 'string' && item.imageData.length < 5_600_000 && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(item.imageData)
       ? item.imageData : undefined;
     const formatRaw = isObject(item.textFormatting) ? item.textFormatting : {};
@@ -87,6 +87,11 @@ export function validateProject(raw: unknown): RDVProject {
       diagonalGlowEnabled:item.diagonalGlowEnabled===true,
       diagonalGlowIntensity:safeNumber(item.diagonalGlowIntensity,170,50,300),
       visualPreset: item.visualPreset === 'legacy' ? 'legacy' : 'studio',
+      footerMode: ['text','image','none'].includes(String(item.footerMode)) ? item.footerMode as HudElement['footerMode'] : 'text',
+      footerText: typeof item.footerText === 'string' ? safeString(item.footerText,100) : 'RDV BUS',
+      ...(typeof item.footerImageData === 'string' && item.footerImageData.length < 5_600_000
+        && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(item.footerImageData)
+        ? {footerImageData:item.footerImageData} : {}),
       ...((technical || freeText) ? { technicalSide } : {}),
       ...(technical ? {technicalLayout: item.technicalLayout === 'legacyFullscreen' ? 'legacyFullscreen' as const : item.technicalLayout === 'fullscreen' ? 'fullscreen' as const : 'side' as const} : {}),
       ...(freeText ? { freeTextStyle, freeTextCaptions: captions,
