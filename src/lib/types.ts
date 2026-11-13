@@ -7,12 +7,13 @@ export type ElementKind =
   | 'technical' | 'location' | 'date' | 'route'
   | 'driver' | 'credit' | 'freeText' | 'slide' | 'corner';
 export type TextField = 'heading' | 'line1' | 'line2' | 'line3' | 'line4' | 'line5' | 'line6';
-export type AnimationStyle = 'slide' | 'fade' | 'none' | 'legacy';
+export type AnimationStyle = 'slide' | 'fade' | 'none' | 'legacy' | 'curtain' | 'zoom' | 'split';
 export type VisualPreset = 'studio' | 'legacy';
 export type CompactTextDisplay = 'both' | 'first' | 'second' | 'alternate';
 export type SocialIconId = 'none' | 'facebook' | 'instagram' | 'x' | 'tiktok' | 'twitch' | 'whatsapp' | 'telegram' | 'discord';
 export type FreeTextStyle = 'classic' | 'technicalBar' | 'technicalAlpha1' | 'fullTechnical' | 'fullPage'
-  | 'legacyLabel' | 'legacyHalfBar' | 'legacyFullBar' | 'legacyPresentationBar' | 'legacyPresentationSlide';
+  | 'legacyLabel' | 'legacyHalfBar' | 'legacyFullBar' | 'legacyPresentationBar' | 'legacyPresentationSlide'
+  | 'newsLabel' | 'newsTicker' | 'newsLowerThird' | 'newsSlide';
 export type TechnicalLayout = 'side' | 'fullscreen' | 'legacyFullscreen';
 export type TextAlign = 'left' | 'center' | 'right' | 'justify';
 export type BulletMode = 'none' | 'chevrons' | 'dots' | 'numbers';
@@ -96,6 +97,10 @@ export interface HudElement {
   /** Visual clássico original ou modelo Studio da reconstrução. */
   visualPreset?: VisualPreset;
   imageData?: string;
+  /** Rodapé: texto editável, logo transparente ou oculto. */
+  footerMode?: 'text' | 'image' | 'none';
+  footerText?: string;
+  footerImageData?: string;
   technicalSide?: 'left' | 'right';
   /** Estilos opcionais do Texto livre; versões anteriores usam 'classic'. */
   freeTextStyle?: FreeTextStyle;
