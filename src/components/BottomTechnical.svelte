@@ -19,6 +19,10 @@
   $: captions = element.kind === 'technical' ? (element.technicalCaptions || TECHNICAL_CAPTIONS) : (element.freeTextCaptions || TECHNICAL_CAPTIONS);
   $: fontFamily = fontStack(element.style.fontFamily);
   $: fontScale = clamp(element.style.scaleY, .75, 1.4);
+  $: studio = element.visualPreset === 'studio';
+  $: panelShape = studio
+    ? `M22 0 H${w-22} Q${w} 0 ${w} 22 V${h-22} Q${w} ${h} ${w-22} ${h} H22 Q0 ${h} 0 ${h-22} V22 Q0 0 22 0 Z`
+    : `M0 68 L68 0 H${w} V${h} H0Z`;
   $: visibleFields = Math.max(1, [fields.line1,fields.line2,fields.line3,fields.line4,fields.line5,fields.line6].filter(value=>value.trim()).length);
   $: enterDuration = legacyTechnicalEntrance(visibleFields);
   $: p = element.animation === 'legacy' ? legacyPhase(time,duration,enterDuration,.60) : enterDuration;
@@ -52,12 +56,19 @@
       <stop offset="0.64" stop-color={element.style.background}/>
       <stop offset="1" stop-color={paint.dark}/>
     </linearGradient>
-    <clipPath id={`portrait-clip-${id}`}><path d={`M0 68 L68 0 H${w} V${h} H0Z`}/></clipPath>
+    <clipPath id={`portrait-clip-${id}`}><path d={panelShape}/></clipPath>
   </defs>
   <g opacity={panel} transform={`translate(0 ${95*(1-panel)})`}>
-    <path d={`M0 68 L68 0 H${w} V${h} H0Z`} fill={`url(#portrait-bar-${id})`} fill-opacity=".93"/>
-    <path d={`M0 68 L68 0 H${w}`} stroke={element.style.accent} stroke-width="5" fill="none"/>
-    <path d={`M16 78 L85 12 H${w-28}`} stroke={paint.edge} stroke-width="2" fill="none"/>
+    <path d={panelShape} fill={`url(#portrait-bar-${id})`} fill-opacity={studio?.98:.93}
+      stroke={studio?paint.edge:'none'} stroke-width={studio?2.5:0}/>
+    {#if studio}
+      <rect x="12" y={h*.20} width="6" height={h*.60} rx="3" fill={element.style.accent}/>
+      <path d={`M28 2 H${Math.max(28,w*.28)}`} stroke={element.style.accent} stroke-width="4" fill="none"/>
+      <path d={`M${w-118} ${h-10} h77 l23 -23`} stroke={paint.edge} stroke-width="2" fill="none"/>
+    {:else}
+      <path d={`M0 68 L68 0 H${w}`} stroke={element.style.accent} stroke-width="5" fill="none"/>
+      <path d={`M16 78 L85 12 H${w-28}`} stroke={paint.edge} stroke-width="2" fill="none"/>
+    {/if}
   </g>
   <g clip-path={`url(#portrait-clip-${id})`}>
     <g opacity={title} transform={`translate(0 ${24*(1-title)})`}>
@@ -92,7 +103,7 @@
     </g>
   </g>
   <DiagonalGlow id={`bottom-${id}`} {time} {duration} width={w} height={h}
-    shape={`M0 68 L68 0 H${w} V${h} H0Z`} path="M0 68 L68 0"
-    secondaryPath="M16 78 L85 12" enabled={element.diagonalGlowEnabled===true}
+    shape={panelShape} path={studio?`M${w-118} ${h-10} h77 l23 -23`:'M0 68 L68 0'}
+    secondaryPath={studio?`M${w-136} ${h-22} h72 l21 -21`:'M16 78 L85 12'} enabled={element.diagonalGlowEnabled===true}
     intensity={element.diagonalGlowIntensity ?? 170}/>
 </g>
