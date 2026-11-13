@@ -29,6 +29,26 @@
   $: maskId = `broadcast-clip-${id}`;
   $: gradientId = `broadcast-gradient-${id}`;
   $: badgeWidth = label ? Math.min(125,w*.27) : ticker ? Math.min(225,w*.25) : 0;
+  $: hasSocial = (element.freeTextIcon || 'none') !== 'none' && !slide;
+  $: iconSize = label ? Math.min(64,h*.64) : ticker ? Math.min(78,h*.55) : Math.min(94,h*.48);
+  $: iconX = Math.max(4,w-iconSize-(lower?32:label?15:22));
+  $: iconY = label ? (h-iconSize)/2 : ticker ? (h*.73-iconSize)/2 : h*.36-iconSize/2;
+  $: reserveRight = hasSocial ? iconSize + (lower?68:label?33:45) : 0;
+  // A faixa lateral de 125 px precisa de duas linhas em títulos compridos.
+  function splitBadgeTitle(title:string):string[]{
+    if(title.length<=10)return [title];
+    const words=title.split(/\s+/u).filter(Boolean);
+    if(words.length<2)return [title];
+    let first=words[0], rest=words.slice(1).join(' ');
+    if(words.length>2){
+      const idx=words.reduce((best,word,i)=>i>0&&i<words.length
+        &&Math.abs(words.slice(0,i).join(' ').length-words.slice(i).join(' ').length)
+         <Math.abs(words.slice(0,best).join(' ').length-words.slice(best).join(' ').length)?i:best,1);
+      first=words.slice(0,idx).join(' ');rest=words.slice(idx).join(' ');
+    }
+    return [first,rest];
+  }
+  $: badgeLines = splitBadgeTitle(headline);
   $: motion = visualMotionFrame(element.animation,time,duration,slide?'fullscreen':'label',1);
   $: reveal = motion.active ? motion.panel : 1;
   $: textReveal = motion.active ? motion.value : 1;
@@ -60,29 +80,33 @@
     <rect width={w} height={h} rx={modern?18:3} fill={`url(#${gradientId})`} stroke={paint.edge} stroke-width={modern?2:3}/>
     <rect width={badgeWidth} height={h} rx={modern?12:0} fill={accent}/>
     <path d={`M${badgeWidth+12} 3 H${w-22}`} stroke={accent} stroke-width={modern?3:5} opacity={motion.active?motion.gold:1}/>
-    <text x={badgeWidth/2} y={h*.58} text-anchor="middle" fill={paint.dark} font-size={fitted(headline,modern?16:19,badgeWidth-13)} font-weight="900">{headline}</text>
+    {#each badgeLines as part,i}
+      <text data-edit-field="heading" x={badgeWidth/2} y={badgeLines.length>1?h*(.43+i*.27):h*.59}
+        text-anchor="middle" fill={paint.dark} font-size={fitted(part,Math.min(24,h*.25),badgeWidth-16)}
+        font-weight="900">{part}</text>
+    {/each}
     <g opacity={textReveal}>
-      <text x={badgeWidth+16} y={h*.50} fill={primary} font-size={fitted(line1,h*.31,w-badgeWidth-34)} font-weight="800">{line1}</text>
-      <text x={badgeWidth+17} y={h*.81} fill={secondary} font-size={fitted(line2,h*.19,w-badgeWidth-36)}>{line2}</text>
+      <text data-edit-field="line1" x={badgeWidth+16} y={h*.50} fill={primary} font-size={fitted(line1,h*.31,w-badgeWidth-34-reserveRight)} font-weight="800">{line1}</text>
+      <text data-edit-field="line2" x={badgeWidth+17} y={h*.81} fill={secondary} font-size={fitted(line2,h*.19,w-badgeWidth-36-reserveRight)}>{line2}</text>
     </g>
   {:else if ticker}
     <!-- Barra de notícias: bandeira esquerda, manchete e subtítulo em filete inferior. -->
     <rect width={w} height={h} rx={modern?19:1} fill={`url(#${gradientId})`} stroke={paint.edge} stroke-width={modern?2:3}/>
     <rect width={badgeWidth} height={h*.73} fill={accent}/>
-    <text x={badgeWidth/2} y={h*.45} text-anchor="middle" fill={paint.dark} font-weight="900" font-size={fitted(headline,Math.min(30,h*.27),badgeWidth-18)}>{headline}</text>
+    <text data-edit-field="heading" x={badgeWidth/2} y={h*.45} text-anchor="middle" fill={paint.dark} font-weight="900" font-size={fitted(headline,Math.min(30,h*.27),badgeWidth-18)}>{headline}</text>
     <rect y={h*.75} width={w} height={h*.25} fill={modern?paint.edge:accent} fill-opacity={modern?.55:1}/>
     <g opacity={textReveal}>
-      <text x={badgeWidth+25} y={h*.54} fill={primary} font-size={fitted(line1,h*.34,w-badgeWidth-48)} font-weight="850">{line1}</text>
-      <text x="24" y={h*.93} fill={modern?secondary:paint.dark} font-size={fitted(line2,Math.min(24,h*.17),w-48)} font-weight="700">{line2}</text>
+      <text data-edit-field="line1" x={badgeWidth+25} y={h*.54} fill={primary} font-size={fitted(line1,h*.34,w-badgeWidth-48-reserveRight)} font-weight="850">{line1}</text>
+      <text data-edit-field="line2" x="24" y={h*.93} fill={modern?secondary:paint.dark} font-size={fitted(line2,Math.min(24,h*.17),w-48)} font-weight="700">{line2}</text>
     </g>
   {:else if lower}
     <!-- Lower third editorial: duas camadas, sem barra opaca cobrindo toda a imagem. -->
     <path d={`M0 0 H${w-44} L${w} 44 V${h*.75} H0 Z`} fill={`url(#${gradientId})`} stroke={paint.edge} stroke-width="2.5"/>
     <rect x="0" y="0" width={modern?9:19} height={h*.76} fill={accent}/>
     <rect x={modern?25:32} y={h*.77} width={w-(modern?25:32)} height={h*.23} rx={modern?9:0} fill={accent}/>
-    <text x={modern?42:48} y={h*.22} font-size={fitted(headline,h*.16,w-100)} letter-spacing="3" fill={accent} font-weight="900" opacity={titleReveal}>{headline}</text>
-    <text x={modern?42:48} y={h*.61} font-size={fitted(line1,h*.34,w-112)} fill={primary} font-weight="900" opacity={textReveal}>{line1}</text>
-    <text x={modern?48:54} y={h*.935} font-size={fitted(line2,h*.15,w-98)} fill={paint.dark} font-weight="800" opacity={textReveal}>{line2}</text>
+    <text data-edit-field="heading" x={modern?42:48} y={h*.22} font-size={fitted(headline,h*.16,w-100-reserveRight)} letter-spacing="3" fill={accent} font-weight="900" opacity={titleReveal}>{headline}</text>
+    <text data-edit-field="line1" x={modern?42:48} y={h*.61} font-size={fitted(line1,h*.34,w-112-reserveRight)} fill={primary} font-weight="900" opacity={textReveal}>{line1}</text>
+    <text data-edit-field="line2" x={modern?48:54} y={h*.935} font-size={fitted(line2,h*.15,w-98)} fill={paint.dark} font-weight="800" opacity={textReveal}>{line2}</text>
   {:else if slide}
     <!-- Manchete em tela cheia: título e corpo em área editorial com respiro e rodapé independente. -->
     <rect width={w} height={h} fill={`url(#${gradientId})`} fill-opacity=".97"/>
@@ -101,11 +125,10 @@
     <FooterBrand {element} x={w*.08} y={h*.967} fontSize={Math.min(21,h*.022)} maxWidth={w*.42} maxHeight={h*.06}
       color={textColor(element,'footer','secondary')}/>
   {/if}
-  {#if !slide && (label || ticker || lower)}
-    {#if (element.freeTextIcon || 'none') !== 'none' && lower}
-      <g opacity={iconReveal} transform={`translate(${w-61} ${h*.4}) scale(${motion.active?motion.iconScale:1}) translate(-25 -25)`}>
-        <SocialIcon icon={element.freeTextIcon || 'none'} x={0} y={0} size={50} color={accent}/>
-      </g>
-    {/if}
+  {#if hasSocial}
+    <!-- Ícone disponível em todos os modelos que oferecem seletor no inspetor. -->
+    <g opacity={iconReveal} transform={`translate(${iconX+iconSize/2} ${iconY+iconSize/2}) scale(${motion.active?motion.iconScale:1}) translate(${-iconSize/2} ${-iconSize/2})`}>
+      <SocialIcon icon={element.freeTextIcon || 'none'} x={0} y={0} size={iconSize} color={accent} framed={true}/>
+    </g>
   {/if}
 </g>

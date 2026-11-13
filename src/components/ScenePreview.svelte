@@ -38,7 +38,7 @@
 
   function richBody(element: HudElement, key: EditableTextKey): boolean {
     return element.kind === 'freeText' && key === 'line1' &&
-      ['classic', 'fullPage', 'legacyPresentationBar', 'legacyPresentationSlide'].includes(element.freeTextStyle || 'classic');
+      ['classic', 'fullPage', 'legacyPresentationBar', 'legacyPresentationSlide', 'newsSlide'].includes(element.freeTextStyle || 'classic');
   }
   function editableKey(node: Element): EditableTextKey | null {
     const field = node.getAttribute('data-edit-field');
@@ -272,7 +272,7 @@
           width={element.style.width*element.style.scaleX} height={baseH*element.style.scaleY}
           fill="transparent" stroke={BRAND.goldLight} stroke-width="3"
           stroke-dasharray="12 8" pointer-events="none"/>
-        {#if !((element.kind === 'technical' && ['fullscreen','legacyFullscreen'].includes(element.technicalLayout || '')) || (element.kind === 'freeText' && (element.freeTextStyle === 'fullPage' || element.freeTextStyle === 'fullTechnical' || element.freeTextStyle === 'legacyPresentationSlide')))}
+        {#if !((element.kind === 'technical' && ['fullscreen','legacyFullscreen'].includes(element.technicalLayout || '')) || (element.kind === 'freeText' && (element.freeTextStyle === 'fullPage' || element.freeTextStyle === 'fullTechnical' || ['legacyPresentationSlide','newsSlide'].includes(element.freeTextStyle || ''))))}
         {#each (isBottomBar(element,project.canvas.width,project.canvas.height) ? BOTTOM_BAR_HANDLES : isBar(element) ? (element.technicalSide === 'right' ? RIGHT_TECH_HANDLES : LEFT_TECH_HANDLES) : ALL_HANDLES) as handle}
           <rect data-editor-overlay="true" class="resize-handle"
             x={handleX(handle, element.style.width*element.style.scaleX)-10} y={handleY(handle, baseH*element.style.scaleY)-10}

@@ -107,6 +107,9 @@
   $: freeSocial = element.kind === 'freeText' && (element.freeTextIcon || 'none') !== 'none' && (freeLabel || freeBarPresentation);
   $: clipStart = freeSocial ? 92 : 32;
   $: clipWidth = Math.max(45, w-clipStart-32);
+  // O modo de uma linha centraliza no espaço disponível, sem invadir o ícone.
+  $: centeredCompactText = compactLabel && !labelWeights.stacked;
+  $: compactCenterX = clipStart + clipWidth / 2;
   $: bodyTitleSize = Math.min(rich.titleSize*fontScale, fullSlide?95:48);
   // Usa uma área de recorte e uma linha de base compartilhadas: o texto não
   // pode começar acima do clipPath (cortava o topo das letras no slide).
@@ -125,8 +128,8 @@
   $: scrollDistance = legacyScrollDistance(time, speed);
   $: lineWidth1 = measure(line1Text, typeSize, true, false);
   $: lineWidth2 = measure(line2Text, typeSize*.68, false, false);
-  $: activeScroll1 = freeLabel && rich.scrollLine1;
-  $: activeScroll2 = freeLabel && rich.scrollLine2;
+  $: activeScroll1 = freeLabel && rich.scrollLine1 && !centeredCompactText;
+  $: activeScroll2 = freeLabel && rich.scrollLine2 && !centeredCompactText;
   $: startScroll = w - 32;
   $: bodyLayout = layoutRichText(fields.line1, Math.max(120,w-2*margin-150), bodyFontSize, 1.38, rich.bullets, rich.bodyBold, rich.bodyItalic, measure);
   let ctx: CanvasRenderingContext2D | null = null;
@@ -303,8 +306,8 @@
             <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={startScroll-scrollDistance+i*(lineWidth1+scrollGap)} y={lineY(0)} fill={textColor(element,'line1','white')} font-size={typeSize} font-family={fontFamily} font-weight="800">{line1Text}</text>
           {/each}
         {:else}
-          <g transform={`translate(${-26*(1-pBody)} 0)`}>
-            <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={clipStart+2} y={lineY(0)} fill={textColor(element,'line1','white')} font-size={fit(line1Text,typeSize,clipWidth-6)} font-family={fontFamily} font-weight="800">{line1Text}</text>
+          <g transform={`translate(${centeredCompactText?0:-26*(1-pBody)} 0)`}>
+            <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={centeredCompactText?compactCenterX:clipStart+2} text-anchor={centeredCompactText?'middle':'start'} dominant-baseline={centeredCompactText?'middle':undefined} y={centeredCompactText?h/2:lineY(0)} fill={textColor(element,'line1','white')} font-size={fit(line1Text,typeSize,clipWidth-6)} font-family={fontFamily} font-weight="800">{line1Text}</text>
           </g>
         {/if}
         </g>
@@ -315,7 +318,7 @@
               <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={startScroll-scrollDistance+i*(lineWidth2+scrollGap)} y={lineY(1)} fill={textColor(element,'line2','secondary')} font-size={typeSize*.68} font-family={fontFamily}>{line2Text}</text>
             {/each}
           {:else}
-            <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={clipStart+2} y={lineY(1)} fill={textColor(element,'line2','secondary')} font-size={fit(line2Text,typeSize*.68,clipWidth-6,false)} font-family={fontFamily}>{line2Text}</text>
+            <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={centeredCompactText?compactCenterX:clipStart+2} text-anchor={centeredCompactText?'middle':'start'} dominant-baseline={centeredCompactText?'middle':undefined} y={centeredCompactText?h/2:lineY(1)} fill={textColor(element,'line2','secondary')} font-size={fit(line2Text,typeSize*.68,clipWidth-6,false)} font-family={fontFamily}>{line2Text}</text>
           {/if}
         {/if}
         </g>
@@ -323,9 +326,14 @@
     {:else}
       <g opacity={pIconOpacity} transform={`translate(48 48) scale(${pIconScale}) translate(-48 -48)`}>
         <rect x="18" y="18" width="60" height="60" rx="12" fill={paint.edge} fill-opacity=".32" stroke={accent} stroke-width="1.7" />
-        <svg x="27" y="27" width="42" height="42" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-          <path d={CARD_ICONS[element.kind] || CARD_ICONS.default} fill="none" stroke={accent} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
+        {#if element.kind === 'freeText' && element.freeTextIcon && element.freeTextIcon !== 'none'}
+          <!-- Cartela RDV Bus Clássica: usa o mesmo SVG vetorial de redes sociais do Studio. -->
+          <SocialIcon icon={element.freeTextIcon} x={27} y={27} size={42} color={accent}/>
+        {:else}
+          <svg x="27" y="27" width="42" height="42" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <path d={CARD_ICONS[element.kind] || CARD_ICONS.default} fill="none" stroke={accent} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        {/if}
       </g>
       <g opacity={pTitle} transform={`translate(${-26*(1-pTitle)} 0)`}>
         <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="100" y={h*.36} fill={textColor(element,'heading','secondary')} font-size={Math.min(17*fontScale,h*.21)} font-weight="800" letter-spacing="2.7">{fields.heading}</text>
