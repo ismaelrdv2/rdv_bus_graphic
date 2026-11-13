@@ -4,6 +4,8 @@
   import { palettePaint, textColor } from '../lib/palette';
   import type { TextColorKey, TextColorRole } from '../lib/types';
   import LegacyShape from './LegacyShape.svelte';
+  import FooterBrand from './FooterBrand.svelte';
+  import BroadcastShape from './BroadcastShape.svelte';
   import BottomTechnical from './BottomTechnical.svelte';
   import ShineOverlay from './ShineOverlay.svelte';
   import DiagonalGlow from './DiagonalGlow.svelte';
@@ -29,6 +31,7 @@
   // Formato e aparência são independentes: o seletor Studio/Clássico decide o renderizador
   // para TODAS as categorias, inclusive barras, tela cheia e texto livre legado.
   $: shouldUseLegacy = element.visualPreset === 'legacy';
+  $: broadcast = element.kind === 'freeText' && ['newsLabel','newsTicker','newsLowerThird','newsSlide'].includes(element.freeTextStyle || '');
   $: sx = element.style.scaleX;
   $: sy = element.style.scaleY;
   // A caixa é redimensionada, mas o texto NÃO sofre transform(scaleX, scaleY).
@@ -163,6 +166,8 @@
 <g font-family={fontFamily}>
   {#if portraitBottom}
     <BottomTechnical {element} {time} {duration}/>
+  {:else if broadcast}
+    <BroadcastShape {element} {time} {duration} {canvasHeight}/>
   {:else if shouldUseLegacy}
     <LegacyShape {element} {time} {duration} {canvasWidth} {canvasHeight}/>
   {:else}
@@ -206,7 +211,7 @@
           </g>
         {/if}
       {/each}
-      <text x={titleX} y={height - 39*sy} fill={textColor(element,'footer','secondary')} font-size={16*textFactor} font-weight="800" font-family={fontFamily} letter-spacing="7">RDV BUS</text>
+      <FooterBrand {element} x={titleX} y={height - 39*sy} fontSize={16*textFactor} maxWidth={Math.max(100,innerRight-titleX-32)} maxHeight={Math.max(22,35*sy)} color={textColor(element,'footer','secondary')} letterSpacing={7}/>
       <path d={`M${innerRight-42} ${height-36*sy} h31 l22 -22`} fill="none" stroke={accent} opacity={studioGold} stroke-width="2"/>
     </g>
   {:else if fullTech}
@@ -231,7 +236,7 @@
       <path d={`M${x+48} ${y+fullRowHeight*.78} H${x+fullCellWidth}`} stroke={paint.edge} stroke-width="2"/>
       </g>
     {/each}
-    <text x={fullMargin} y={height-38} font-size="16" fill={textColor(element,'footer','secondary')} letter-spacing="8" font-weight="800">RDV BUS</text>
+    <FooterBrand {element} x={fullMargin} y={height-38} fontSize={16} maxWidth={Math.max(90,w*.43)} maxHeight={46} color={textColor(element,'footer','secondary')} letterSpacing={8}/>
     <path d={`M${w-fullMargin-70} ${height-36} h45 l24 -24`} stroke={accent} opacity={studioGold} stroke-width="3" fill="none"/>
   {:else if technicalAlpha1}
     <rect width={w} height={height} rx="16" fill={bg} fill-opacity="0.95"/>
@@ -263,7 +268,7 @@
         {/each}
       </g>
     </g>
-    <text x={fullMargin} y={height-34} font-size="16" fill={textColor(element,'footer','secondary')} font-weight="800" letter-spacing="7">RDV BUS</text>
+    <FooterBrand {element} x={fullMargin} y={height-34} fontSize={16} maxWidth={Math.max(90,w*.43)} maxHeight={46} color={textColor(element,'footer','secondary')} letterSpacing={7}/>
     <path d={`M${w-fullMargin-65} ${height-34} h44 l19 -19`} fill="none" stroke={accent} opacity={studioGold} stroke-width="3"/>
   {:else if corner}
     <rect width={w} height={height} rx="15" fill={bg} fill-opacity="0.96" stroke={paint.edge} stroke-width="3"/>
