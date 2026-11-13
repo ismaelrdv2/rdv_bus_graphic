@@ -78,7 +78,7 @@ export function makeElement(kind: ElementKind): HudElement {
       animation = 'fade'; break;
   }
   return {
-    id: uniqueId(), kind, title: KIND_INFO[kind].label, visible: true, fields, style, animation, shineEnabled:true, diagonalGlowEnabled:false, diagonalGlowIntensity:170, visualPreset: 'legacy',
+    id: uniqueId(), kind, title: KIND_INFO[kind].label, visible: true, fields, style, animation, shineEnabled:true, diagonalGlowEnabled:false, diagonalGlowIntensity:170, visualPreset: 'legacy', footerMode:'text', footerText:'RDV BUS',
     ...(kind === 'technical' ? { technicalSide: 'left' as const, technicalLayout: 'side' as const } : {}),
     ...(kind === 'freeText' ? {
       freeTextStyle: 'legacyLabel' as const,
