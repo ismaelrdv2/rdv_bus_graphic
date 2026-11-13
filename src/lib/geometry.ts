@@ -9,7 +9,7 @@ export const CREDIT_CARD_FONT_SIZE = 29;
 /** Apenas cartelas compactas: telas inteiras, slides, barras e logotipos mantêm layout próprio. */
 export function isCompactCartela(element: HudElement): boolean {
   return ['location','date','route','driver','credit'].includes(element.kind)
-    || (element.kind === 'freeText' && element.freeTextStyle === 'legacyLabel');
+    || (element.kind === 'freeText' && ['legacyLabel','newsLabel'].includes(element.freeTextStyle || ''));
 }
 /** Padroniza largura, altura e fonte mantendo conteúdo, cores e animações personalizados. */
 export function standardizeCard(element: HudElement, canvasWidth: number, canvasHeight: number): HudElement {
@@ -33,7 +33,10 @@ export function elementBaseHeight(element: HudElement, canvasHeight: number): nu
   if (element.kind === 'technical') return isBar(element) && canvasHeight > 1080 ? PORTRAIT_BAR_HEIGHT : canvasHeight;
   if (element.kind === 'freeText') {
     if (element.freeTextStyle === 'technicalBar') return canvasHeight > 1080 ? PORTRAIT_BAR_HEIGHT : canvasHeight;
-    if (['fullTechnical', 'fullPage', 'legacyPresentationSlide'].includes(element.freeTextStyle || '')) return canvasHeight;
+    if (['fullTechnical', 'fullPage', 'legacyPresentationSlide', 'newsSlide'].includes(element.freeTextStyle || '')) return canvasHeight;
+    if (element.freeTextStyle === 'newsTicker') return 138;
+    if (element.freeTextStyle === 'newsLowerThird') return 205;
+    if (element.freeTextStyle === 'newsLabel') return CREDIT_CARD_HEIGHT;
     if (element.freeTextStyle === 'technicalAlpha1') return 480;
     if (element.freeTextStyle === 'legacyPresentationBar') return 222;
     if (element.freeTextStyle === 'legacyLabel') return CREDIT_CARD_HEIGHT;

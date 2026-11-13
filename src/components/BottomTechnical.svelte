@@ -8,6 +8,7 @@
   import { clamp } from '../lib/timing';
   import { legacyPhase, legacyStage, legacyTechnicalEntrance } from '../lib/legacy';
   import DiagonalGlow from './DiagonalGlow.svelte';
+  import FooterBrand from './FooterBrand.svelte';
   export let element: HudElement;
   export let time = 0;
   export let duration = 5.3;
@@ -98,7 +99,7 @@
       {/if}
     {/each}
     <g opacity={footer}>
-      <text x="79" y={h-24} fill={textColor(element,'footer','secondary')} font-size={15*fontScale} letter-spacing="5.5" font-weight="800">R D V  B U S</text>
+      <FooterBrand {element} x={79} y={h-24} fontSize={15*fontScale} maxWidth={Math.max(90,w*.43)} maxHeight={38*fontScale} color={textColor(element,'footer','secondary')} letterSpacing={5.5}/>
       <path d={`M${w-134} ${h-20} h72 l19 -17`} stroke={element.style.accent} stroke-width="2.5" fill="none"/>
     </g>
   </g>

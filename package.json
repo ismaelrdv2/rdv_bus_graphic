@@ -1,7 +1,7 @@
 {
   "name": "rdv-bus",
   "private": true,
-  "version": "0.1.0-alpha.9.3.8",
+  "version": "0.1.0-alpha.9.3.9",
   "type": "module",
   "description": "RDV Bus Studio — editor de HUDs para vídeos de ônibus",
   "scripts": {
@@ -10,6 +10,7 @@
     "preview": "vite preview --host 127.0.0.1",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test:legacy": "node tests/check-legacy-v6.mjs && node tests/check-visual-presets.mjs",
+    "test:broadcast": "node tests/check-broadcast.mjs",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
     "desktop:build:linux": "tauri build --bundles appimage",
