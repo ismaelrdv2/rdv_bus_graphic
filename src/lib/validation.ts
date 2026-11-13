@@ -7,6 +7,7 @@ import { clamp } from './timing';
 import { normalizeFontName } from './fonts';
 import { PORTRAIT_BAR_HEIGHT } from './geometry';
 import { DEFAULT_RICH_TEXT } from './richtext';
+import { canonicalFreeTextStyle, studioOnlyStyle } from './freeTextModes';
 
 const isObject = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
 const safeString = (value: unknown, max = 500) => typeof value === 'string' ? value.slice(0, max) : '';
@@ -33,7 +34,7 @@ export function validateProject(raw: unknown): RDVProject {
     const technical = item.kind === 'technical';
     const freeText = item.kind === 'freeText';
     const freeTextStyle = ['technicalBar', 'technicalAlpha1', 'fullTechnical', 'fullPage', 'legacyLabel', 'legacyHalfBar', 'legacyFullBar', 'legacyPresentationBar', 'legacyPresentationSlide', 'newsLabel', 'newsTicker', 'newsLowerThird', 'newsSlide'].includes(String(item.freeTextStyle))
-      ? item.freeTextStyle as HudElement['freeTextStyle'] : 'classic';
+      ? canonicalFreeTextStyle(item.freeTextStyle as HudElement['freeTextStyle']) : 'classic';
     const rawCaptions = Array.isArray(item.freeTextCaptions) ? item.freeTextCaptions : [];
     const captions = ['CARROCERIA', 'MODELO', 'CHASSI', 'MODELO', 'EMPRESA', 'PREFIXO']
       .map((defaultLabel, labelIndex) => typeof rawCaptions[labelIndex] === 'string'
@@ -86,7 +87,7 @@ export function validateProject(raw: unknown): RDVProject {
       shineEnabled:item.shineEnabled!==false,
       diagonalGlowEnabled:item.diagonalGlowEnabled===true,
       diagonalGlowIntensity:safeNumber(item.diagonalGlowIntensity,170,50,300),
-      visualPreset: item.visualPreset === 'legacy' ? 'legacy' : 'studio',
+      visualPreset: freeText && studioOnlyStyle(freeTextStyle) ? 'studio' : item.visualPreset === 'legacy' ? 'legacy' : 'studio',
       footerMode: ['text','image','none'].includes(String(item.footerMode)) ? item.footerMode as HudElement['footerMode'] : 'text',
       footerText: typeof item.footerText === 'string' ? safeString(item.footerText,100) : 'RDV BUS',
       ...(typeof item.footerImageData === 'string' && item.footerImageData.length < 5_600_000
@@ -95,6 +96,8 @@ export function validateProject(raw: unknown): RDVProject {
       ...((technical || freeText) ? { technicalSide } : {}),
       ...(technical ? {technicalLayout: item.technicalLayout === 'legacyFullscreen' ? 'legacyFullscreen' as const : item.technicalLayout === 'fullscreen' ? 'fullscreen' as const : 'side' as const} : {}),
       ...(freeText ? { freeTextStyle, freeTextCaptions: captions,
+        scrollBarSize: ['small','medium','large'].includes(String(item.scrollBarSize)) ? item.scrollBarSize as HudElement['scrollBarSize'] : item.freeTextStyle==='legacyFullBar'?'large' as const:item.freeTextStyle==='legacyHalfBar'?'medium' as const:'small' as const,
+        autoFitWidth: item.autoFitWidth===true,
         freeTextDisplay: ['both','first','second','alternate'].includes(String(item.freeTextDisplay)) ? item.freeTextDisplay as HudElement['freeTextDisplay'] : 'both' as const,
         freeTextIcon: ['facebook','instagram','x','tiktok','twitch','whatsapp','telegram','discord'].includes(String(item.freeTextIcon)) ? item.freeTextIcon as HudElement['freeTextIcon'] : 'none' as const,
         richText: (() => { const rich = isObject(item.richText) ? item.richText : {};
