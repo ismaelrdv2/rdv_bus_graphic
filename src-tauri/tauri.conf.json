@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "RDV Bus Studio",
+  "productName": "RDV Bus Studio - Animacoes TESTE",
   "version": "0.1.0-alpha.9.3.8",
-  "identifier": "com.rdvbus.studio",
+  "identifier": "com.rdvbus.studio.animationtest",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://127.0.0.1:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "RDV Bus Studio — 0.1.0-alpha.9.3.8",
+        "title": "RDV Bus Studio — Animações TESTE (Alpha 9.3.8)",
         "width": 1480,
         "height": 900,
         "minWidth": 1040,
