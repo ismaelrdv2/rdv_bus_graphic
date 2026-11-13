@@ -338,7 +338,6 @@
     <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={studioTextX} y={cardTextY.main} fill={textColor(element,'line1','white')} font-family={fontFamily} font-size={scaledText(fields.line1,Math.min(size,height*.36),studioTextWidth)} font-weight="800">{fields.line1}</text>
     {#if fields.line2}<text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={studioTextX} y={cardTextY.secondary} fill={textColor(element,'line2','secondary')} font-size={Math.min(21*textFactor,height*.17)}>{fields.line2}</text>{/if}
   {/if}
-    {/if}
   {#if studioCard}
     <!-- Reaproveita o desenho dos ícones 0.14; fica dentro da área reservada à esquerda. -->
     <g transform={`translate(${cardIconX} ${Math.max(8,(height-cardIconSize)/2)})`} pointer-events="none">
