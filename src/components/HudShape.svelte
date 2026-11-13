@@ -142,6 +142,9 @@
   $: studioRowReveals = studioMotion.rows;
   $: studioMaskId = `studio-motion-mask-${id}`;
   $: studioMaskGradientId = `studio-motion-gradient-${id}`;
+  $: studioScrollDistance = Math.max(0,time-.50) * (rich.scrollPixelsPerSecond || 200);
+  $: studioLineWidth1 = measureRich(compactLine1, Math.min(size,height*.33), true, false);
+  $: studioLineWidth2 = measureRich(compactLine2, Math.min(size*.72,height*.24), false, false);
   $: studioFront = -38 + studioMotion.panel * (w+76);
   $: studioStop1 = clamp((studioFront-26)/Math.max(1,w)*100,0,100);
   $: studioStop2 = clamp((studioFront+26)/Math.max(1,w)*100,studioStop1,100);
@@ -292,7 +295,48 @@
         <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={compactLabelX} y={compactWeights.stacked?height*.86:height*.66} opacity={compactWeights.second} fill={textColor(element,'line2','secondary')} font-family={fontFamily} font-size={scaledText(compactLine2,Math.min(size*(compactWeights.stacked ? .75 : 1),height*(compactWeights.stacked ? .22 : .40)),compactLabelWidth)}>{compactLine2}</text>
       {/if}
     </g>
-  {:else if freeText && element.freeTextStyle === 'classic'}
+  {:else if studioWideBar}
+    <!-- Barras largas Studio: não reutilizam a geometria do Clássico 0.14. -->
+    <defs>
+      <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
+        <stop stop-color={paint.background}/><stop offset="1" stop-color={bg}/>
+      </linearGradient>
+      <clipPath id={contentClipId}><rect x={freeSocial?112:32} y="7" width={Math.max(32,w-(freeSocial?152:72))} height={Math.max(12,height-14)}/></clipPath>
+    </defs>
+    <rect x="2" y="2" width={Math.max(1,w-4)} height={Math.max(1,height-4)} rx="20"
+      fill={`url(#${gradId})`} stroke={paint.edge} stroke-width="2.5" fill-opacity=".97"/>
+    <rect x="9" y={height*.20} width="5" height={height*.60} rx="2.5" fill={accent}/>
+    <path d={`M28 2 H${Math.min(w*.38,290)}`} stroke={accent} stroke-width="4" fill="none"/>
+    <path d={`M${w-110} ${height-4} h79 l18 -17`} stroke={paint.edge} stroke-width="2.5" fill="none"/>
+    {#if freeSocial}
+      <g opacity={studioMotion.iconOpacity} transform={`translate(49 ${height/2}) scale(${studioMotion.iconScale}) translate(-49 ${-height/2})`}>
+        <SocialIcon icon={element.freeTextIcon || 'none'} x={23} y={Math.max(12,height/2-26)} size={52} color={accent} framed={true}/>
+      </g>
+    {/if}
+    <g clip-path={`url(#${contentClipId})`}>
+      {#if rich.scrollLine1}
+        {#each Array.from({length:Math.max(1,Math.min(20,rich.scrollRepeats||1))},(_,i)=>i) as i}
+          <text data-edit-field="line1" opacity={studioValueAlpha} x={w-30-studioScrollDistance+i*(studioLineWidth1+(rich.scrollGap||240))}
+            y={height*.43} font-size={Math.min(size,height*.33)} font-weight="800" fill={textColor(element,'line1','white')}>{compactLine1}</text>
+        {/each}
+      {:else}
+        <text data-edit-field="line1" opacity={studioValueAlpha} x={freeSocial?114:34} y={height*.43}
+          font-size={scaledText(compactLine1,Math.min(size,height*.33),Math.max(32,w-(freeSocial?162:84)))}
+          font-family={fontFamily} font-weight="800" fill={textColor(element,'line1','white')}>{compactLine1}</text>
+      {/if}
+      <path d={`M${freeSocial?112:32} ${height*.54} H${w-36}`} stroke={accent} stroke-width="1" stroke-opacity=".35" opacity={studioGold}/>
+      {#if rich.scrollLine2}
+        {#each Array.from({length:Math.max(1,Math.min(20,rich.scrollRepeats||1))},(_,i)=>i) as i}
+          <text data-edit-field="line2" opacity={studioValueAlpha} x={w-30-studioScrollDistance+i*(studioLineWidth2+(rich.scrollGap||240))}
+            y={height*.83} font-size={Math.min(size*.72,height*.24)} fill={textColor(element,'line2','secondary')}>{compactLine2}</text>
+        {/each}
+      {:else if compactLine2}
+        <text data-edit-field="line2" opacity={studioValueAlpha} x={freeSocial?114:34} y={height*.83}
+          font-size={scaledText(compactLine2,Math.min(size*.72,height*.24),Math.max(32,w-(freeSocial?162:84)))}
+          font-family={fontFamily} fill={textColor(element,'line2','secondary')}>{compactLine2}</text>
+      {/if}
+    </g>
+  {:else if freeText && (element.freeTextStyle === 'classic' || studioPresentationBar)}
     <defs><clipPath id={contentClipId}><rect x="30" y={bodyStart} width={w-60} height={bodyAreaHeight}/></clipPath></defs>
     <path d={`M14 0 H${w-32} L${w} 26 V${height-20} Q${w} ${height} ${w-20} ${height} H16 Q0 ${height} 0 ${height-16} V14 Q0 0 14 0Z`} fill={bg} fill-opacity=".97" stroke={paint.edge} stroke-width="3"/>
     <path d={`M16 1 H${Math.min(w*.38,230)}`} stroke={accent} stroke-width="5"/>
