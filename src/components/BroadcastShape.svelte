@@ -56,16 +56,29 @@
   $: iconReveal = motion.active ? motion.iconOpacity : 1;
   $: fitted = (text:string,ideal:number,available:number) =>
     Math.max(9, Math.min(ideal,available/Math.max(1,[...text].length*.57)));
-  function wrap(text:string,limit:number):string[]{
-    const result:string[] = [];let line='';
-    for(const word of text.split(/\s+/u)){
-      if(!word)continue;
-      if(line && line.length+word.length+1>limit){result.push(line);line=word;}else line+=(line?' ':'')+word;
+  /** Respeita Enter e mantém os marcadores no início de cada parágrafo. */
+  function wrap(text:string,limit:number,bullet:'none'|'dots'|'chevrons'|'numbers'):string[]{
+    const lines:string[]=[];
+    let index=0;
+    for(const raw of text.replace(/\r\n?/g,'\n').split('\n')){
+      const paragraph=raw.trim();
+      if(!paragraph){lines.push('');continue;}
+      const prefix=bullet==='dots'?'• ':bullet==='chevrons'?'» ':bullet==='numbers'?String(++index)+'. ':'';
+      const words=paragraph.split(/\s+/u).filter(Boolean);
+      let line=prefix;
+      for(const word of words){
+        if(line.trim() && line.length+word.length+1>limit){
+          lines.push(line);line=word;
+        }else line+=(line&&!line.endsWith(' ')?' ':'')+word;
+      }
+      lines.push(line);
     }
-    if(line)result.push(line);
-    return result.slice(0,5);
+    return lines;
   }
-  $: paragraphs = wrap(element.fields.line1||'',Math.max(19,Math.round(w/33)));
+  $: bulletStyle = element.richText?.bullets || 'none';
+  $: paragraphs = wrap(element.fields.line1||'',Math.max(19,Math.round(w/33)),bulletStyle);
+  $: slideLineStep = Math.min(96,h*.46/Math.max(1,paragraphs.length));
+  $: slideFontSize = Math.min(78,h*.078,slideLineStep*.86);
 </script>
 
 <defs>
@@ -114,11 +127,16 @@
     <rect x={w*.08} y={h*.12} width={w*.34} height={Math.max(6,h*.012)} fill={accent} opacity={motion.active?motion.gold:1}/>
     <text data-edit-field="heading" x={w*.08} y={h*.22} fill={accent} letter-spacing="5"
       font-size={fitted(headline,Math.min(h*.045,54),w*.82)} font-weight="900" opacity={titleReveal}>{headline}</text>
-    {#each paragraphs as paragraph,index}
-      <text data-edit-field="line1" x={w*.08} y={h*.34+index*Math.min(96,h*.095)}
-        fill={primary} font-size={fitted(paragraph,Math.min(78,h*.078),w*.80)}
-        font-weight={modern?"700":"900"} opacity={textReveal}>{paragraph}</text>
-    {/each}
+    <clipPath id={`broadcast-body-${id}`}>
+      <rect x={w*.07} y={h*.275} width={w*.86} height={h*.52}/>
+    </clipPath>
+    <g clip-path={`url(#broadcast-body-${id})`}>
+      {#each paragraphs as paragraph,index}
+        <text data-edit-field="line1" x={w*.08} y={h*.34+index*slideLineStep}
+          fill={primary} font-size={fitted(paragraph,slideFontSize,w*.80)}
+          font-weight={modern?"700":"900"} opacity={textReveal}>{paragraph}</text>
+      {/each}
+    </g>
     <rect x={w*.08} y={h*.81} width={w*.84} height={Math.max(2,h*.004)} fill={paint.edge} opacity=".8"/>
     <text data-edit-field="line2" x={w*.08} y={h*.88} fill={secondary}
       font-size={fitted(line2,Math.min(37,h*.037),w*.82)} opacity={textReveal}>{line2}</text>
