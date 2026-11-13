@@ -196,10 +196,12 @@
           {@const y = rowStart + index * rowStep}
           {@const rowX = isRight ? technicalRowTextX(w,height,y+26,true) : innerX}
           {@const rowWidth = isRight ? technicalTextAvailableWidth(w,height,y+26,true)-6 : contentWidth}
+          <g opacity={studioRowReveals[index]}>
           <path d={`M${rowX - 44} ${y + 3} l12 13 -12 13 M${rowX - 30} ${y+3} l12 13 -12 13`} stroke={accent} opacity={studioGold} stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           <text data-edit-caption={index} style={fieldTextStyle(element,'caption'+index)} x={rowX} y={y+3} fill={textColor(element,('caption'+index) as TextColorKey,'secondary')} font-family={fontFamily} font-weight="800" font-size={scaledText(captions[index] || '', Math.min((isRight?15:17)*textFactor, rowStep*.21), Math.max(60,rowWidth-(captions[index] || '').length*3))} letter-spacing="3">{captions[index] || ''}</text>
           <text data-edit-field={'line'+(index+1)} style={fieldTextStyle(element,'line'+(index+1))} x={rowX} y={y+Math.min(42*sy,rowStep*.52)} fill={textColor(element,('line'+(index+1)) as TextColorKey,'white')} font-family={fontFamily} font-weight="800" font-size={scaledText(value, Math.min(size, rowStep*.43, isRight?34*textFactor:1000), rowWidth)}>{value}</text>
           <path d={`M${rowX} ${y + rowStep*.7} H${innerRight}`} stroke={paint.edge} stroke-width="2"/>
+          </g>
         {/if}
       {/each}
       <text x={titleX} y={height - 39*sy} fill={textColor(element,'footer','secondary')} font-size={16*textFactor} font-weight="800" font-family={fontFamily} letter-spacing="7">RDV BUS</text>
@@ -220,10 +222,12 @@
       {@const countInRow = Math.min(fullColumns, activeTechnical.length - row * fullColumns)}
       {@const x = fullMargin + (fullColumns - countInRow) * (fullCellWidth + 60) / 2 + col * (fullCellWidth + 60)}
       {@const y = fullGridStartY + row * (fullRowHeight + fullGridGap)}
+      <g opacity={studioRowReveals[position]}>
       <path d={`M${x} ${y+9} l15 17 -15 17 M${x+16} ${y+9} l15 17 -15 17`} stroke={accent} opacity={studioGold} stroke-width="4" fill="none" stroke-linecap="round"/>
       <text data-edit-caption={index} style={fieldTextStyle(element,'caption'+index)} x={x+48} y={y+16} font-family={fontFamily} font-size={Math.min(21,fullRowHeight*.19)} fill={textColor(element,('caption'+index) as TextColorKey,'secondary')} font-weight="800" letter-spacing="3">{captions[index] || ''}</text>
       <text data-edit-field={'line'+(index+1)} style={fieldTextStyle(element,'line'+(index+1))} x={x+48} y={y+Math.min(76,fullRowHeight*.64)} font-family={fontFamily} font-size={scaledText(value,fullFont,fullCellWidth-58)} fill={textColor(element,('line'+(index+1)) as TextColorKey,'white')} font-weight="800">{value}</text>
       <path d={`M${x+48} ${y+fullRowHeight*.78} H${x+fullCellWidth}`} stroke={paint.edge} stroke-width="2"/>
+      </g>
     {/each}
     <text x={fullMargin} y={height-38} font-size="16" fill={textColor(element,'footer','secondary')} letter-spacing="8" font-weight="800">RDV BUS</text>
     <path d={`M${w-fullMargin-70} ${height-36} h45 l24 -24`} stroke={accent} opacity={studioGold} stroke-width="3" fill="none"/>
@@ -234,8 +238,10 @@
     <path d={`M33 ${77*sy} H${w-30}`} stroke="#39445a" stroke-width="2"/>
     {#each [fields.line1,fields.line2,fields.line3,fields.line4] as value, index}
       {#if value}
+        <g opacity={studioRowReveals[index]}>
         <text data-edit-caption={index} style={fieldTextStyle(element,'caption'+index)} x="33" y={(132+index*86)*sy} fill={textColor(element,('caption'+index) as TextColorKey,'secondary')} font-family={fontFamily} font-size={scaledText(captions[index] || '',21*textFactor,w-66)}>{captions[index] || ''}</text>
         <text data-edit-field={'line'+(index+1)} style={fieldTextStyle(element,'line'+(index+1))} x="33" y={(170+index*86)*sy} fill={textColor(element,('line'+(index+1)) as TextColorKey,'white')} font-family={fontFamily} font-size={scaledText(value,Math.min(size,32*textFactor),w-66)} font-weight="600">{value}</text>
+        </g>
       {/if}
     {/each}
   {:else if fullPage}
