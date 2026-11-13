@@ -27,3 +27,36 @@ export function legacyScrollTravel(width: number, textWidth: number, repeats: nu
 export function legacyScrollRecommendedDuration(width: number, textWidth: number, speed: number, repeats: number, gap = 240): number {
   return .5 + legacyScrollTravel(width, textWidth, repeats, gap) / clamp(speed, 30, 1400) + .5;
 }
+
+
+/**
+ * Transcrição das curvas de entrada do rdv_anim.py (pacote gráfico v6).
+ * Os tempos são segundos, relativos ao início da sequência (não percentuais).
+ * Animação determinística: a mesma função serve ao preview e a cada quadro exportado.
+ */
+export function legacyLabelMotion(phase: number) {
+  const panel = easeOutCubic(phase / 0.40);
+  const gold = easeOutCubic((phase - 0.10) / 0.45);
+  const iconProgress = clamp((phase - 0.28) / 0.35, 0, 1);
+  const overshoot = 1 + 2.5 * (iconProgress - 1) ** 3 + 1.5 * (iconProgress - 1) ** 2;
+  return {
+    panel,
+    gold,
+    iconScale: 0.55 + 0.45 * overshoot,
+    iconOpacity: clamp((phase - 0.28) / 0.14, 0, 1),
+    label: easeOutCubic((phase - 0.38) / 0.30),
+    value: easeOutCubic((phase - 0.46) / 0.34),
+  };
+}
+
+/** RDV v6: 0,55 s de painel + 90 ms por campo + 0,40 s para o último campo. */
+export function legacyTechnicalEntrance(visibleFields: number): number {
+  const count = Math.max(1, Math.min(8, Math.round(visibleFields)));
+  return 0.55 + 0.09 * count + 0.40;
+}
+
+/** Logo de canto do RDV v6: escala de 86% a 100% e deslocamento lateral de 30 px. */
+export function legacyCornerMotion(phase: number) {
+  const reveal = easeOutCubic(phase / 0.55);
+  return { opacity: reveal, scale: 0.86 + 0.14 * reveal, offset: 30 * (1 - reveal) };
+}
