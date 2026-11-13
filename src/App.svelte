@@ -204,7 +204,7 @@
   function updateSelectedStyle(key: keyof HudStyle, value: number | string): void {
     if (!selectedId) return;
     const bottomBar = selected ? isBottomBar(selected,project.canvas.width,project.canvas.height) : false;
-    const fullscreen = selected && ((selected.kind === 'technical' && ['fullscreen', 'legacyFullscreen'].includes(selected.technicalLayout || '')) || (selected.kind === 'freeText' && (selected.freeTextStyle === 'fullPage' || selected.freeTextStyle === 'fullTechnical' || selected.freeTextStyle === 'legacyPresentationSlide')));
+    const fullscreen = selected && ((selected.kind === 'technical' && ['fullscreen', 'legacyFullscreen'].includes(selected.technicalLayout || '')) || (selected.kind === 'freeText' && (selected.freeTextStyle === 'fullPage' || selected.freeTextStyle === 'fullTechnical' || ['legacyPresentationSlide','newsSlide'].includes(selected.freeTextStyle || ''))));
     const limits: Partial<Record<keyof HudStyle, [number, number]>> = {
       x: [0, project.canvas.width], y: [0, project.canvas.height], width: [isBar(selected!) ? 640 : 140, project.canvas.width], fontSize: [16, 110], opacity: [0, 100], scaleX: [0.2, 4], scaleY: [0.2, 4],
     };
@@ -225,7 +225,7 @@
   }
 
   function resizeElement(id: string, change: Partial<HudStyle>): void {
-    changeElement(id, element => ((element.kind === 'technical' && ['fullscreen', 'legacyFullscreen'].includes(element.technicalLayout || '')) || (element.kind === 'freeText' && (element.freeTextStyle === 'fullPage' || element.freeTextStyle === 'fullTechnical' || element.freeTextStyle === 'legacyPresentationSlide'))) ? element : isBottomBar(element,project.canvas.width,project.canvas.height) ? ({ ...element, style: {...element.style, scaleY:clamp(change.scaleY ?? element.style.scaleY,.75,1.4), scaleX:1, width:project.canvas.width, x:0, y:Math.round(project.canvas.height - PORTRAIT_BAR_HEIGHT*clamp(change.scaleY ?? element.style.scaleY,.75,1.4))} })
+    changeElement(id, element => ((element.kind === 'technical' && ['fullscreen', 'legacyFullscreen'].includes(element.technicalLayout || '')) || (element.kind === 'freeText' && (element.freeTextStyle === 'fullPage' || element.freeTextStyle === 'fullTechnical' || ['legacyPresentationSlide','newsSlide'].includes(element.freeTextStyle || '')))) ? element : isBottomBar(element,project.canvas.width,project.canvas.height) ? ({ ...element, style: {...element.style, scaleY:clamp(change.scaleY ?? element.style.scaleY,.75,1.4), scaleX:1, width:project.canvas.width, x:0, y:Math.round(project.canvas.height - PORTRAIT_BAR_HEIGHT*clamp(change.scaleY ?? element.style.scaleY,.75,1.4))} })
       : ({ ...element, style: { ...element.style, ...change } }));
   }
 
@@ -376,8 +376,8 @@
 
   function moveElement(id: string, x: number, y: number): void {
     changeElement(id, element => isBottomBar(element,project.canvas.width,project.canvas.height)
-      ? {...element, style:{...element.style,x:0,y:Math.round(project.canvas.height-PORTRAIT_BAR_HEIGHT*element.style.scaleY),width:project.canvas.width,scaleX:1}} : isBar(element) || (element.kind === 'technical' && ['fullscreen', 'legacyFullscreen'].includes(element.technicalLayout || '')) || (element.kind === 'freeText' && (element.freeTextStyle === 'fullPage' || element.freeTextStyle === 'fullTechnical' || element.freeTextStyle === 'legacyPresentationSlide'))
-      ? { ...element, style: { ...element.style, x: (['fullscreen', 'legacyFullscreen'].includes(element.technicalLayout || '') || (element.kind === 'freeText' && (element.freeTextStyle === 'fullPage' || element.freeTextStyle === 'fullTechnical' || element.freeTextStyle === 'legacyPresentationSlide'))) ? 0 : element.technicalSide === 'right' ? project.canvas.width - element.style.width*element.style.scaleX : 0, y: 0 } }
+      ? {...element, style:{...element.style,x:0,y:Math.round(project.canvas.height-PORTRAIT_BAR_HEIGHT*element.style.scaleY),width:project.canvas.width,scaleX:1}} : isBar(element) || (element.kind === 'technical' && ['fullscreen', 'legacyFullscreen'].includes(element.technicalLayout || '')) || (element.kind === 'freeText' && (element.freeTextStyle === 'fullPage' || element.freeTextStyle === 'fullTechnical' || ['legacyPresentationSlide','newsSlide'].includes(element.freeTextStyle || '')))
+      ? { ...element, style: { ...element.style, x: (['fullscreen', 'legacyFullscreen'].includes(element.technicalLayout || '') || (element.kind === 'freeText' && (element.freeTextStyle === 'fullPage' || element.freeTextStyle === 'fullTechnical' || ['legacyPresentationSlide','newsSlide'].includes(element.freeTextStyle || '')))) ? 0 : element.technicalSide === 'right' ? project.canvas.width - element.style.width*element.style.scaleX : 0, y: 0 } }
       : { ...element, style: { ...element.style, x, y } });
   }
 
@@ -416,7 +416,7 @@
       const ratioX = width / project.canvas.width;
       const ratioY = height / project.canvas.height;
       const elements = project.elements.map(element => {
-        const full = (element.kind === 'technical' && ['fullscreen', 'legacyFullscreen'].includes(element.technicalLayout || '')) || (element.kind === 'freeText' && (element.freeTextStyle === 'fullTechnical' || element.freeTextStyle === 'fullPage' || element.freeTextStyle === 'legacyPresentationSlide'));
+        const full = (element.kind === 'technical' && ['fullscreen', 'legacyFullscreen'].includes(element.technicalLayout || '')) || (element.kind === 'freeText' && (element.freeTextStyle === 'fullTechnical' || element.freeTextStyle === 'fullPage' || ['legacyPresentationSlide','newsSlide'].includes(element.freeTextStyle || '')));
         if (full) return {...element, style:{...element.style,x:0,y:0,width,scaleX:1,scaleY:1}};
         if (isBar(element)) {
           if (portrait) return {...element, style:{...element.style,x:0,y:height-PORTRAIT_BAR_HEIGHT,width,scaleX:1,scaleY:1}};
