@@ -307,7 +307,7 @@
           {/each}
         {:else}
           <g transform={`translate(${centeredCompactText?0:-26*(1-pBody)} 0)`}>
-            <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={centeredCompactText?compactCenterX:clipStart+2} text-anchor={centeredCompactText?'middle':'start'} y={lineY(0)} fill={textColor(element,'line1','white')} font-size={fit(line1Text,typeSize,clipWidth-6)} font-family={fontFamily} font-weight="800">{line1Text}</text>
+            <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={centeredCompactText?compactCenterX:clipStart+2} text-anchor={centeredCompactText?'middle':'start'} dominant-baseline={centeredCompactText?'middle':undefined} y={centeredCompactText?h/2:lineY(0)} fill={textColor(element,'line1','white')} font-size={fit(line1Text,typeSize,clipWidth-6)} font-family={fontFamily} font-weight="800">{line1Text}</text>
           </g>
         {/if}
         </g>
@@ -318,7 +318,7 @@
               <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={startScroll-scrollDistance+i*(lineWidth2+scrollGap)} y={lineY(1)} fill={textColor(element,'line2','secondary')} font-size={typeSize*.68} font-family={fontFamily}>{line2Text}</text>
             {/each}
           {:else}
-            <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={centeredCompactText?compactCenterX:clipStart+2} text-anchor={centeredCompactText?'middle':'start'} y={lineY(1)} fill={textColor(element,'line2','secondary')} font-size={fit(line2Text,typeSize*.68,clipWidth-6,false)} font-family={fontFamily}>{line2Text}</text>
+            <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={centeredCompactText?compactCenterX:clipStart+2} text-anchor={centeredCompactText?'middle':'start'} dominant-baseline={centeredCompactText?'middle':undefined} y={centeredCompactText?h/2:lineY(1)} fill={textColor(element,'line2','secondary')} font-size={fit(line2Text,typeSize*.68,clipWidth-6,false)} font-family={fontFamily}>{line2Text}</text>
           {/if}
         {/if}
         </g>
