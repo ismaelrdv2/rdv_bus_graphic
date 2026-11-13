@@ -36,14 +36,14 @@ assert(tv.includes("bullet==='dots'")&&tv.includes("bullet==='chevrons'")&&tv.in
 assert(tv.includes('slideLineStep')&&tv.includes('broadcast-body-'));
 const userInterface=read('src/components/PropertiesPanel.svelte'),driver=read('src/App.svelte');
 
-assert(userInterface.includes('onLabelBarSize='));
-assert(userInterface.includes('onAutoFitLabel='));
-assert(userInterface.includes('onFreeTextNote='));
-assert(driver.includes('on:change={event=>onLabelBarSize'));
-assert(driver.includes('onFreeTextNote'));
-assert(!driver.includes('<option value="legacyHalfBar">'));
-assert(!driver.includes('<option value="legacyFullBar">'));
-assert(!driver.includes('<option value="legacyPresentationSlide">'));
+assert(driver.includes('onLabelBarSize='));
+assert(driver.includes('onAutoFitLabel='));
+assert(driver.includes('onFreeTextNote='));
+assert(userInterface.includes('on:change={event=>onLabelBarSize'));
+assert(userInterface.includes('onFreeTextNote'));
+assert(!userInterface.includes('<option value="legacyHalfBar">'));
+assert(!userInterface.includes('<option value="legacyFullBar">'));
+assert(!userInterface.includes('<option value="legacyPresentationSlide">'));
 const validation=read('src/lib/validation.ts');
 assert(validation.includes('canonicalFreeTextStyle'));
 assert(validation.includes('studioOnlyStyle(freeTextStyle)'));
