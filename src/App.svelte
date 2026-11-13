@@ -5,6 +5,7 @@
   import { writeTextFile } from '@tauri-apps/plugin-fs';
   import { getOutputDirectory, joinOutputPath, openOutputDirectory, rememberOutputFile } from './lib/output';
   import Icon from './components/Icon.svelte';
+  import UpdateCenter from './components/UpdateCenter.svelte';
   import LibraryPanel from './components/LibraryPanel.svelte';
   import PropertiesPanel from './components/PropertiesPanel.svelte';
   import ScenePreview from './components/ScenePreview.svelte';
@@ -632,6 +633,7 @@
       <div class="project-control"><span class="project-label">PROJETO ATUAL</span><div class="project-input-wrap"><Icon name="edit" size={14}/><input aria-label="Nome do projeto" value={project.name} maxlength="120" on:input={(event) => applyChange({ ...project, name: event.currentTarget.value })}/></div></div>
     </div>
     <div class="header-actions">
+<UpdateCenter platform="desktop" currentVersion={APP_VERSION}/>
       <span class="autosave-mark" title={autosaveOk ? "O projeto está salvo localmente neste dispositivo" : "Armazenamento local indisponível: salve um arquivo JSON"}><span class:autosave-failed={!autosaveOk} class="autosave-dot"></span> {autosaveOk ? "Salvo localmente" : "Salve o projeto"}</span>
       <button class="button ghost-button" on:click={resetProject} title="Criar novo projeto"><Icon name="plus" size={16}/><span>Novo</span></button>
       <button class="button ghost-button" on:click={() => void openCurrentProject()} title="Abrir projeto (Ctrl+O)"><Icon name="folder" size={16}/><span>Abrir</span></button>
