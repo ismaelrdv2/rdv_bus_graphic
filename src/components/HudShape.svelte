@@ -112,6 +112,9 @@
   $: compactLine2 = singleLineText(fields.line2);
   $: compactLabelX = freeSocial ? 104 : 28;
   $: compactLabelWidth = Math.max(30, w - compactLabelX - 28);
+  $: centeredCompactText = !compactWeights.stacked;
+  // Centraliza na região textual, deslocada apenas quando há ícone social.
+  $: compactCenterX = compactLabelX + compactLabelWidth / 2;
   $: bodyLeft = fullPage ? fullMargin : freeSocial ? 100 : 34;
   $: bodyWidth = Math.max(60, w - 2 * bodyLeft);
   $: bodyStart = fullPage ? Math.max(215, height * .22) : 73 * sy;
@@ -307,9 +310,9 @@
       </g>
     {/if}
     <g clip-path={`url(#${contentClipId})`}>
-      <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={compactLabelX} y={compactWeights.stacked?height*.42:height*.66} opacity={compactWeights.first * studioValueAlpha} fill={textColor(element,'line1','white')} font-family={fontFamily} font-weight="800" font-size={scaledText(compactLine1,Math.min(size,height*(compactWeights.stacked ? .32 : .42)),compactLabelWidth)}>{compactLine1}</text>
+      <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={centeredCompactText?compactCenterX:compactLabelX} text-anchor={centeredCompactText?'middle':'start'} y={compactWeights.stacked?height*.42:height*.66} opacity={compactWeights.first * studioValueAlpha} fill={textColor(element,'line1','white')} font-family={fontFamily} font-weight="800" font-size={scaledText(compactLine1,Math.min(size,height*(compactWeights.stacked ? .32 : .42)),compactLabelWidth)}>{compactLine1}</text>
       {#if compactLine2}
-        <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={compactLabelX} y={compactWeights.stacked?height*.86:height*.66} opacity={compactWeights.second * studioValueAlpha} fill={textColor(element,'line2','secondary')} font-family={fontFamily} font-size={scaledText(compactLine2,Math.min(size*(compactWeights.stacked ? .75 : 1),height*(compactWeights.stacked ? .22 : .40)),compactLabelWidth)}>{compactLine2}</text>
+        <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={centeredCompactText?compactCenterX:compactLabelX} text-anchor={centeredCompactText?'middle':'start'} y={compactWeights.stacked?height*.86:height*.66} opacity={compactWeights.second * studioValueAlpha} fill={textColor(element,'line2','secondary')} font-family={fontFamily} font-size={scaledText(compactLine2,Math.min(size*(compactWeights.stacked ? .75 : 1),height*(compactWeights.stacked ? .22 : .40)),compactLabelWidth)}>{compactLine2}</text>
       {/if}
     </g>
   {:else if studioWideBar}
