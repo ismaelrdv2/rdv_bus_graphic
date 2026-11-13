@@ -241,12 +241,12 @@
     if (!selectedId) return;
     changeElement(selectedId, element => {
       if (element.kind !== 'freeText') return element;
-      const full = value === 'fullTechnical' || value === 'fullPage' || value === 'legacyPresentationSlide';
-      const width = full ? project.canvas.width : value === 'technicalBar' ? 640 : value === 'technicalAlpha1' ? 500 : value === 'legacyLabel' ? 550 : value === 'legacyHalfBar' ? Math.round(project.canvas.width*.47) : value === 'legacyFullBar' ? Math.round(project.canvas.width*.91) : value === 'legacyPresentationBar' ? Math.round(project.canvas.width*.91) : 900;
+      const full = ['fullTechnical','fullPage','legacyPresentationSlide','newsSlide'].includes(value);
+      const width = full ? project.canvas.width : value === 'technicalBar' ? 640 : value === 'technicalAlpha1' ? 500 : ['legacyLabel','newsLabel'].includes(value) ? 550 : value === 'newsTicker' || value === 'newsLowerThird' ? Math.min(project.canvas.width-60,1260) : value === 'legacyHalfBar' ? Math.round(project.canvas.width*.47) : value === 'legacyFullBar' ? Math.round(project.canvas.width*.91) : value === 'legacyPresentationBar' ? Math.round(project.canvas.width*.91) : 900;
       const x = full ? 0 : value === 'technicalBar' ? (element.technicalSide === 'right' ? project.canvas.width - width : 0)
         : value === 'technicalAlpha1' ? Math.max(0, project.canvas.width - width - 70) : Math.min(element.style.x, project.canvas.width - width);
       const y = full || value === 'technicalBar' ? 0 : value === 'technicalAlpha1' ? Math.min(192, project.canvas.height - 480)
-        : Math.max(0, Math.min(element.style.y, project.canvas.height - (value === 'legacyPresentationBar'?222: value.startsWith('legacy')?128:165)));
+        : Math.max(0, Math.min(element.style.y, project.canvas.height - (value === 'legacyPresentationBar'?222: value === 'newsTicker'?138: value === 'newsLowerThird'?205: value === 'newsLabel'?102: value.startsWith('legacy')?128:165)));
       const bottom = value === 'technicalBar' && project.canvas.height > project.canvas.width;
       return { ...element, freeTextStyle: value, ...(value.startsWith('legacy') ? { animation:'legacy' as const } : {}), style: { ...element.style, x:bottom?0:x, y:bottom?project.canvas.height-PORTRAIT_BAR_HEIGHT:y, width:bottom?project.canvas.width:width, scaleX: 1, scaleY: 1 } };
     });
@@ -321,12 +321,8 @@
     changeElement(selectedId, element => ({
       ...element,
       visualPreset: value,
-      ...(value === 'legacy' && element.kind === 'freeText' && element.freeTextStyle === 'classic'
-        ? { freeTextStyle: 'legacyLabel' as const }
-        : value === 'legacy' && element.kind === 'freeText' && element.freeTextStyle === 'fullPage'
-          ? { freeTextStyle: 'legacyPresentationSlide' as const, style: {...element.style, width:project.canvas.width, x:0, y:0, scaleX:1, scaleY:1} }
-          : {}),
-      animation: value === 'legacy' ? 'legacy' : element.animation === 'legacy' ? 'slide' : element.animation,
+      // Aparência, formato e animação são escolhas independentes.
+      // Não troca a animação escolhida ao mudar Studio/Clássico.
     }));
   }
 
@@ -350,6 +346,18 @@
   function updateSelectedTitle(title: string): void {
     if (!selectedId) return;
     changeElement(selectedId, element => ({ ...element, title }));
+  }
+
+  function updateSelectedFooter(key: 'footerMode' | 'footerText' | 'footerImageData', value:string | undefined): void {
+    if (!selectedId) return;
+    changeElement(selectedId,element=>{
+      const next={...element};
+      if (key==='footerImageData' && !value) delete next.footerImageData;
+      else if (key==='footerText') next.footerText=(value||'').slice(0,100);
+      else if (key==='footerMode' && ['text','image','none'].includes(value||'')) next.footerMode=value as HudElement['footerMode'];
+      else if (key==='footerImageData') next.footerImageData=value;
+      return next;
+    });
   }
 
   function updateSelectedImage(imageData: string | undefined): void {
@@ -667,7 +675,7 @@
       <div class="timeline-panel"><Timeline {project} {selectedId} {time} {playing} onTogglePlay={togglePlayback} onStop={stopAndRewind} onSeek={seek} onSelect={(id) => selectedId = id}/></div>
     </main>
 
-    <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onShineToggle={updateSelectedShine} onDiagonalGlowToggle={updateSelectedDiagonalGlow} onDiagonalGlowIntensity={updateSelectedDiagonalIntensity} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onTechnicalLayout={updateTechnicalLayout}
+    <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onShineToggle={updateSelectedShine} onDiagonalGlowToggle={updateSelectedDiagonalGlow} onDiagonalGlowIntensity={updateSelectedDiagonalIntensity} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onFooter={updateSelectedFooter} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onTechnicalLayout={updateTechnicalLayout}
       {systemFonts} onFontFamily={updateSelectedFontFamily} onVisualPreset={updateSelectedVisualPreset} onFitScrollDuration={fitSelectedScrollDuration} onRichText={updateRichText} onFreeTextStyle={changeFreeTextStyle} onFreeTextIcon={updateSelectedFreeTextIcon} onFreeTextDisplay={updateSelectedFreeTextDisplay} onFreeTextCaption={updateFreeTextCaption} onResetScale={resetSelectedScale} onStandardizeSelected={standardizeSelectedCard} onStandardizeAll={standardizeAllCards} onSelectNone={() => selectedId = null}/></aside>
   </div>
 
