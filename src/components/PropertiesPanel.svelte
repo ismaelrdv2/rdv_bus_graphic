@@ -4,6 +4,7 @@
   import { DEFAULT_PALETTE, colorAsSelected, textGroupAsSelected } from '../lib/palette';
   import { FIELD_LABELS, KIND_INFO } from '../lib/templates';
   import { DEFAULT_RICH_TEXT } from '../lib/richtext';
+  import { studioOnlyStyle } from '../lib/freeTextModes';
   import { singleLineText } from '../lib/compactText';
   import { isBottomBar, isBar, isCompactCartela, CREDIT_CARD_WIDTH, CREDIT_CARD_HEIGHT } from '../lib/geometry';
   import type { FreeTextStyle, RichTextSettings, TechnicalLayout, VisualPreset, HudElement, HudStyle, RDVProject, TextField, TextColorKey, TextColorRole, TextColorGroup, PaletteColors, PaletteId } from '../lib/types';
@@ -36,6 +37,9 @@
   export let onFreeTextStyle: (style: FreeTextStyle) => void;
   export let onFreeTextIcon: (icon: HudElement['freeTextIcon']) => void;
   export let onFreeTextDisplay: (mode: HudElement['freeTextDisplay']) => void;
+  export let onLabelBarSize:(size:'small'|'medium'|'large')=>void;
+  export let onAutoFitLabel:(enabled:boolean)=>void;
+  export let onFreeTextNote:(enabled:boolean)=>void;
   export let onTechnicalLayout: (layout: TechnicalLayout) => void;
   export let onVisualPreset: (preset: VisualPreset) => void;
   export let onFitScrollDuration: () => void;
@@ -89,7 +93,7 @@
     ? ['heading', 'line1', 'line2', 'line3', 'line4', 'line5', 'line6'] as TextField[]
     : selected?.kind === 'freeText' && selected.freeTextStyle === 'technicalAlpha1'
     ? ['heading', 'line1', 'line2', 'line3', 'line4'] as TextField[]
-    : selected?.kind === 'freeText' && ['legacyLabel','legacyHalfBar','legacyFullBar'].includes(selected.freeTextStyle || '')
+    : selected?.kind === 'freeText' && ['legacyLabel'].includes(selected.freeTextStyle || '')
     ? ['line1', 'line2'] as TextField[]
     : selected?.kind === 'freeText' && ['newsLabel','newsTicker','newsLowerThird','newsSlide'].includes(selected.freeTextStyle || '')
     ? ['heading','line1','line2'] as TextField[]
@@ -162,10 +166,7 @@
             <option value="fullTechnical">Ficha em tela inteira — 6 campos</option>
             <option value="fullPage">Cartela em tela inteira — Studio</option>
             <option value="legacyLabel">Original 0.14 · Etiqueta</option>
-            <option value="legacyHalfBar">Original 0.14 · Barra metade</option>
-            <option value="legacyFullBar">Original 0.14 · Barra larga</option>
             <option value="legacyPresentationBar">Original 0.14 · Apresentação em barra</option>
-            <option value="legacyPresentationSlide">Original 0.14 · Apresentação em slide (tela inteira)</option>
             <option value="newsLabel">Telejornal · Etiqueta Plantão</option>
             <option value="newsTicker">Telejornal · Barra de Notícias</option>
             <option value="newsLowerThird">Telejornal · Lower Third</option>
@@ -182,8 +183,8 @@
           </select>
         </label>
       {/if}
-      {#if selected.kind === 'freeText' && selected.freeTextStyle === 'legacyLabel'}
-        <label class="field"><span>Apresentação dos textos da etiqueta</span>
+      {#if selected.kind === 'freeText' && ['legacyLabel','legacyPresentationBar'].includes(selected.freeTextStyle || '')}
+        <label class="field"><span>Apresentação do Texto 1 e Texto 2</span>
           <select value={selected.freeTextDisplay || 'both'} on:change={(event)=>onFreeTextDisplay(event.currentTarget.value as HudElement['freeTextDisplay'])}>
             <option value="both">Texto 1 e Texto 2 — duas linhas</option>
             <option value="first">Somente Texto 1 — centralizado</option>
@@ -191,7 +192,38 @@
             <option value="alternate">Alternar Texto 1 / Texto 2 durante o vídeo</option>
           </select>
         </label>
-        <p class="inspector-hint">Etiqueta compacta: cada campo ocupa uma linha, sem quebra. Para parágrafos, use a cartela ou o slide.</p>
+        {#if selected.freeTextStyle==='legacyLabel'}
+          <p class="inspector-hint">Etiqueta: duas linhas ou um único texto centralizado. Barras antigas agora utilizam esse mesmo modelo com largura personalizável.</p>
+        {/if}
+      {/if}
+      {#if selected.kind==='freeText' && selected.freeTextStyle==='legacyLabel'}
+        <label class="field"><span>Dimensionamento da etiqueta</span>
+          <select value={selected.autoFitWidth===true?'auto':'manual'}
+            on:change={event=>onAutoFitLabel(event.currentTarget.value==='auto')}>
+            <option value="manual">Redimensionamento manual</option>
+            <option value="auto">Largura automática pelo conteúdo</option>
+          </select>
+        </label>
+        {#if richText.scrollLine1 || richText.scrollLine2}
+          <label class="field"><span>Tamanho da barra durante a rolagem</span>
+            <select value={selected.scrollBarSize || 'small'}
+              on:change={event=>onLabelBarSize(event.currentTarget.value as 'small'|'medium'|'large')}>
+              <option value="small">Pequena · 550 px</option>
+              <option value="medium">Média · 960 px</option>
+              <option value="large">Grande · 1550 px</option>
+            </select>
+          </label>
+          <p class="inspector-hint">Você também pode redimensionar a etiqueta manualmente. Os controles de rolagem continuam independentes para cada linha.</p>
+        {/if}
+      {/if}
+      {#if selected.kind==='freeText' && selected.freeTextStyle==='fullPage'}
+        <label class="field"><span>Texto 2 como nota de rodapé</span>
+          <select value={selected.showFullPageNote!==false?'on':'off'}
+            on:change={event=>onFreeTextNote(event.currentTarget.value==='on')}>
+            <option value="on">Mostrar nota</option>
+            <option value="off">Ocultar nota (preservar o texto)</option>
+          </select>
+        </label>
       {/if}
       {#if selected.kind === 'technical'}
         <label class="field"><span>Apresentação da ficha</span>
@@ -202,12 +234,16 @@
           </select>
         </label>
       {/if}
-      <label class="field"><span>Padrão visual dos elementos</span>
-        <select value={selected.visualPreset || 'studio'} on:change={(event)=>onVisualPreset(event.currentTarget.value as VisualPreset)}>
-          <option value="legacy">Clássico 0.14 · roxo e dourado</option>
-          <option value="studio">Studio · reconstrução atual</option>
-        </select>
-      </label>
+      {#if selected.kind==='freeText' && studioOnlyStyle(selected.freeTextStyle)}
+        <p class="inspector-hint">Este formato utiliza exclusivamente o padrão visual Studio.</p>
+      {:else}
+        <label class="field"><span>Padrão visual dos elementos</span>
+          <select value={selected.visualPreset || 'studio'} on:change={(event)=>onVisualPreset(event.currentTarget.value as VisualPreset)}>
+            <option value="legacy">Clássico 0.14 · roxo e dourado</option>
+            <option value="studio">Studio · reconstrução atual</option>
+          </select>
+        </label>
+      {/if}
       <p class="inspector-hint">Clássico e Studio controlam apenas a aparência; qualquer transição pode ser combinada com os dois estilos. Os novos modelos são desenhos originais inspirados em telejornais.</p>
       <label class="field"><span>Nome no projeto</span><input type="text" value={selected.title} maxlength="80" on:input={(event) => onRename(event.currentTarget.value)}/></label>
       <h4>Editar os campos</h4>
@@ -434,7 +470,7 @@
         </label>
       {/if}
       <p class="inspector-hint">Brilho de varredura apenas nas cartelas. Nas fichas técnicas, somente as diagonais recebem brilho, com intensidade ajustável.</p>
-      {#if selected.kind === 'freeText' && ['legacyLabel','legacyHalfBar','legacyFullBar'].includes(selected.freeTextStyle || '')}
+      {#if selected.kind === 'freeText' && ['legacyLabel'].includes(selected.freeTextStyle || '')}
         <div class="rich-tools">
           <h4>Rolagem original — linhas independentes</h4>
           <label class="field"><span>Linha 1</span><select value={richText.scrollLine1?'on':'off'} on:change={(event)=>onRichText('scrollLine1',event.currentTarget.value==='on')}><option value="off">Parada</option><option value="on">Rolando ◀</option></select></label>
