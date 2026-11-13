@@ -7,6 +7,7 @@
   import ShineOverlay from './ShineOverlay.svelte';
   import DiagonalGlow from './DiagonalGlow.svelte';
   import SocialIcon from './SocialIcon.svelte';
+  import FooterBrand from './FooterBrand.svelte';
   import { palettePaint, textColor } from '../lib/palette';
   import type { TextColorKey, TextColorRole } from '../lib/types';
   import { elementBaseHeight, compactCardTextBaselines, isCompactCartela } from '../lib/geometry';
@@ -217,7 +218,7 @@
         {/if}
       {/each}
       <g opacity={pFooter}>
-        <text x={technicalFooterX} y={h-48} font-size={15*fontScale} fill={textColor(element,'footer','secondary')} font-weight="800" letter-spacing="6">RDV BUS</text>
+        <FooterBrand {element} x={technicalFooterX} y={h-48} fontSize={15*fontScale} maxWidth={Math.max(80,w-technicalFooterX-126)} maxHeight={Math.max(24,38*fontScale)} color={textColor(element,'footer','secondary')} letterSpacing={6}/>
         <path d={`M${w-133} ${h-40} h35 l22 -18`} stroke={accent} stroke-width="2.5" fill="none"/>
       </g>
     </g>
@@ -246,7 +247,7 @@
         </g>
       {/if}
     {/each}
-    <g opacity={pFooter}><text x={margin} y={h-54} font-size="17" fill={textColor(element,'footer','secondary')} letter-spacing="6" font-weight="800">RDV BUS</text><path d={`M${w-margin-160} ${h-62} H${w-margin-42} L${w-margin} ${h-102}`} stroke={accent} stroke-width="2" fill="none" /></g>
+    <g opacity={pFooter}><FooterBrand {element} x={margin} y={h-54} fontSize={17} maxWidth={Math.max(90,w*.42)} maxHeight={44} color={textColor(element,'footer','secondary')} letterSpacing={6}/><path d={`M${w-margin-160} ${h-62} H${w-margin-42} L${w-margin} ${h-102}`} stroke={accent} stroke-width="2" fill="none" /></g>
   {:else if fullSlide}
     <g opacity={pPanel}>
       <rect width={w} height={h} fill={`url(#${gradientId})`} fill-opacity=".9" />
@@ -268,7 +269,7 @@
       {/each}
       </g>
     </g>
-    <g opacity={pFooter}><text x={margin} y={h-54} font-size="17" fill={textColor(element,'footer','secondary')} letter-spacing="6" font-weight="800">RDV BUS</text><path d={`M${w-margin-160} ${h-62} H${w-margin-42} L${w-margin} ${h-102}`} stroke={accent} stroke-width="2" fill="none" /></g>
+    <g opacity={pFooter}><FooterBrand {element} x={margin} y={h-54} fontSize={17} maxWidth={Math.max(90,w*.42)} maxHeight={44} color={textColor(element,'footer','secondary')} letterSpacing={6}/><path d={`M${w-margin-160} ${h-62} H${w-margin-42} L${w-margin} ${h-102}`} stroke={accent} stroke-width="2" fill="none" /></g>
   {:else}
     <!-- Etiquetas / barras antigas: o painel e os detalhes entram por revelação,
          os textos chegam em tempos diferentes e podem rolar separadamente. -->
