@@ -47,6 +47,8 @@ jobs:
         run: npm run test:legacy
       - name: Testar formatos TV e rodapés editáveis
         run: npm run test:broadcast
+      - name: Testar verificação segura das atualizações
+        run: npm run test:updates
       - name: Verificar Svelte e TypeScript
         run: npm run check
       - name: Compilar AppImage
@@ -82,6 +84,8 @@ jobs:
         run: npm run test:legacy
       - name: Testar formatos TV e rodapés editáveis
         run: npm run test:broadcast
+      - name: Testar verificação segura das atualizações
+        run: npm run test:updates
       - name: Verificar Svelte e TypeScript
         run: npm run check
       - name: Compilar instalador NSIS
