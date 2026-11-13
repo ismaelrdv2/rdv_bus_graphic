@@ -6,7 +6,7 @@
   import { fieldTextStyle } from '../lib/inlineText';
   import { fontStack } from '../lib/fonts';
   import { clamp } from '../lib/timing';
-  import { legacyPhase, legacyStage } from '../lib/legacy';
+  import { legacyPhase, legacyStage, legacyTechnicalEntrance } from '../lib/legacy';
   import DiagonalGlow from './DiagonalGlow.svelte';
   export let element: HudElement;
   export let time = 0;
@@ -19,10 +19,13 @@
   $: captions = element.kind === 'technical' ? (element.technicalCaptions || TECHNICAL_CAPTIONS) : (element.freeTextCaptions || TECHNICAL_CAPTIONS);
   $: fontFamily = fontStack(element.style.fontFamily);
   $: fontScale = clamp(element.style.scaleY, .75, 1.4);
-  $: p = element.animation === 'legacy' ? legacyPhase(time,duration,1.3,.5) : 1;
-  $: panel = element.animation === 'legacy' ? legacyStage(p,0,.38) : 1;
-  $: title = element.animation === 'legacy' ? legacyStage(p,.22,.26) : 1;
-  $: footer = element.animation === 'legacy' ? legacyStage(p,.65,.22) : 1;
+  $: visibleFields = Math.max(1, [fields.line1,fields.line2,fields.line3,fields.line4,fields.line5,fields.line6].filter(value=>value.trim()).length);
+  $: enterDuration = legacyTechnicalEntrance(visibleFields);
+  $: p = element.animation === 'legacy' ? legacyPhase(time,duration,enterDuration,.60) : enterDuration;
+  $: panel = element.animation === 'legacy' ? legacyStage(p,0,.55) : 1;
+  $: title = element.animation === 'legacy' ? legacyStage(p,.34,.32) : 1;
+  $: underline = element.animation === 'legacy' ? legacyStage(p,.45,.42) : 1;
+  $: footer = element.animation === 'legacy' ? legacyStage(p,.55+.09*visibleFields,.30) : 1;
   $: id = element.id.replace(/[^a-zA-Z0-9_-]/g,'');
   let measureContext: CanvasRenderingContext2D | null = null;
   function fit(text:string, preferred:number, maximum:number):number {
@@ -38,7 +41,7 @@
   // Não usar rowProgress(i) diretamente em {@const}: o compilador Svelte não
   // rastreia p quando ele é acessado somente dentro de uma função auxiliar.
   $: rowReveals = Array.from({ length: 6 }, (_, i) =>
-    element.animation === 'legacy' ? legacyStage(p, .32 + .085 * i, .28) : 1
+    element.animation === 'legacy' ? legacyStage(p, .55 + .09 * i, .32) : 1
   );
 </script>
 
@@ -51,16 +54,18 @@
     </linearGradient>
     <clipPath id={`portrait-clip-${id}`}><path d={`M0 68 L68 0 H${w} V${h} H0Z`}/></clipPath>
   </defs>
-  <g opacity={panel} transform={`translate(0 ${45*(1-panel)})`}>
+  <g opacity={panel} transform={`translate(0 ${95*(1-panel)})`}>
     <path d={`M0 68 L68 0 H${w} V${h} H0Z`} fill={`url(#portrait-bar-${id})`} fill-opacity=".93"/>
     <path d={`M0 68 L68 0 H${w}`} stroke={element.style.accent} stroke-width="5" fill="none"/>
     <path d={`M16 78 L85 12 H${w-28}`} stroke={paint.edge} stroke-width="2" fill="none"/>
   </g>
   <g clip-path={`url(#portrait-clip-${id})`}>
-    <g opacity={title} transform={`translate(0 ${22*(1-title)})`}>
+    <g opacity={title} transform={`translate(0 ${24*(1-title)})`}>
       <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="78" y={Math.max(81,h*.145)}
         fill={textColor(element,'heading','primary')} font-size={fit(fields.heading || 'FICHA TÉCNICA',35*fontScale,w-150)} font-weight="800" letter-spacing="3">{fields.heading || 'FICHA TÉCNICA'}</text>
-      <path d={`M78 ${h*.172} H${w-65}`} stroke={paint.edge} stroke-width="2"/>
+    </g>
+    <g opacity={underline}>
+      <path d={`M78 ${h*.172} h${Math.max(0,(w-143)*underline)}`} stroke={paint.edge} stroke-width="2"/>
     </g>
     {#each [fields.line1,fields.line2,fields.line3,fields.line4,fields.line5,fields.line6] as value,i}
       {@const col = i%2}
@@ -71,7 +76,7 @@
       {@const top = h*.205 + row*pitch}
       {@const revealed = rowReveals[i]}
       {#if value}
-      <g opacity={revealed} transform={`translate(0 ${18*(1-revealed)})`}>
+      <g opacity={revealed} transform={`translate(0 ${26*(1-revealed)})`}>
         <path d={`M${left-23} ${top+7} l8 9 -8 9 M${left-12} ${top+7} l8 9 -8 9`} stroke={element.style.accent} fill="none" stroke-width="2.9" stroke-linejoin="round"/>
         <text data-edit-caption={i} style={fieldTextStyle(element,'caption'+i)} x={left+10} y={top+13} fill={textColor(element,('caption'+i) as TextColorKey,'secondary')}
           font-size={Math.min(16*fontScale,pitch*.16)} letter-spacing="2.1" font-weight="800">{captions[i] || ''}</text>
