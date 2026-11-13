@@ -1,34 +1,39 @@
-# TESTE DE ANIMAÇÕES — recuperação do RDV Bus v6 / WebApp 60 FPS
+# Animação clássica v6 — motor compartilhado com Studio
 
-**Status:** experimental; não integrar à branch `main` até aprovação visual do usuário.
+O usuário aprovou o vídeo de teste das animações v6 em 12/11/2026. A animação agora é adotada nos dois renderizadores (Clássico e Studio), mantendo as respectivas geometrias.
 
-## Fontes analisadas
-- `pacote_grafico_rdv_bus_v6.zip`: `rdv_pacote/rdv_anim.py` (motor Python original).
-- `RDV_Bus_WebApp_CORRIGIDO_60FPS.zip`: `RDV_Bus_WebApp/renderer.js`.
-- `RDV_Bus_WebApp_0.10.html`: funções `buildLabelAnim`, `labelAnimationFrame`, `fichaAnimationFrame` e `freeAnimationFrame`.
+## Princípio da arquitetura
+- **Modelo**: etiqueta curta, barra, ficha, slide, cartela, imagem de canto.
+- **Padrão visual**: `visualPreset='legacy'` para o desenho Clássico 0.14 ou `'studio'` para o desenho moderno, independentemente do modelo.
+- **Animação**: `animation='legacy'` ativa a mesma sequência temporal recuperada do pacote v6 nos dois desenhos. Outros estilos (`fade`, `slide`, `none`) permanecem sob o motor normal. Novas transições serão acrescentadas ao seletor futuramente.
 
-## Experimento
-- Etiquetas Clássico 0.14 e cartelas clássicas: revelação horizontal suave do painel em **0,40 s**, filete dourado independente entre **0,10 e 0,55 s** com halo, ícone em escala elástica **0,28 a 0,63 s**, legenda **0,38 a 0,68 s**, texto **0,46 a 0,80 s**.
-- Reflexo luminoso das cartelas: efeito existente preservado; sua janela de passagem mantém a faixa de aproximadamente **0,55–1,15 s**, recortada na própria etiqueta.
-- Ficha técnica lateral Clássico: painel **0,55 s**, título começa em **0,40 s**, linha em **0,50 s**; valores revelados individualmente a cada **90 ms**. Duração da entrada **0,55 + 0,09×n + 0,40 s**, saída **0,60 s**.
-- Ficha técnica inferior em retrato: campos sequenciais com a mesma cadência, painel vindo de baixo e revelação de linha independente.
-- Logomarca/imagem de canto Clássico: entrada de **0,65 s**, saída de **0,45 s**, escala **86% → 100%**, deslocamento de **30 px**.
-- Para preservar a composição atual com várias camadas, as animações usam a **duração global do projeto**. Quando há muitas fichas técnicas, a permanência resultante é menor que no legado; isso é intencional nesta fase e exige validação visual.
-- As imagens em escala SVG são aproximações vetoriais e não reproduzem o filtro Pillow pixel a pixel.
-- Não altera o estilo Studio, os presets de cor, a escolha de formatos, o estado de projetos, o gerador FFmpeg Desktop nem o codificador MP4 Mobile.
+## Curvas incorporadas
+- Painel da etiqueta: revelação esquerda → direita em **0,40 s**, com borda suave.
+- Filete dourado: **0,10–0,55 s**, com halo no Clássico.
+- Ícones: escala elástica iniciando aos **0,28 s**, finalizando aos **0,63 s**.
+- Rótulo: **0,38–0,68 s**; texto: **0,46–0,80 s**.
+- Fichas técnicas: entrada proporcional à quantidade de campos (`0,55 + 0,09 × n + 0,40` s), saída **0,60 s**, valores com defasagem de **90 ms**.
+- Imagem de canto: escala **86% → 100%**, deslocamento de **30 px**.
+- A duração geral permanece configurada no projeto; o motor de animação é determinístico por quadro, sem temporizadores independentes.
 
-## Instalação segura
-- Desktop: nome de pacote **RDV Bus Studio - Animacoes TESTE**, identificador `com.rdvbus.studio.animationtest`.
-- Android: aplicativo **RDV Bus Studio Animações TESTE**, pacote `br.com.rdvbus.studio.animationtest`. Instalável ao lado do app Mobile regular; tem armazenamento próprio de projetos.
-- Versão sem mudança: **Desktop 0.1.0-alpha.9.3.8**, **Mobile 0.1.0-alpha.3.7**.
+## Diferenças efetivas do desenho Studio
+- Etiqueta curta moderna com bordas arredondadas; barras médias/longas com recorte próprio e suporte à rolagem horizontal por linha.
+- Apresentação em barra e em tela cheia com geometria Studio, sem redirecionamento automático ao Clássico.
+- Fichas técnicas lateral, compacta, em tela cheia e inferior retrato com aparência própria.
+- Cartelas de localização, data, linha de ônibus, motorista e crédito mantém ícones Studio e animação comum.
+- Imagem de canto no Studio mantém moldura moderna; Clássico mantém imagem direta.
 
-## Protocolo de teste
-1. Abrir as versões normais e experimentais lado a lado (ou alternadamente).
-2. Na opção **Clássico 0.14**, gerar uma etiqueta com ícone e dois textos. Observar quadros em 0 / 0,10 / 0,28 / 0,38 / 0,46 / 0,55 / 0,63 / 0,80 / 1,15 segundo.
-3. Testar a ficha lateral à esquerda e à direita, preferencialmente com 2, 4 e 6 campos preenchidos.
-4. Testar ficha inferior retrato e logo de canto.
-5. Comparar transparência, recortes, intensidade do brilho, duração de entrada e de saída, em prévia e em vídeo 60 FPS.
-6. Confirmar que os elementos Studio e os arquivos de projeto anteriores continuam funcionando.
-7. Só aprovar a integração à `main` se esses testes visuais forem satisfatórios.
+## Compatibilidade
+- Nenhuma alteração no schema do projeto nem na numeração: Desktop **0.1.0-alpha.9.3.8**; Mobile **0.1.0-alpha.3.7**.
+- Sem mudanças no FFmpeg, AppImage, instalador Windows, Android MediaCodec ou localização dos arquivos.
+- Foram recuperados nomes, appId e artefatos normais, substituindo as identificações temporárias do teste.
+- O sistema de abas Desktop continua em PR separado; não faz parte da promoção das animações.
 
-**Observação:** o teste automático verifica as curvas numéricas e a compilação; a fidelidade visual final depende da comparação dos vídeos reais.
+## Critérios de regressão
+1. `npm run check` e testes numéricos das curvas de referência.
+2. Prévia e exportação usam os mesmos atributos e cálculos SVG.
+3. Testar a alternância Clássico/Studio em etiquetas, barras, fichas e slides.
+4. Testar opções `fade`, `slide`, `none`, movimento e rolagem.
+5. Conferir transparência e quadros em 0, 0,10, 0,28, 0,38, 0,46, 0,55, 0,63, 0,80 e 5,30 s, a 60 FPS.
+
+O motor está preparado para adicionar transições inéditas depois, sem inventar ou ativar estilos que ainda não foram implementados.
