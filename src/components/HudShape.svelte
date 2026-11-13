@@ -119,7 +119,7 @@
   $: bodyLeft = fullPage ? fullMargin : freeSocial ? 100 : 34;
   $: bodyWidth = Math.max(60, w - 2 * bodyLeft);
   $: bodyStart = fullPage ? Math.max(215, height * .22) : 73 * sy;
-  $: bodyAreaHeight = fullPage ? height - bodyStart - fullMargin : Math.max(14, height - bodyStart - 10);
+  $: bodyAreaHeight = fullPage ? height - bodyStart - (fields.line2 && element.showFullPageNote!==false ? Math.max(fullMargin,145):fullMargin) : Math.max(14, height - bodyStart - (studioPresentationBar?32:10));
   $: bodyLayout = layoutRichText(fields.line1, bodyWidth, bodySize, 1.35, rich.bullets, rich.bodyBold, rich.bodyItalic, measureRich);
   $: scrollProgress = clamp(duration > 0 ? time / duration : 0, 0, 1) * (rich.scrollSpeed / 100);
   $: scrollOffset = bodyStart + bodyAreaHeight - scrollProgress * (bodyAreaHeight + bodyLayout.contentHeight);
@@ -272,6 +272,12 @@
         {/each}
       </g>
     </g>
+    {#if fields.line2 && element.showFullPageNote!==false}
+      <text opacity={studioValueAlpha} data-edit-field="line2" style={fieldTextStyle(element,'line2')}
+        x={fullMargin} y={height-93}
+        font-family={fontFamily} font-size={scaledText(fields.line2,Math.min(25*textFactor,34),w-2*fullMargin)}
+        fill={textColor(element,'line2','secondary')}>{fields.line2}</text>
+    {/if}
     <FooterBrand {element} x={fullMargin} y={height-34} fontSize={16} maxWidth={Math.max(90,w*.43)} maxHeight={46} color={textColor(element,'footer','secondary')} letterSpacing={7}/>
     <path d={`M${w-fullMargin-65} ${height-34} h44 l19 -19`} fill="none" stroke={accent} opacity={studioGold} stroke-width="3"/>
   {:else if corner}
@@ -377,7 +383,20 @@
     <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={freeSocial?100:34} y={42*sy} font-size={scaledText(fields.heading,Math.min(headingSize,height*.24),w-70)} fill={textColor(element,'heading','secondary')} font-family={fontFamily} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'} letter-spacing="3">{fields.heading}</text>
     <path d={`M${freeSocial?100:34} ${58*sy} H${Math.min(w-38,520)}`} stroke={paint.edge} stroke-width="2"/>
     <g clip-path={`url(#${contentClipId})`}>
-      {#if rich.scroll === 'horizontal'}
+      {#if studioPresentationBar && !compactWeights.stacked}
+        <g opacity={compactWeights.first*studioValueAlpha}>
+          <text data-edit-field="line1" x={bodyLeft+bodyWidth/2} y={height*.67} dominant-baseline="middle"
+            text-anchor="middle" font-family={fontFamily}
+            font-size={scaledText(compactLine1,Math.min(bodySize*1.12,height*.31),bodyWidth)}
+            font-weight="800" fill={textColor(element,'line1','white')}>{compactLine1}</text>
+        </g>
+        <g opacity={compactWeights.second*studioValueAlpha}>
+          <text data-edit-field="line2" x={bodyLeft+bodyWidth/2} y={height*.67} dominant-baseline="middle"
+            text-anchor="middle" font-family={fontFamily}
+            font-size={scaledText(compactLine2,Math.min(bodySize*1.12,height*.31),bodyWidth)}
+            font-weight="800" fill={textColor(element,'line2','secondary')}>{compactLine2}</text>
+        </g>
+      {:else if rich.scroll === 'horizontal'}
         <text opacity={studioValueAlpha} data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={marqueeX} y={bodyStart + bodyAreaHeight*.66} font-family={fontFamily} xml:space="preserve" font-size={bodySize} fill={textColor(element,'line1','white')} font-weight={rich.bodyBold?'800':'400'} font-style={rich.bodyItalic?'italic':'normal'} text-decoration={rich.bodyUnderline?'underline':'none'}>
           {#each marquee as run}<tspan font-weight={run.bold?'800':(rich.bodyBold?'800':'400')} font-style={run.italic?'italic':(rich.bodyItalic?'italic':'normal')} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}
         </text>
@@ -397,6 +416,13 @@
         </g>
       {/if}
     </g>
+    {#if studioPresentationBar && compactWeights.stacked && fields.line2 &&
+      (rich.scroll!=='none' || fields.line1.includes('\n') || rich.bullets!=='none')}
+      <text opacity={studioValueAlpha} data-edit-field="line2" style={fieldTextStyle(element,'line2')}
+        x={alignedX(rich.alignment,bodyLeft,bodyWidth)} y={height*.92}
+        text-anchor={textAnchor(rich.alignment)} font-size={scaledText(fields.line2,Math.min(23*textFactor,height*.12),bodyWidth)}
+        fill={textColor(element,'line2','secondary')} font-family={fontFamily}>{fields.line2}</text>
+    {/if}
   {:else if slide}
     <path d={`M14 0 H${w-32} L${w} 26 V${height-20} Q${w} ${height} ${w-20} ${height} H16 Q0 ${height} 0 ${height-16} V14 Q0 0 14 0Z`} fill={bg} fill-opacity=".97" stroke={paint.edge} stroke-width="3"/>
     <path d={`M16 1 H${Math.min(w*.38,230)}`} stroke={accent} opacity={studioGold} stroke-width="5"/>
