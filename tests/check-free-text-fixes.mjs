@@ -41,4 +41,13 @@ assert(classicLabel.includes('rich.scrollLine1 && !centeredCompactText'),
 assert(classicLabel.includes('rich.scrollLine2 && !centeredCompactText'),
   'Rolagem impede alinhamento central no modo somente Texto 2');
 
+
+const classicCartela = read('src/components/LegacyShape.svelte');
+const modernCartela = read('src/components/HudShape.svelte');
+assert(classicCartela.includes("element.kind === 'freeText' && element.freeTextIcon && element.freeTextIcon !== 'none'"),
+  'Cartela Clássica deve respeitar a rede social selecionada');
+assert(classicCartela.includes('<SocialIcon icon={element.freeTextIcon}'),
+  'Cartela Clássica ainda utiliza ícone genérico');
+assert(modernCartela.includes('SocialIcon'), 'O ícone Studio deve continuar intacto');
+
 console.log('Texto Livre: ícones, título, edição direta, centralização e geometria: OK');
