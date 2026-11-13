@@ -242,7 +242,7 @@
         {#if selected.imageData}<button class="text-action" on:click={() => onImage(undefined)}>Remover imagem</button>{/if}
         {#if imageError}<small class="error-text">{imageError}</small>{/if}
       {/if}
-      {#if selected.kind === 'technical' || selected.kind === 'slide' ||
+      {#if selected.kind === 'technical' ||
         (selected.kind === 'freeText' && ['technicalBar','fullTechnical','fullPage','legacyPresentationSlide','newsSlide'].includes(selected.freeTextStyle || ''))}
         <h4>Rodapé / Identidade visual</h4>
         <label class="field"><span>Mostrar no rodapé</span>
