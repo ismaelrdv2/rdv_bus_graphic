@@ -430,6 +430,7 @@
         enabled={element.diagonalGlowEnabled===true}
         intensity={element.diagonalGlowIntensity ?? 170}/>
     {/if}
+  {/if}
     </g>
   {/if}
 </g>
