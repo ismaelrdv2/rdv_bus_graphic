@@ -11,7 +11,7 @@ def test_two_renderers():
     new=src('src/components/HudShape.svelte')
     for x in (old,new):
         assert 'singleLineText' in x and 'compactTextWeights' in x
-    assert "element.freeTextStyle === 'legacyLabel' ? element.visualPreset !== 'studio'" in new
+    assert "shouldUseLegacy = element.visualPreset === 'legacy'" in new
     assert "freeText && element.freeTextStyle === 'legacyLabel'" in new
     assert "compactLabel = element.kind === 'freeText' && element.freeTextStyle === 'legacyLabel'" in old
 def test_controls():

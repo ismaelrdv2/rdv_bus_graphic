@@ -248,7 +248,7 @@
       const y = full || value === 'technicalBar' ? 0 : value === 'technicalAlpha1' ? Math.min(192, project.canvas.height - 480)
         : Math.max(0, Math.min(element.style.y, project.canvas.height - (value === 'legacyPresentationBar'?222: value.startsWith('legacy')?128:165)));
       const bottom = value === 'technicalBar' && project.canvas.height > project.canvas.width;
-      return { ...element, freeTextStyle: value, ...(value.startsWith('legacy') ? { animation:'legacy' as const, visualPreset:'legacy' as const } : {}), style: { ...element.style, x:bottom?0:x, y:bottom?project.canvas.height-PORTRAIT_BAR_HEIGHT:y, width:bottom?project.canvas.width:width, scaleX: 1, scaleY: 1 } };
+      return { ...element, freeTextStyle: value, ...(value.startsWith('legacy') ? { animation:'legacy' as const } : {}), style: { ...element.style, x:bottom?0:x, y:bottom?project.canvas.height-PORTRAIT_BAR_HEIGHT:y, width:bottom?project.canvas.width:width, scaleX: 1, scaleY: 1 } };
     });
   }
 
@@ -258,7 +258,7 @@
       if (element.kind !== 'technical') return element;
       const width = ['fullscreen','legacyFullscreen'].includes(layout) ? project.canvas.width : Math.min(640, project.canvas.width);
       const bottom = layout === 'side' && project.canvas.height > project.canvas.width;
-      return { ...element, technicalLayout: layout, ...(layout === 'legacyFullscreen' ? { animation:'legacy' as const, visualPreset:'legacy' as const } : {}),
+      return { ...element, technicalLayout: layout, ...(layout === 'legacyFullscreen' ? { animation:'legacy' as const } : {}),
         style: { ...element.style, width:bottom?project.canvas.width:width, scaleX:1, scaleY:1, x: bottom || ['fullscreen','legacyFullscreen'].includes(layout) ? 0 : element.technicalSide==='right' ? project.canvas.width-width : 0, y:bottom?project.canvas.height-PORTRAIT_BAR_HEIGHT:0 } };
     });
   }

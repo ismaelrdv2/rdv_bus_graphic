@@ -12,7 +12,7 @@
   import { elementBaseHeight, compactCardTextBaselines, isCompactCartela } from '../lib/geometry';
   import { technicalSeparatorEnd, technicalTextX, technicalTextRightEdge, technicalRowTextX, technicalTextAvailableWidth } from '../lib/technicalGeometry';
   import { clamp } from '../lib/timing';
-  import { legacyPhase, legacyStage, legacyScrollDistance } from '../lib/legacy';
+  import { legacyPhase, legacyStage, legacyScrollDistance, legacyLabelMotion, legacyTechnicalEntrance, legacyCornerMotion } from '../lib/legacy';
   import { compactTextWeights, singleLineText } from '../lib/compactText';
   import { DEFAULT_RICH_TEXT, layoutRichText, alignedX, textAnchor, type MeasureRich } from '../lib/richtext';
 
@@ -26,9 +26,9 @@
   $: w = element.style.width * element.style.scaleX;
   $: h = elementBaseHeight(element, canvasHeight) * element.style.scaleY;
   $: sideRight = element.technicalSide === 'right';
-  $: isTech = element.kind === 'technical' || element.freeTextStyle === 'technicalBar' || element.freeTextStyle === 'fullTechnical';
-  $: fullTech = (element.kind === 'technical' && element.technicalLayout === 'legacyFullscreen') || (element.kind === 'freeText' && element.freeTextStyle === 'fullTechnical');
-  $: fullSlide = element.kind === 'freeText' && element.freeTextStyle === 'legacyPresentationSlide';
+  $: isTech = element.kind === 'technical' || ['technicalBar','technicalAlpha1','fullTechnical'].includes(element.freeTextStyle || '');
+  $: fullTech = (element.kind === 'technical' && ['legacyFullscreen','fullscreen'].includes(element.technicalLayout || '')) || (element.kind === 'freeText' && element.freeTextStyle === 'fullTechnical');
+  $: fullSlide = element.kind === 'freeText' && ['legacyPresentationSlide','fullPage'].includes(element.freeTextStyle || '');
   $: isFull = fullTech || fullSlide;
   $: isTechSide = isTech && !fullTech;
   $: techShape=sideRight?`M84 0 H${w} V${h} H0 Z`:`M0 0 H${w-84} L${w} ${h} H0 Z`;
@@ -55,15 +55,33 @@
   $: cardGradientId = `old-card-${id}`;
   $: contentClipId = `old-content-${id}`;
   $: slideBodyClipId = `old-slide-body-${id}`;
+  $: panelWipeId = `old-panel-wipe-${id}`;
+  $: panelWipeGradientId = `old-panel-wipe-gradient-${id}`;
+  $: goldRevealId = `old-gold-reveal-${id}`;
+  $: goldBlurId = `old-gold-blur-${id}`;
   $: portrait = canvasHeight > canvasWidth;
-  $: enterDuration = isFull || isTechSide ? 1.43 : .8;
-  $: phase = element.animation === 'legacy' ? legacyPhase(time, duration, enterDuration, isFull || isTechSide ? .65 : .5) : enterDuration;
+  // V6 Python: cada campo da ficha acrescenta 90 ms à revelação.
+  // Composição continua respeitando a duração total escolhida no Studio.
+  $: visibleTechnicalRows = Math.max(1, values.filter(value => value.trim().length > 0).length);
+  $: technicalDuration = legacyTechnicalEntrance(visibleTechnicalRows);
+  $: enterDuration = isTech ? technicalDuration : element.kind === 'corner' ? .65 : .80;
+  $: exitDuration = isTech ? .60 : element.kind === 'corner' ? .45 : .50;
+  $: phase = element.animation === 'legacy' ? legacyPhase(time, duration, enterDuration, exitDuration) : enterDuration;
   $: stage = (start: number, length: number) => legacyStage(phase, start, length);
-  $: pPanel = stage(0, .55);
-  $: pTitle = stage(isTechSide ? .38 : .22, .34);
-  $: pRule = stage(isTechSide ? .49 : .36, .40);
-  $: pBody = stage(isTechSide ? .54 : .45, .34);
-  $: pFooter = stage(isTechSide ? 1.08 : .63, .25);
+  $: labelMotion = legacyLabelMotion(phase);
+  $: cornerMotion = legacyCornerMotion(phase);
+  $: cornerDirection = element.style.x + w / 2 < canvasWidth / 2 ? -1 : 1;
+  $: pPanel = isTech || isFull ? stage(0, .55) : labelMotion.panel;
+  $: pTitle = isTech ? stage(.40, .30) : isFull ? stage(.22, .34) : labelMotion.label;
+  $: pRule = isTech ? stage(.50, .40) : isFull ? stage(.36, .40) : labelMotion.gold;
+  $: pBody = isTech ? stage(.55, .32) : isFull ? stage(.54, .45) : labelMotion.value;
+  $: pFooter = isTech ? stage(.55 + .09 * visibleTechnicalRows, .30) : stage(.63, .25);
+  $: pIconScale = labelMotion.iconScale;
+  $: pIconOpacity = labelMotion.iconOpacity;
+  // Wipe do pacote Python: área revelada com borda suavizada de ~36 px.
+  $: wipeEdge = -36 + pPanel * (w + 72);
+  $: wipeStart = clamp((wipeEdge - 26) / Math.max(1, w) * 100, 0, 100);
+  $: wipeEnd = clamp((wipeEdge + 26) / Math.max(1, w) * 100, wipeStart, 100);
   $: direction = sideRight ? 1 : -1;
   $: margin = portrait ? 72 : 82;
   $: columns = portrait ? 2 : 4;
@@ -145,6 +163,15 @@
     <linearGradient id={cardGradientId} x1="0" x2="1" y1="0" y2="1">
       <stop stop-color={paint.background}/><stop offset="1" stop-color={background}/>
     </linearGradient>
+    <linearGradient id={panelWipeGradientId} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={w} y2="0">
+      <stop offset={`${wipeStart}%`} stop-color="white"/>
+      <stop offset={`${wipeEnd}%`} stop-color="black"/>
+    </linearGradient>
+    <mask id={panelWipeId} maskUnits="userSpaceOnUse" x="-36" y="-36" width={w+72} height={h+72}>
+      <rect x="0" y="0" width={w} height={h} fill={`url(#${panelWipeGradientId})`}/>
+    </mask>
+    <clipPath id={goldRevealId}><rect x="-4" y="-10" width={Math.max(0, 170 * pRule + 4)} height="34"/></clipPath>
+    <filter id={goldBlurId} x="-35%" y="-450%" width="170%" height="1000%"><feGaussianBlur stdDeviation="5"/></filter>
     <clipPath id={contentClipId}><rect x={clipStart} y="0" width={clipWidth} height={h}/></clipPath>
     <clipPath id={slideBodyClipId}><rect x={margin+55} y={slideClipTop} width={Math.max(80,w-2*margin-110)} height={slideClipHeight}/></clipPath>
     <clipPath id={clipId}>
@@ -154,7 +181,7 @@
 
   {#if element.kind === 'corner'}
     <!-- O original mostrava o logotipo diretamente, sem a moldura Studio. -->
-    <g opacity={stage(0, .55)} transform={`translate(${w/2} ${h/2}) scale(${.86+.14*stage(0,.55)}) translate(${-w/2} ${-h/2})`}>
+    <g opacity={cornerMotion.opacity} transform={`translate(${w/2 + cornerDirection * cornerMotion.offset} ${h/2}) scale(${cornerMotion.scale}) translate(${-w/2} ${-h/2})`}>
       {#if element.imageData}
         <image href={element.imageData} x="0" y="0" width={w} height={h} preserveAspectRatio="xMidYMid meet" />
       {:else}
@@ -163,7 +190,7 @@
       {/if}
     </g>
   {:else if isTechSide}
-    <g opacity={pPanel} transform={`translate(${direction*(1-pPanel)*(w+40)} 0)`}>
+    <g opacity={Math.min(1,pPanel*4)} transform={`translate(${direction*(1-pPanel)*(w+40)} 0)`}>
       <path d={sideRight ? `M84 0 H${w} V${h} H0 Z` : `M0 0 H${w-84} L${w} ${h} H0 Z`} fill={`url(#${gradientId})`} fill-opacity=".83" />
       <path d={sideRight ? `M84 0 L0 ${h}` : `M${w-84} 0 L${w} ${h}`} stroke={accent} stroke-width="4" fill="none"/>
       <path d={sideRight ? `M101 0 L17 ${h}` : `M${w-101} 0 L${w-17} ${h}`} stroke={paint.edge} stroke-width="2" fill="none"/>
@@ -245,15 +272,17 @@
   {:else}
     <!-- Etiquetas / barras antigas: o painel e os detalhes entram por revelação,
          os textos chegam em tempos diferentes e podem rolar separadamente. -->
-    <g opacity={pPanel}>
+    <!-- Revelação horizontal + halo do RDV v6 (somente renderizador clássico). -->
+    <g mask={`url(#${panelWipeId})`} opacity={Math.min(1,pPanel*3)}>
       <path d={`M16 0 H${w-22} L${w} 22 V${h-20} Q${w} ${h} ${w-20} ${h} H16 Q0 ${h} 0 ${h-16} V16 Q0 0 16 0Z`} fill={background} fill-opacity=".87" stroke={paint.edge} stroke-width="2" />
-    </g>
-    <g opacity={pRule}>
-      <path d={`M0 12 L16 0 H${Math.min(w*.4,165)}`} stroke={accent} stroke-width="3" fill="none" />
       <path d={`M${w-90} ${h-1} h45 l25 -18`} fill="none" stroke={accent} stroke-width="2.2" />
     </g>
+    <g clip-path={`url(#${goldRevealId})`} opacity={pRule}>
+      <path d={`M0 12 L16 0 H${Math.min(w*.4,165)}`} stroke={accent} stroke-width="11" opacity=".55" fill="none" filter={`url(#${goldBlurId})`}/>
+      <path d={`M0 12 L16 0 H${Math.min(w*.4,165)}`} stroke={accent} stroke-width="3" fill="none" />
+    </g>
     {#if freeSocial}
-      <g opacity={pBody}><SocialIcon icon={element.freeTextIcon || 'none'} x={22} y={Math.max(12,h/2-24)} size={48} color={accent} framed={false}/></g>
+      <g opacity={pIconOpacity} transform={`translate(46 ${h/2}) scale(${pIconScale}) translate(-46 ${-h/2})`}><SocialIcon icon={element.freeTextIcon || 'none'} x={22} y={Math.max(12,h/2-24)} size={48} color={accent} framed={false}/></g>
     {/if}
     {#if freeBarPresentation}
       <g opacity={pTitle} transform={`translate(0 ${16*(1-pTitle)})`}>
@@ -291,7 +320,7 @@
         </g>
       </g>
     {:else}
-      <g opacity={stage(.28,.35)} transform={`translate(48 49) scale(${.65+.35*stage(.28,.35)}) translate(-48 -49)`}>
+      <g opacity={pIconOpacity} transform={`translate(48 48) scale(${pIconScale}) translate(-48 -48)`}>
         <rect x="18" y="18" width="60" height="60" rx="12" fill={paint.edge} fill-opacity=".32" stroke={accent} stroke-width="1.7" />
         <svg x="27" y="27" width="42" height="42" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
           <path d={CARD_ICONS[element.kind] || CARD_ICONS.default} fill="none" stroke={accent} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />

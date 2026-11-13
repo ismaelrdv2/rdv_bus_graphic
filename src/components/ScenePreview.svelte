@@ -238,13 +238,9 @@
   on:pointercancel={endDrag}
 >
   {#each project.elements.filter(item => item.visible) as element (element.id)}
-    {@const hasLegacyArt = element.kind === 'technical'
-      ? (element.technicalLayout === 'legacyFullscreen' || (element.technicalLayout !== 'fullscreen' && element.visualPreset === 'legacy'))
-      : element.kind === 'freeText'
-        ? ['legacyLabel','legacyHalfBar','legacyFullBar','legacyPresentationBar','legacyPresentationSlide'].includes(element.freeTextStyle || '')
-          || (element.visualPreset === 'legacy' && ['technicalBar','fullTechnical'].includes(element.freeTextStyle || ''))
-        : element.visualPreset === 'legacy'}
-    {@const motion = motionAt(time, project.canvas.duration, element.animation === 'legacy' && !hasLegacyArt ? 'slide' : element.animation)}
+    <!-- A animação original é interna ao HUD, tanto no Studio quanto no Clássico.
+         O movimento da cena serve apenas aos demais tipos de transição. -->
+    {@const motion = motionAt(time, project.canvas.duration, element.animation)}
     {@const totalAlpha = (element.style.opacity / 100) * motion.alpha}
     <g
       transform={`translate(${element.style.x + (isBottomBar(element,project.canvas.width,project.canvas.height) ? 0 : motion.shiftX * (isBar(element) && element.technicalSide === 'right' ? -1 : 1))} ${element.style.y + (isBottomBar(element,project.canvas.width,project.canvas.height) ? Math.abs(motion.shiftX) : 0)})`}
