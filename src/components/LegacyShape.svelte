@@ -40,7 +40,7 @@
   $: freeBarPresentation = element.kind === 'slide' || (element.kind === 'freeText' && element.freeTextStyle === 'legacyPresentationBar');
   $: freeLabel = element.kind === 'freeText' && ['legacyLabel','legacyHalfBar','legacyFullBar'].includes(element.freeTextStyle || '');
   $: compactLabel = element.kind === 'freeText' && element.freeTextStyle === 'legacyLabel';
-  $: labelWeights = compactTextWeights(compactLabel ? element.freeTextDisplay : 'both', time, duration);
+  $: labelWeights = compactTextWeights(compactLabel || freeBarPresentation && element.kind === 'freeText' ? element.freeTextDisplay : 'both', time, duration);
   // Ícones desenhados no mesmo sistema 24x24; o viewBox garante alinhamento
   // independente de altura do caminho (o pin antes ultrapassava a moldura).
   $: isSmallLabel = !isTech && !fullSlide && !freeBarPresentation && !freeLabel;
@@ -272,6 +272,13 @@
       {/each}
       </g>
     </g>
+    {#if fields.line2 && element.showFullPageNote!==false}
+      <g opacity={pFooter}>
+        <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={margin+65} y={h-105}
+          font-size={fit(fields.line2,Math.min(23*fontScale,32),w-2*margin-130,false)}
+          fill={textColor(element,'line2','secondary')} font-family={fontFamily}>{fields.line2}</text>
+      </g>
+    {/if}
     <g opacity={pFooter}><FooterBrand {element} x={margin} y={h-54} fontSize={17} maxWidth={Math.max(90,w*.42)} maxHeight={44} color={textColor(element,'footer','secondary')} letterSpacing={6}/><path d={`M${w-margin-160} ${h-62} H${w-margin-42} L${w-margin} ${h-102}`} stroke={accent} stroke-width="2" fill="none" /></g>
   {:else}
     <!-- Etiquetas / barras antigas: o painel e os detalhes entram por revelação,
@@ -293,11 +300,31 @@
         <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={freeSocial?104:46} y={h*.31} fill={textColor(element,'heading','white')} font-size={fit(fields.heading,Math.max(25,bodyTitleSize),w-92)} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'}>{fields.heading}</text>
       </g>
       <path d={`M${freeSocial?100:38} ${h*.39} h${(w-(freeSocial?138:76))*pRule}`} stroke={accent} stroke-width="2" opacity={pRule}/>
-      <g opacity={pBody} transform={`translate(0 ${20*(1-pBody)})`}>
-        {#each bodyLayout.lines as line,i}
-          <text xml:space="preserve" data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,freeSocial?104:48,w-(freeSocial?152:96))} y={barBodyBaseline+i*bodyLayout.lineHeight} text-anchor={textAnchor(rich.alignment)} font-size={bodyFontSize} fill={textColor(element,'line1','secondary')} font-family={fontFamily} font-weight={rich.bodyBold?'800':'400'}>{#each line.runs as run}<tspan font-weight={run.bold?'800':rich.bodyBold?'800':'400'} font-style={run.italic?'italic':rich.bodyItalic?'italic':'normal'} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}</text>
-        {/each}
-      </g>
+      {#if !labelWeights.stacked && element.kind === 'freeText'}
+        <g opacity={pBody}>
+          <g opacity={labelWeights.first}>
+            <text data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={(freeSocial?104:48)+(w-(freeSocial?152:96))/2} y={h*.67}
+              dominant-baseline="middle" text-anchor="middle" font-size={fit(singleLineText(fields.line1),Math.min(bodyFontSize*1.18,h*.39),w-(freeSocial?158:105))}
+              fill={textColor(element,'line1','secondary')} font-family={fontFamily} font-weight="800">{singleLineText(fields.line1)}</text>
+          </g>
+          <g opacity={labelWeights.second}>
+            <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={(freeSocial?104:48)+(w-(freeSocial?152:96))/2} y={h*.67}
+              dominant-baseline="middle" text-anchor="middle" font-size={fit(singleLineText(fields.line2),Math.min(bodyFontSize*1.18,h*.39),w-(freeSocial?158:105))}
+              fill={textColor(element,'line2','secondary')} font-family={fontFamily} font-weight="800">{singleLineText(fields.line2)}</text>
+          </g>
+        </g>
+      {:else}
+        <g opacity={pBody} transform={`translate(0 ${20*(1-pBody)})`}>
+          {#each bodyLayout.lines as line,i}
+            <text xml:space="preserve" data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,freeSocial?104:48,w-(freeSocial?152:96))} y={Math.min(barBodyBaseline+i*bodyLayout.lineHeight,h*.74)} text-anchor={textAnchor(rich.alignment)} font-size={bodyFontSize} fill={textColor(element,'line1','secondary')} font-family={fontFamily} font-weight={rich.bodyBold?'800':'400'}>{#each line.runs as run}<tspan font-weight={run.bold?'800':rich.bodyBold?'800':'400'} font-style={run.italic?'italic':rich.bodyItalic?'italic':'normal'} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}</text>
+          {/each}
+          {#if fields.line2}
+            <text data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={alignedX(rich.alignment,freeSocial?104:48,w-(freeSocial?152:96))}
+              y={h*.92} text-anchor={textAnchor(rich.alignment)} font-size={fit(singleLineText(fields.line2),Math.min(22*fontScale,h*.12),w-(freeSocial?152:96),false)}
+              fill={textColor(element,'line2','secondary')} font-family={fontFamily}>{singleLineText(fields.line2)}</text>
+          {/if}
+        </g>
+      {/if}
     {:else if freeLabel}
       <g clip-path={`url(#${contentClipId})`} opacity={pBody}>
         <g opacity={labelWeights.first}>
