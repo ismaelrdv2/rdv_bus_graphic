@@ -26,9 +26,9 @@
   $: w = element.style.width * element.style.scaleX;
   $: h = elementBaseHeight(element, canvasHeight) * element.style.scaleY;
   $: sideRight = element.technicalSide === 'right';
-  $: isTech = element.kind === 'technical' || element.freeTextStyle === 'technicalBar' || element.freeTextStyle === 'fullTechnical';
-  $: fullTech = (element.kind === 'technical' && element.technicalLayout === 'legacyFullscreen') || (element.kind === 'freeText' && element.freeTextStyle === 'fullTechnical');
-  $: fullSlide = element.kind === 'freeText' && element.freeTextStyle === 'legacyPresentationSlide';
+  $: isTech = element.kind === 'technical' || ['technicalBar','technicalAlpha1','fullTechnical'].includes(element.freeTextStyle || '');
+  $: fullTech = (element.kind === 'technical' && ['legacyFullscreen','fullscreen'].includes(element.technicalLayout || '')) || (element.kind === 'freeText' && element.freeTextStyle === 'fullTechnical');
+  $: fullSlide = element.kind === 'freeText' && ['legacyPresentationSlide','fullPage'].includes(element.freeTextStyle || '');
   $: isFull = fullTech || fullSlide;
   $: isTechSide = isTech && !fullTech;
   $: techShape=sideRight?`M84 0 H${w} V${h} H0 Z`:`M0 0 H${w-84} L${w} ${h} H0 Z`;
