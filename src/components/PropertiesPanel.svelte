@@ -30,6 +30,7 @@
   export let onDuplicate: () => void;
   export let onDelete: () => void;
   export let onImage: (data: string | undefined) => void;
+  export let onFooter: (key:'footerMode'|'footerText'|'footerImageData', value:string | undefined) => void;
   export let onCanvas: (key: 'fps' | 'duration' | 'orientation', value: number | string) => void;
   export let onTechnicalSide: (side: 'left' | 'right') => void;
   export let onFreeTextStyle: (style: FreeTextStyle) => void;
@@ -63,12 +64,14 @@
     {id:'motion',title:'Animação'}, {id:'palette',title:'Paleta'},
   ];
   let imageInput: HTMLInputElement;
+  let footerImageInput: HTMLInputElement;
+  let footerError = '';
   let allSelectedRole: TextColorRole = 'white';
   let bodyEditor: HTMLTextAreaElement;
   $: richText = selected?.richText || DEFAULT_RICH_TEXT;
   $: bottomBar = selected ? isBottomBar(selected,project.canvas.width,project.canvas.height) : false;
-  $: richEditor = selected?.kind === 'freeText' && (['classic','fullPage','legacyPresentationBar','legacyPresentationSlide'].includes(selected.freeTextStyle || 'classic'));
-  $: isFullscreen = (selected?.kind === 'technical' && ['fullscreen','legacyFullscreen'].includes(selected.technicalLayout || '')) || (selected?.kind === 'freeText' && (selected.freeTextStyle === 'fullTechnical' || selected.freeTextStyle === 'fullPage' || selected.freeTextStyle === 'legacyPresentationSlide'));
+  $: richEditor = selected?.kind === 'freeText' && (['classic','fullPage','legacyPresentationBar','legacyPresentationSlide','newsSlide'].includes(selected.freeTextStyle || 'classic'));
+  $: isFullscreen = (selected?.kind === 'technical' && ['fullscreen','legacyFullscreen'].includes(selected.technicalLayout || '')) || (selected?.kind === 'freeText' && (selected.freeTextStyle === 'fullTechnical' || selected.freeTextStyle === 'fullPage' || selected.freeTextStyle === 'legacyPresentationSlide' || selected.freeTextStyle === 'newsSlide'));
   function markSelection(marker: string): void {
     if (!selected || !bodyEditor) return;
     const from = bodyEditor.selectionStart;
@@ -88,6 +91,8 @@
     ? ['heading', 'line1', 'line2', 'line3', 'line4'] as TextField[]
     : selected?.kind === 'freeText' && ['legacyLabel','legacyHalfBar','legacyFullBar'].includes(selected.freeTextStyle || '')
     ? ['line1', 'line2'] as TextField[]
+    : selected?.kind === 'freeText' && ['newsLabel','newsTicker','newsLowerThird','newsSlide'].includes(selected.freeTextStyle || '')
+    ? ['heading','line1','line2'] as TextField[]
     : Object.keys(labels) as TextField[];
 
   async function imageChanged(event: Event): Promise<void> {
@@ -110,6 +115,20 @@
     reader.onerror = () => { imageError = 'Não foi possível abrir a imagem.'; };
     reader.readAsDataURL(file);
     input.value = '';
+  }
+
+  async function footerImageChanged(event:Event):Promise<void>{
+    const input=event.currentTarget as HTMLInputElement,file=input.files?.[0];
+    if(!file)return;
+    footerError='';
+    if(!['image/png','image/jpeg','image/webp'].includes(file.type) || file.size>3_500_000){
+      footerError='Escolha PNG, JPG ou WebP com até 3,5 MB.';
+      input.value='';return;
+    }
+    const reader=new FileReader();
+    reader.onload=()=>{if(typeof reader.result==='string')onFooter('footerImageData',reader.result);};
+    reader.onerror=()=>{footerError='Falha ao abrir a logomarca.';};
+    reader.readAsDataURL(file);input.value='';
   }
 </script>
 
@@ -147,10 +166,14 @@
             <option value="legacyFullBar">Original 0.14 · Barra larga</option>
             <option value="legacyPresentationBar">Original 0.14 · Apresentação em barra</option>
             <option value="legacyPresentationSlide">Original 0.14 · Apresentação em slide (tela inteira)</option>
+            <option value="newsLabel">Telejornal · Etiqueta Plantão</option>
+            <option value="newsTicker">Telejornal · Barra de Notícias</option>
+            <option value="newsLowerThird">Telejornal · Lower Third</option>
+            <option value="newsSlide">Telejornal · Slide Manchete (tela inteira)</option>
           </select>
         </label>
       {/if}
-      {#if selected.kind === 'freeText' && ['legacyLabel','legacyHalfBar','legacyFullBar','legacyPresentationBar','classic'].includes(selected.freeTextStyle || 'classic')}
+      {#if selected.kind === 'freeText' && ['legacyLabel','legacyHalfBar','legacyFullBar','legacyPresentationBar','classic','newsLabel','newsTicker','newsLowerThird'].includes(selected.freeTextStyle || 'classic')}
         <label class="field"><span>Ícone social opcional</span>
           <select value={selected.freeTextIcon || 'none'} on:change={(event) => onFreeTextIcon(event.currentTarget.value as HudElement['freeTextIcon'])}>
             {#each ['none','facebook','instagram','x','tiktok','twitch','whatsapp','telegram','discord'] as social}
@@ -185,7 +208,7 @@
           <option value="studio">Studio · reconstrução atual</option>
         </select>
       </label>
-      <p class="inspector-hint">A opção "Clássico" restaura a aparência e animação em camadas dos itens. Os modos originais de Texto livre usam sempre seu desenho histórico.</p>
+      <p class="inspector-hint">Clássico e Studio controlam apenas a aparência; qualquer transição pode ser combinada com os dois estilos. Os novos modelos são desenhos originais inspirados em telejornais.</p>
       <label class="field"><span>Nome no projeto</span><input type="text" value={selected.title} maxlength="80" on:input={(event) => onRename(event.currentTarget.value)}/></label>
       <h4>Editar os campos</h4>
       {#each fieldKeys as field}
@@ -218,6 +241,27 @@
         <button class="button secondary-button fill" on:click={() => imageInput.click()}><Icon name="upload" size={16}/> {selected.imageData ? 'Trocar imagem' : 'Escolher imagem'}</button>
         {#if selected.imageData}<button class="text-action" on:click={() => onImage(undefined)}>Remover imagem</button>{/if}
         {#if imageError}<small class="error-text">{imageError}</small>{/if}
+      {/if}
+      {#if selected.kind === 'technical' || selected.kind === 'slide' ||
+        (selected.kind === 'freeText' && ['technicalBar','fullTechnical','fullPage','legacyPresentationSlide','newsSlide'].includes(selected.freeTextStyle || ''))}
+        <h4>Rodapé / Identidade visual</h4>
+        <label class="field"><span>Mostrar no rodapé</span>
+          <select value={selected.footerMode || 'text'} on:change={event=>onFooter('footerMode',event.currentTarget.value)}>
+            <option value="text">Texto personalizado</option>
+            <option value="image">Imagem / Logomarca</option>
+            <option value="none">Ocultar rodapé</option>
+          </select>
+        </label>
+        {#if (selected.footerMode || 'text') === 'text'}
+          <label class="field"><span>Texto do rodapé</span><input type="text" maxlength="100" value={selected.footerText ?? 'RDV BUS'}
+            on:input={event=>onFooter('footerText',event.currentTarget.value)}/></label>
+        {:else if selected.footerMode === 'image'}
+          <input class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp" bind:this={footerImageInput} on:change={footerImageChanged}/>
+          <button class="button secondary-button fill" on:click={()=>footerImageInput?.click()}><Icon name="upload" size={16}/>{selected.footerImageData?'Trocar logomarca':'Escolher logomarca'}</button>
+          {#if selected.footerImageData}<button class="text-action" on:click={()=>onFooter('footerImageData',undefined)}>Remover imagem</button>{/if}
+          {#if footerError}<small class="error-text">{footerError}</small>{/if}
+          <p class="inspector-hint">PNG com fundo transparente recomendado. A logomarca acompanha a animação e sai no SVG e nos vídeos.</p>
+        {/if}
       {/if}
       <h4>Ações do elemento</h4>
       <div class="action-buttons"><button class="button secondary-button" on:click={onDuplicate}><Icon name="copy" size={16}/> Duplicar</button><button class="button danger-button" on:click={onDelete}><Icon name="trash" size={16}/> Excluir</button></div>
@@ -369,7 +413,7 @@
     </section>
     {:else if activeTab === 'motion'}
     <section class="property-section"><h3>Animação e rolagem</h3>
-      <label class="field"><span>Entrada e saída</span><select value={selected.animation} on:change={(event) => onAnimation(event.currentTarget.value as HudElement['animation'])}><option value="legacy">Animação original 0.14 — por camadas</option><option value="slide">Deslizamento HUD (Studio)</option><option value="fade">Fade suave</option><option value="none">Sem animação</option></select></label>
+      <label class="field"><span>Entrada e saída</span><select value={selected.animation} on:change={(event) => onAnimation(event.currentTarget.value as HudElement['animation'])}><option value="legacy">Animação original 0.14 — por camadas</option><option value="slide">Deslizamento HUD (Studio)</option><option value="fade">Fade suave</option><option value="none">Sem animação</option><option value="curtain">Cortina · Revelar lateralmente</option><option value="zoom">Zoom de Estúdio</option><option value="split">Revelação Central</option></select></label>
       {#if isCompactCartela(selected) || (selected.kind==='freeText' && selected.freeTextStyle==='classic')}
         <label class="field"><span>Brilho após a entrada (somente cartelas)</span>
           <select value={selected.shineEnabled!==false?'on':'off'} on:change={event=>onShineToggle(event.currentTarget.value==='on')}>
