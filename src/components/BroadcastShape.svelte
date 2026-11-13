@@ -81,32 +81,32 @@
     <rect width={badgeWidth} height={h} rx={modern?12:0} fill={accent}/>
     <path d={`M${badgeWidth+12} 3 H${w-22}`} stroke={accent} stroke-width={modern?3:5} opacity={motion.active?motion.gold:1}/>
     {#each badgeLines as part,i}
-      <text x={badgeWidth/2} y={badgeLines.length>1?h*(.43+i*.27):h*.59}
+      <text data-edit-field="heading" x={badgeWidth/2} y={badgeLines.length>1?h*(.43+i*.27):h*.59}
         text-anchor="middle" fill={paint.dark} font-size={fitted(part,Math.min(24,h*.25),badgeWidth-16)}
         font-weight="900">{part}</text>
     {/each}
     <g opacity={textReveal}>
-      <text x={badgeWidth+16} y={h*.50} fill={primary} font-size={fitted(line1,h*.31,w-badgeWidth-34-reserveRight)} font-weight="800">{line1}</text>
-      <text x={badgeWidth+17} y={h*.81} fill={secondary} font-size={fitted(line2,h*.19,w-badgeWidth-36-reserveRight)}>{line2}</text>
+      <text data-edit-field="line1" x={badgeWidth+16} y={h*.50} fill={primary} font-size={fitted(line1,h*.31,w-badgeWidth-34-reserveRight)} font-weight="800">{line1}</text>
+      <text data-edit-field="line2" x={badgeWidth+17} y={h*.81} fill={secondary} font-size={fitted(line2,h*.19,w-badgeWidth-36-reserveRight)}>{line2}</text>
     </g>
   {:else if ticker}
     <!-- Barra de notícias: bandeira esquerda, manchete e subtítulo em filete inferior. -->
     <rect width={w} height={h} rx={modern?19:1} fill={`url(#${gradientId})`} stroke={paint.edge} stroke-width={modern?2:3}/>
     <rect width={badgeWidth} height={h*.73} fill={accent}/>
-    <text x={badgeWidth/2} y={h*.45} text-anchor="middle" fill={paint.dark} font-weight="900" font-size={fitted(headline,Math.min(30,h*.27),badgeWidth-18)}>{headline}</text>
+    <text data-edit-field="heading" x={badgeWidth/2} y={h*.45} text-anchor="middle" fill={paint.dark} font-weight="900" font-size={fitted(headline,Math.min(30,h*.27),badgeWidth-18)}>{headline}</text>
     <rect y={h*.75} width={w} height={h*.25} fill={modern?paint.edge:accent} fill-opacity={modern?.55:1}/>
     <g opacity={textReveal}>
-      <text x={badgeWidth+25} y={h*.54} fill={primary} font-size={fitted(line1,h*.34,w-badgeWidth-48-reserveRight)} font-weight="850">{line1}</text>
-      <text x="24" y={h*.93} fill={modern?secondary:paint.dark} font-size={fitted(line2,Math.min(24,h*.17),w-48)} font-weight="700">{line2}</text>
+      <text data-edit-field="line1" x={badgeWidth+25} y={h*.54} fill={primary} font-size={fitted(line1,h*.34,w-badgeWidth-48-reserveRight)} font-weight="850">{line1}</text>
+      <text data-edit-field="line2" x="24" y={h*.93} fill={modern?secondary:paint.dark} font-size={fitted(line2,Math.min(24,h*.17),w-48)} font-weight="700">{line2}</text>
     </g>
   {:else if lower}
     <!-- Lower third editorial: duas camadas, sem barra opaca cobrindo toda a imagem. -->
     <path d={`M0 0 H${w-44} L${w} 44 V${h*.75} H0 Z`} fill={`url(#${gradientId})`} stroke={paint.edge} stroke-width="2.5"/>
     <rect x="0" y="0" width={modern?9:19} height={h*.76} fill={accent}/>
     <rect x={modern?25:32} y={h*.77} width={w-(modern?25:32)} height={h*.23} rx={modern?9:0} fill={accent}/>
-    <text x={modern?42:48} y={h*.22} font-size={fitted(headline,h*.16,w-100-reserveRight)} letter-spacing="3" fill={accent} font-weight="900" opacity={titleReveal}>{headline}</text>
-    <text x={modern?42:48} y={h*.61} font-size={fitted(line1,h*.34,w-112-reserveRight)} fill={primary} font-weight="900" opacity={textReveal}>{line1}</text>
-    <text x={modern?48:54} y={h*.935} font-size={fitted(line2,h*.15,w-98)} fill={paint.dark} font-weight="800" opacity={textReveal}>{line2}</text>
+    <text data-edit-field="heading" x={modern?42:48} y={h*.22} font-size={fitted(headline,h*.16,w-100-reserveRight)} letter-spacing="3" fill={accent} font-weight="900" opacity={titleReveal}>{headline}</text>
+    <text data-edit-field="line1" x={modern?42:48} y={h*.61} font-size={fitted(line1,h*.34,w-112-reserveRight)} fill={primary} font-weight="900" opacity={textReveal}>{line1}</text>
+    <text data-edit-field="line2" x={modern?48:54} y={h*.935} font-size={fitted(line2,h*.15,w-98)} fill={paint.dark} font-weight="800" opacity={textReveal}>{line2}</text>
   {:else if slide}
     <!-- Manchete em tela cheia: título e corpo em área editorial com respiro e rodapé independente. -->
     <rect width={w} height={h} fill={`url(#${gradientId})`} fill-opacity=".97"/>
