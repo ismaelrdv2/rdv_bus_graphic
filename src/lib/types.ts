@@ -112,6 +112,8 @@ export interface HudElement {
   scrollBarSize?: 'small' | 'medium' | 'large';
   /** Autoajusta a largura ao texto; redimensionamento manual desativa esta opção. */
   autoFitWidth?: boolean;
+  /** Texto 2 em cartela de tela inteira, como nota acima do rodapé. */
+  showFullPageNote?: boolean;
   /** Rótulos personalizados dos campos nos dois estilos de ficha. */
   freeTextCaptions?: string[];
   /** Ficha tradicional lateral ou ficha técnica em tela inteira. */
