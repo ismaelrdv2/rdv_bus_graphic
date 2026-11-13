@@ -15,7 +15,8 @@
     "desktop:build": "tauri build",
     "desktop:build:linux": "tauri build --bundles appimage",
     "desktop:build:windows": "tauri build --bundles nsis",
-    "test:updates": "node tests/check-updates.mjs"
+    "test:updates": "node tests/check-updates.mjs",
+    "test:consolidation": "node tests/check-free-text-consolidation.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",

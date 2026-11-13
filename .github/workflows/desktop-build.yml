@@ -49,6 +49,8 @@ jobs:
         run: npm run test:broadcast
       - name: Testar verificação segura das atualizações
         run: npm run test:updates
+      - name: Testar reorganização do Texto Livre
+        run: npm run test:consolidation
       - name: Verificar Svelte e TypeScript
         run: npm run check
       - name: Compilar AppImage
@@ -86,6 +88,8 @@ jobs:
         run: npm run test:broadcast
       - name: Testar verificação segura das atualizações
         run: npm run test:updates
+      - name: Testar reorganização do Texto Livre
+        run: npm run test:consolidation
       - name: Verificar Svelte e TypeScript
         run: npm run check
       - name: Compilar instalador NSIS

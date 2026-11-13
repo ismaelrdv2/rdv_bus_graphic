@@ -108,6 +108,12 @@ export interface HudElement {
   freeTextIcon?: SocialIconId;
   /** Etiqueta: 2 linhas, texto 1, texto 2 ou alternância temporal. */
   freeTextDisplay?: CompactTextDisplay;
+  /** Para etiqueta com rolagem; barras antigas foram incorporadas a este modo. */
+  scrollBarSize?: 'small' | 'medium' | 'large';
+  /** Autoajusta a largura ao texto; redimensionamento manual desativa esta opção. */
+  autoFitWidth?: boolean;
+  /** Texto 2 em cartela de tela inteira, como nota acima do rodapé. */
+  showFullPageNote?: boolean;
   /** Rótulos personalizados dos campos nos dois estilos de ficha. */
   freeTextCaptions?: string[];
   /** Ficha tradicional lateral ou ficha técnica em tela inteira. */

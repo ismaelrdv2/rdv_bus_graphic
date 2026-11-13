@@ -20,6 +20,7 @@
   import { DEFAULT_PALETTE, PALETTE_PRESETS, parseColor, withTextGroupColor } from './lib/palette';
   import type { EditableTextKey } from './lib/inlineText';
   import { legacyScrollRecommendedDuration } from './lib/legacy';
+  import { canonicalFreeTextStyle, studioOnlyStyle, labelBarDimensions, estimatedLabelWidth, type LabelBarSize } from './lib/freeTextModes';
   import { beginVideo, pushVideoFrame, finishVideo, cancelVideo, exportFrameSvg, svgToPngBase64, VIDEO_FORMATS, type VideoFormat, type RasterQuality, type ExportBackground } from './lib/video';
   import { MAX_ELEMENTS, type TextFormatting, type TextAlign, type BulletMode, type ElementKind, type FreeTextStyle, type RichTextSettings, type TechnicalLayout, type HudElement, type HudStyle, type RDVProject, type TextField, type TextColorKey, type TextColorRole, type TextColorGroup, type PaletteColors, type PaletteId, type UiStatus } from './lib/types';
   import { isDesktop, loadAutosave, openProjectBrowser, openProjectNative, saveProject, writeAutosave } from './lib/projects';
@@ -69,7 +70,16 @@
   }
 
   function changeElement(id: string, fn: (element: HudElement) => HudElement): void {
-    applyChange({ ...project, elements: project.elements.map(element => element.id === id ? fn(element) : element) });
+    applyChange({ ...project, elements: project.elements.map(element => {
+      if(element.id!==id)return element;
+      const next=fn(element);
+      if(next.kind==='freeText' && next.freeTextStyle==='legacyLabel' && next.autoFitWidth){
+        const width=estimatedLabelWidth(next,project.canvas.width);
+        return {...next,style:{...next.style,width,scaleX:1,
+          x:Math.max(0,Math.min(next.style.x,project.canvas.width-width))}};
+      }
+      return next;
+    }) });
   }
 
   function addElement(kind: ElementKind): void {
@@ -221,13 +231,13 @@
         if (key === 'width' || key === 'x' || key === 'scaleX') nextStyle.x = element.technicalSide === 'right' ? Math.max(0, project.canvas.width - nextStyle.width * nextStyle.scaleX) : 0;
         nextStyle.y = 0;
       }
-      return { ...element, style: nextStyle };
+      return { ...element, autoFitWidth: (key==='width'||key==='scaleX')?false:element.autoFitWidth, style: nextStyle };
     });
   }
 
   function resizeElement(id: string, change: Partial<HudStyle>): void {
     changeElement(id, element => ((element.kind === 'technical' && ['fullscreen', 'legacyFullscreen'].includes(element.technicalLayout || '')) || (element.kind === 'freeText' && (element.freeTextStyle === 'fullPage' || element.freeTextStyle === 'fullTechnical' || ['legacyPresentationSlide','newsSlide'].includes(element.freeTextStyle || '')))) ? element : isBottomBar(element,project.canvas.width,project.canvas.height) ? ({ ...element, style: {...element.style, scaleY:clamp(change.scaleY ?? element.style.scaleY,.75,1.4), scaleX:1, width:project.canvas.width, x:0, y:Math.round(project.canvas.height - PORTRAIT_BAR_HEIGHT*clamp(change.scaleY ?? element.style.scaleY,.75,1.4))} })
-      : ({ ...element, style: { ...element.style, ...change } }));
+      : ({ ...element, autoFitWidth: change.width!==undefined||change.scaleX!==undefined?false:element.autoFitWidth, style: { ...element.style, ...change } }));
   }
 
   function resetSelectedScale(): void {
@@ -239,6 +249,7 @@
   }
 
   function changeFreeTextStyle(value: FreeTextStyle): void {
+    value=canonicalFreeTextStyle(value);
     if (!selectedId) return;
     changeElement(selectedId, element => {
       if (element.kind !== 'freeText') return element;
@@ -249,8 +260,27 @@
       const y = full || value === 'technicalBar' ? 0 : value === 'technicalAlpha1' ? Math.min(192, project.canvas.height - 480)
         : Math.max(0, Math.min(element.style.y, project.canvas.height - (value === 'legacyPresentationBar'?222: value === 'newsTicker'?138: value === 'newsLowerThird'?205: value === 'newsLabel'?102: value.startsWith('legacy')?128:165)));
       const bottom = value === 'technicalBar' && project.canvas.height > project.canvas.width;
-      return { ...element, freeTextStyle: value, ...(value.startsWith('legacy') ? { animation:'legacy' as const } : {}), style: { ...element.style, x:bottom?0:x, y:bottom?project.canvas.height-PORTRAIT_BAR_HEIGHT:y, width:bottom?project.canvas.width:width, scaleX: 1, scaleY: 1 } };
+      return { ...element, freeTextStyle: value, visualPreset:studioOnlyStyle(value)?'studio':element.visualPreset, ...(value.startsWith('legacy') ? { animation:'legacy' as const } : {}), style: { ...element.style, x:bottom?0:x, y:bottom?project.canvas.height-PORTRAIT_BAR_HEIGHT:y, width:bottom?project.canvas.width:width, scaleX: 1, scaleY: 1 } };
     });
+  }
+
+  function updateLabelBarSize(size:LabelBarSize):void{
+    if(!selectedId)return;
+    changeElement(selectedId,element=>{
+      if(element.kind!=='freeText'||element.freeTextStyle!=='legacyLabel')return element;
+      const dims=labelBarDimensions(size,project.canvas.width);
+      return {...element,scrollBarSize:size,autoFitWidth:false,style:{
+        ...element.style,width:dims.width,scaleX:1,scaleY:1,
+        x:Math.max(0,Math.min(element.style.x,project.canvas.width-dims.width)),
+        y:Math.max(0,Math.min(element.style.y,project.canvas.height-dims.height))
+      }};
+    });
+  }
+
+  function setLabelAutoFit(enabled:boolean):void{
+    if(!selectedId)return;
+    changeElement(selectedId,element=>element.kind==='freeText'&&element.freeTextStyle==='legacyLabel'
+      ? {...element,autoFitWidth:enabled,scrollBarSize:'small'}:element);
   }
 
   function updateTechnicalLayout(layout: TechnicalLayout): void {
@@ -312,6 +342,12 @@
     changeElement(selectedId, element => element.kind === 'freeText' ? {...element, freeTextDisplay:value || 'both'} : element);
   }
 
+  function updateSelectedFreeTextNote(enabled:boolean):void{
+    if(!selectedId)return;
+    changeElement(selectedId,element=>element.kind==='freeText'&&element.freeTextStyle==='fullPage'
+      ? {...element,showFullPageNote:enabled}:element);
+  }
+
   function updateSelectedFreeTextIcon(value: HudElement['freeTextIcon']): void {
     if (!selectedId) return;
     changeElement(selectedId, element => element.kind === 'freeText' ? {...element, freeTextIcon:value || 'none'} : element);
@@ -321,7 +357,7 @@
     if (!selectedId) return;
     changeElement(selectedId, element => ({
       ...element,
-      visualPreset: value,
+      visualPreset: element.kind==='freeText'&&studioOnlyStyle(element.freeTextStyle)?'studio':value,
       // Aparência, formato e animação são escolhas independentes.
       // Não troca a animação escolhida ao mudar Studio/Clássico.
     }));
@@ -678,7 +714,7 @@
     </main>
 
     <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onShineToggle={updateSelectedShine} onDiagonalGlowToggle={updateSelectedDiagonalGlow} onDiagonalGlowIntensity={updateSelectedDiagonalIntensity} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onFooter={updateSelectedFooter} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onTechnicalLayout={updateTechnicalLayout}
-      {systemFonts} onFontFamily={updateSelectedFontFamily} onVisualPreset={updateSelectedVisualPreset} onFitScrollDuration={fitSelectedScrollDuration} onRichText={updateRichText} onFreeTextStyle={changeFreeTextStyle} onFreeTextIcon={updateSelectedFreeTextIcon} onFreeTextDisplay={updateSelectedFreeTextDisplay} onFreeTextCaption={updateFreeTextCaption} onResetScale={resetSelectedScale} onStandardizeSelected={standardizeSelectedCard} onStandardizeAll={standardizeAllCards} onSelectNone={() => selectedId = null}/></aside>
+      {systemFonts} onFontFamily={updateSelectedFontFamily} onVisualPreset={updateSelectedVisualPreset} onFitScrollDuration={fitSelectedScrollDuration} onRichText={updateRichText} onFreeTextStyle={changeFreeTextStyle} onLabelBarSize={updateLabelBarSize} onAutoFitLabel={setLabelAutoFit} onFreeTextNote={updateSelectedFreeTextNote} onFreeTextIcon={updateSelectedFreeTextIcon} onFreeTextDisplay={updateSelectedFreeTextDisplay} onFreeTextCaption={updateFreeTextCaption} onResetScale={resetSelectedScale} onStandardizeSelected={standardizeSelectedCard} onStandardizeAll={standardizeAllCards} onSelectNone={() => selectedId = null}/></aside>
   </div>
 
   <footer class="app-footer"><div><span class="footer-dot"></span> RDV Bus Studio <span class="footer-divider">·</span> <span class="muted">{APP_VERSION}</span></div><div><span class="footer-stat">{project.elements.length} elemento(s)</span><span class="footer-divider">·</span><span class="footer-stat">{totalFrames} quadros</span><span class="footer-divider">·</span><span class="muted">{isDesktop() ? 'Tauri Desktop' : 'Modo navegador'}</span></div></footer>
