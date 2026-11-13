@@ -21,4 +21,24 @@ assert(app.includes("['legacyPresentationSlide','newsSlide'].includes"),
 assert(preview.includes("['legacyPresentationSlide','newsSlide'].includes"),
   'Slide Manchete não pode mostrar alças de redimensionamento');
 
-console.log('Texto Livre: ícones, títulos, edição direta e geometria: OK');
+
+const classicLabel=read('src/components/LegacyShape.svelte');
+const studioLabel=read('src/components/HudShape.svelte');
+const compact=read('src/lib/compactText.ts');
+for(const variant of ['first','second','alternate']){
+  assert(compact.includes("case '"+variant+"'"), 'Modo de texto ausente: '+variant);
+}
+for(const [name,renderer] of [['Clássico',classicLabel],['Studio',studioLabel]]){
+  assert(renderer.includes("centeredCompactText"),name+' não identifica o modo de texto único');
+  assert(renderer.includes("compactCenterX"),name+' não calcula o centro da área útil');
+  assert((renderer.match(/text-anchor=\{centeredCompactText\?'middle':'start'\}/g)||[]).length===2,
+    name+' precisa centralizar horizontalmente Texto 1 e Texto 2');
+  assert((renderer.match(/dominant-baseline=\{centeredCompactText\?'middle':undefined\}/g)||[]).length===2,
+    name+' precisa centralizar verticalmente Texto 1 e Texto 2');
+}
+assert(classicLabel.includes('rich.scrollLine1 && !centeredCompactText'),
+  'Rolagem impede alinhamento central no modo somente Texto 1');
+assert(classicLabel.includes('rich.scrollLine2 && !centeredCompactText'),
+  'Rolagem impede alinhamento central no modo somente Texto 2');
+
+console.log('Texto Livre: ícones, título, edição direta, centralização e geometria: OK');
