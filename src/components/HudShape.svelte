@@ -19,6 +19,7 @@
   import { DEFAULT_RICH_TEXT, layoutRichText, parseRuns, alignedX, textAnchor, type MeasureRich } from '../lib/richtext';
   import { compactTextWeights, singleLineText } from '../lib/compactText';
   import { visualMotionFrame } from '../lib/visualAnimation';
+  import { studioOnlyStyle } from '../lib/freeTextModes';
 
   export let element: HudElement;
   export let canvasHeight = 1080;
@@ -30,7 +31,7 @@
   $: fontFamily = fontStack(element.style.fontFamily);
   // Formato e aparência são independentes: o seletor Studio/Clássico decide o renderizador
   // para TODAS as categorias, inclusive barras, tela cheia e texto livre legado.
-  $: shouldUseLegacy = element.visualPreset === 'legacy';
+  $: shouldUseLegacy = element.visualPreset === 'legacy' && !(element.kind === 'freeText' && studioOnlyStyle(element.freeTextStyle));
   $: broadcast = element.kind === 'freeText' && ['newsLabel','newsTicker','newsLowerThird','newsSlide'].includes(element.freeTextStyle || '');
   $: sx = element.style.scaleX;
   $: sy = element.style.scaleY;
