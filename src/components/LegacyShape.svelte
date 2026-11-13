@@ -326,9 +326,14 @@
     {:else}
       <g opacity={pIconOpacity} transform={`translate(48 48) scale(${pIconScale}) translate(-48 -48)`}>
         <rect x="18" y="18" width="60" height="60" rx="12" fill={paint.edge} fill-opacity=".32" stroke={accent} stroke-width="1.7" />
-        <svg x="27" y="27" width="42" height="42" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-          <path d={CARD_ICONS[element.kind] || CARD_ICONS.default} fill="none" stroke={accent} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
+        {#if element.kind === 'freeText' && element.freeTextIcon && element.freeTextIcon !== 'none'}
+          <!-- Cartela RDV Bus Clássica: usa o mesmo SVG vetorial de redes sociais do Studio. -->
+          <SocialIcon icon={element.freeTextIcon} x={27} y={27} size={42} color={accent}/>
+        {:else}
+          <svg x="27" y="27" width="42" height="42" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <path d={CARD_ICONS[element.kind] || CARD_ICONS.default} fill="none" stroke={accent} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        {/if}
       </g>
       <g opacity={pTitle} transform={`translate(${-26*(1-pTitle)} 0)`}>
         <text data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="100" y={h*.36} fill={textColor(element,'heading','secondary')} font-size={Math.min(17*fontScale,h*.21)} font-weight="800" letter-spacing="2.7">{fields.heading}</text>
