@@ -98,6 +98,7 @@ export function validateProject(raw: unknown): RDVProject {
       ...(freeText ? { freeTextStyle, freeTextCaptions: captions,
         scrollBarSize: ['small','medium','large'].includes(String(item.scrollBarSize)) ? item.scrollBarSize as HudElement['scrollBarSize'] : item.freeTextStyle==='legacyFullBar'?'large' as const:item.freeTextStyle==='legacyHalfBar'?'medium' as const:'small' as const,
         autoFitWidth: item.autoFitWidth===true,
+        showFullPageNote: item.showFullPageNote!==false,
         freeTextDisplay: ['both','first','second','alternate'].includes(String(item.freeTextDisplay)) ? item.freeTextDisplay as HudElement['freeTextDisplay'] : 'both' as const,
         freeTextIcon: ['facebook','instagram','x','tiktok','twitch','whatsapp','telegram','discord'].includes(String(item.freeTextIcon)) ? item.freeTextIcon as HudElement['freeTextIcon'] : 'none' as const,
         richText: (() => { const rich = isObject(item.richText) ? item.richText : {};
