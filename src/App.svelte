@@ -342,6 +342,12 @@
     changeElement(selectedId, element => element.kind === 'freeText' ? {...element, freeTextDisplay:value || 'both'} : element);
   }
 
+  function updateSelectedFreeTextNote(enabled:boolean):void{
+    if(!selectedId)return;
+    changeElement(selectedId,element=>element.kind==='freeText'&&element.freeTextStyle==='fullPage'
+      ? {...element,showFullPageNote:enabled}:element);
+  }
+
   function updateSelectedFreeTextIcon(value: HudElement['freeTextIcon']): void {
     if (!selectedId) return;
     changeElement(selectedId, element => element.kind === 'freeText' ? {...element, freeTextIcon:value || 'none'} : element);
@@ -708,7 +714,7 @@
     </main>
 
     <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onShineToggle={updateSelectedShine} onDiagonalGlowToggle={updateSelectedDiagonalGlow} onDiagonalGlowIntensity={updateSelectedDiagonalIntensity} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onFooter={updateSelectedFooter} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onTechnicalLayout={updateTechnicalLayout}
-      {systemFonts} onFontFamily={updateSelectedFontFamily} onVisualPreset={updateSelectedVisualPreset} onFitScrollDuration={fitSelectedScrollDuration} onRichText={updateRichText} onFreeTextStyle={changeFreeTextStyle} onLabelBarSize={updateLabelBarSize} onAutoFitLabel={setLabelAutoFit} onFreeTextIcon={updateSelectedFreeTextIcon} onFreeTextDisplay={updateSelectedFreeTextDisplay} onFreeTextCaption={updateFreeTextCaption} onResetScale={resetSelectedScale} onStandardizeSelected={standardizeSelectedCard} onStandardizeAll={standardizeAllCards} onSelectNone={() => selectedId = null}/></aside>
+      {systemFonts} onFontFamily={updateSelectedFontFamily} onVisualPreset={updateSelectedVisualPreset} onFitScrollDuration={fitSelectedScrollDuration} onRichText={updateRichText} onFreeTextStyle={changeFreeTextStyle} onLabelBarSize={updateLabelBarSize} onAutoFitLabel={setLabelAutoFit} onFreeTextNote={updateSelectedFreeTextNote} onFreeTextIcon={updateSelectedFreeTextIcon} onFreeTextDisplay={updateSelectedFreeTextDisplay} onFreeTextCaption={updateFreeTextCaption} onResetScale={resetSelectedScale} onStandardizeSelected={standardizeSelectedCard} onStandardizeAll={standardizeAllCards} onSelectNone={() => selectedId = null}/></aside>
   </div>
 
   <footer class="app-footer"><div><span class="footer-dot"></span> RDV Bus Studio <span class="footer-divider">·</span> <span class="muted">{APP_VERSION}</span></div><div><span class="footer-stat">{project.elements.length} elemento(s)</span><span class="footer-divider">·</span><span class="footer-stat">{totalFrames} quadros</span><span class="footer-divider">·</span><span class="muted">{isDesktop() ? 'Tauri Desktop' : 'Modo navegador'}</span></div></footer>
