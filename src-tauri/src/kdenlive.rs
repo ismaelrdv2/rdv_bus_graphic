@@ -48,8 +48,16 @@ pub fn prepare_clip(
     if !matches!(ext.as_str(), "mov" | "mkv" | "webm" | "mp4") {
         return Err("O formato do vídeo não é compatível com este perfil Kdenlive.".into());
     }
-    let mlt = video.with_extension("mlt");
-    let readme = video.with_extension("kdenlive-LEIA-ME.txt");
+    // Arquivos auxiliares não devem sobrescrever um .mlt do usuário nem
+    // um guia de uma exportação anterior.
+    let (mlt, readme) = (1..=999u32)
+        .find_map(|attempt| {
+            let suffix = if attempt == 1 { String::new() } else { format!("-{attempt}") };
+            let mlt = video.with_extension(format!("rdv-kdenlive{suffix}.mlt"));
+            let readme = video.with_extension(format!("rdv-kdenlive{suffix}-LEIA-ME.txt"));
+            if !mlt.exists() && !readme.exists() { Some((mlt, readme)) } else { None }
+        })
+        .ok_or("Limite de arquivos auxiliares Kdenlive excedido")?;
     let mode = match background.as_str() {
         "transparent" => "Canal alfa: coloque o clipe em V2 acima do video V1. Nao use Chroma Key.\n",
         "green" => "Chroma Key verde (#00FF00): coloque em V2 e aplique Chroma Key: Basic sobre este clipe.\n",
@@ -69,9 +77,15 @@ Arquivo de video: {}\nPerfil: {}x{}, {} FPS, {} quadros\n\n\
 Este .mlt nao e um projeto .kdenlive nem altera projetos existentes.\n",
         video.display(), width, height, fps, frames, mode
     );
-    fs::write(&mlt, kdenlive_clip_xml(&video, width, height, fps, frames))
-        .map_err(|e| format!("Não foi possível preparar o clipe MLT: {e}"))?;
-    fs::write(&readme, instructions).map_err(|e| format!("Clipe MLT gerado, mas falha no guia Kdenlive: {e}"))?;
+    use std::io::Write as _;
+    let mut mltfile = fs::OpenOptions::new().write(true).create_new(true).open(&mlt)
+        .map_err(|e| format!("Não foi possível criar o clipe MLT sem sobrescrever arquivos: {e}"))?;
+    mltfile.write_all(kdenlive_clip_xml(&video, width, height, fps, frames).as_bytes())
+        .map_err(|e| format!("Falha ao escrever clipe MLT: {e}"))?;
+    let mut textfile = fs::OpenOptions::new().write(true).create_new(true).open(&readme)
+        .map_err(|e| format!("Clipe MLT pronto, mas o guia já existe ou está indisponível: {e}"))?;
+    textfile.write_all(instructions.as_bytes())
+        .map_err(|e| format!("Clipe MLT pronto, mas falha ao escrever guia: {e}"))?;
     Ok(mlt.to_string_lossy().into_owned())
 }
 
@@ -85,6 +99,25 @@ mod kdenlive_tests {
         assert!(clip.contains("out=\"317\""));
         assert!(clip.contains("frame_rate_num=\"60\""));
         assert!(clip.contains("display_aspect_num=\"16\""));
+    }
+    #[test]
+    fn creates_unique_sidecars_without_overwriting_existing_files() {
+        let dir = std::env::temp_dir().join(format!(
+            "rdv-kdenlive-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
+                .unwrap().as_nanos()
+        ));
+        fs::create_dir_all(&dir).unwrap();
+        let video = dir.join("demo.mov");
+        fs::write(&video, b"demo").unwrap();
+        let first = prepare_clip(video.to_string_lossy().into_owned(), 1920, 1080, 60, 120, "transparent".into()).unwrap();
+        let second = prepare_clip(video.to_string_lossy().into_owned(), 1920, 1080, 60, 120, "transparent".into()).unwrap();
+        assert_ne!(first, second);
+        assert!(Path::new(&first).is_file());
+        assert!(Path::new(&second).is_file());
+        assert!(Path::new(&first).with_extension("txt").is_file() == false); // guia tem sufixo distinto
+        fs::remove_dir_all(&dir).unwrap();
     }
     #[test]
     fn portrait_profile() {
