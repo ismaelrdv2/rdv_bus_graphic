@@ -11,12 +11,12 @@ O Kdenlive utiliza o mecanismo MLT e pode importar vídeos com alfa, imagem sequ
 3. No diálogo, mantenha ativada **Preparar clipe para Kdenlive (.mlt + guia ao lado do vídeo)** e escolha a pasta de exportação.
 4. Ao concluir, a pasta terá os seguintes arquivos, com o mesmo nome-base:
    - `Meu_Projeto.mov`: mídia real com transparência, editável no Kdenlive;
-   - `Meu_Projeto.mlt`: clipe MLT auxiliar, para testar a Biblioteca do Kdenlive;
-   - `Meu_Projeto.kdenlive-LEIA-ME.txt`: instruções de importação, FPS, número de quadros e transparência/Chroma Key.
+   - `Meu_Projeto.rdv-kdenlive.mlt`: clipe MLT auxiliar, para testar a Biblioteca do Kdenlive;
+   - `Meu_Projeto.rdv-kdenlive-LEIA-ME.txt`: instruções de importação, FPS, número de quadros e transparência/Chroma Key.
 5. No Kdenlive crie um projeto com **1920×1080 ou 1080×1920**, **30 ou 60 FPS** igual ao exportado. Adicione primeiro o **MOV** à Cesta de Projeto e coloque na faixa de vídeo superior (V2), sobre as imagens em V1. A faixa inferior continua sendo a mídia original.
 6. O canal alfa deve permitir enxergar o vídeo de V1 através das áreas transparentes. Se não houver composição, habilite/adicione a composição entre as faixas do projeto.
 
-O arquivo `.mlt` é uma integração experimental de biblioteca; seu caminho de mídia é absoluto, apontando para o MOV exportado. Não mova ou apague o MOV depois de importar; se mudar de computador, faça a religação da mídia no Kdenlive. **O fluxo principal confiável é importar diretamente o MOV**.
+A cada nova exportação com o mesmo nome, os arquivos auxiliares ganham um sufixo diferente e não sobrescrevem arquivos anteriores. O arquivo `.mlt` é uma integração experimental de biblioteca; seu caminho de mídia é absoluto, apontando para o MOV exportado. Não mova ou apague o MOV depois de importar; se mudar de computador, faça a religação da mídia no Kdenlive. **O fluxo principal confiável é importar diretamente o MOV**.
 
 ### Chroma Key MP4
 Se escolher MP4/H.264 com verde puro `#00FF00` ou azul puro `#0000FF`, o arquivo não contém canal alfa. Coloque em V2, aplique o efeito **Chroma Key: Basic** e selecione exatamente a cor do fundo. Ajuste o controle Variance para eliminar o fundo sem perder detalhes do primeiro plano; se houver halos, utilize **Chroma Key: Advanced** e/ou correção de spill. O H.264 4:2:0 pode introduzir halos cromáticos, então priorize MOV RGBA na saída Desktop.
