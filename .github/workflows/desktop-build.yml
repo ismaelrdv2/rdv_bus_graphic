@@ -1,14 +1,10 @@
 name: RDV Bus Studio Desktop — AppImage e Windows EXE
 
+# Modo economia (23/11/2026): nenhuma compilação por push, PR ou tag.
+# Compilações prioritárias: RDV-Build-Server-Private (runner Debian rdv-debian13).
+# Este workflow hospedado somente pode ser iniciado manualmente pelo proprietário.
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [main, feature/chroma-key-and-alpha-frames]
-  push:
-    branches: [main]
-    tags: ['v0.1.0-alpha.*']
-    paths-ignore:
-      - '**/*.md'
 
 permissions:
   contents: read
