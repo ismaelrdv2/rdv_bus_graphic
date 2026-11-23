@@ -570,6 +570,9 @@
     if (exportingVideo) return;
     if (!isDesktop()) return notify('Exportação de vídeo disponível somente no aplicativo desktop Tauri. Use npm run desktop:dev.', 'error');
     const preset = VIDEO_FORMATS.find(item => item.value === videoFormat) ?? VIDEO_FORMATS[0];
+    // H.264 não tem canal alfa. Mesmo que o formato mude antes da reatividade da UI,
+    // nunca gere MP4 com fundo transparente (que seria interpretado como preto).
+    const effectiveBackground: ExportBackground = videoFormat === 'mp4-h264' && exportBackground === 'transparent' ? 'green' : exportBackground;
     const cleanName = project.name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50) || 'rdv_bus';
     try {
       const output = await nativeSave({ title: 'Exportar vídeo RDV Bus', defaultPath: joinOutputPath(await getOutputDirectory(), `${cleanName}.${preset.ext}`), filters: [{ name: preset.label, extensions: [preset.ext] }] });
@@ -594,7 +597,7 @@
           // Assim o WebView realmente rasteriza os vetores a 2×, em vez de esticar
           // um bitmap já rasterizado a 1080p.
           const xml = exportFrameSvg(svg, project.canvas.width * rasterQuality, project.canvas.height * rasterQuality);
-          const data = await svgToPngBase64(xml, project.canvas.width, project.canvas.height, canvas, rasterQuality, exportBackground);
+          const data = await svgToPngBase64(xml, project.canvas.width, project.canvas.height, canvas, rasterQuality, effectiveBackground);
           await pushVideoFrame(jobId, data);
           exportProgress = (index + 1) / frames;
           // Libera o loop de eventos periodicamente para atualizar o painel de progresso.
@@ -729,12 +732,13 @@
 {#if showExportVideo}
   <div class="dialog-backdrop" role="presentation">
     <div class="help-dialog" role="dialog" aria-modal="true" aria-label="Exportar vídeo animado">
-      <div class="dialog-heading"><div><Icon name="film"/><strong>Exportar vídeo com transparência</strong></div><button class="icon-button" aria-label="Fechar" disabled={exportingVideo} on:click={() => showExportVideo = false}>×</button></div>
+      <div class="dialog-heading"><div><Icon name="film"/><strong>Exportar vídeo: alfa ou Chroma Key</strong></div><button class="icon-button" aria-label="Fechar" disabled={exportingVideo} on:click={() => showExportVideo = false}>×</button></div>
       <div class="dialog-content video-export-content">
-        <p>Gera {totalFrames} quadros a {project.canvas.fps} FPS em {project.canvas.width} × {project.canvas.height}. O fundo continua transparente; o preto é somente da pré-visualização.</p>
+        <p>Gera {totalFrames} quadros a {project.canvas.fps} FPS em {project.canvas.width} × {project.canvas.height}. Para vídeo com canal alfa escolha MOV, MKV ou WebM; para MP4 use Chroma Key com fundo verde/azul.</p>
         {#if isDesktop()}<p class="export-description">Pasta de saída: <code>{outputDirectory || '~/RDV Bus Studio'}</code> <button class="button ghost-button" on:click={() => void openOutputFolder()} disabled={exportingVideo}><Icon name="folder" size={15}/> Abrir pasta</button></p>{/if}
         <label for="video-format">Formato de vídeo</label>
-        <select id="video-format" bind:value={videoFormat} disabled={exportingVideo}>
+        <select id="video-format" bind:value={videoFormat} disabled={exportingVideo}
+          on:change={() => { if(videoFormat==='mp4-h264' && exportBackground==='transparent') exportBackground='green'; }}>
           {#each VIDEO_FORMATS as preset}<option value={preset.value}>{preset.label}</option>{/each}
         </select>
         <p class="export-description">{VIDEO_FORMATS.find(item => item.value === videoFormat)?.description}</p>
@@ -746,11 +750,15 @@
         <p class="export-description">2× renderiza os vetores em resolução ampliada antes de reduzir para 1080p. Melhora diagonais e contornos, mas aumenta o trabalho de renderização.</p>
         <label for="export-background">Fundo do vídeo</label>
         <select id="export-background" bind:value={exportBackground} disabled={exportingVideo}>
-          <option value="transparent">Transparente — sobreposição no editor de vídeo</option>
-          <option value="black">Preto — demonstração compatível com qualquer player</option>
+          <option value="transparent" disabled={videoFormat==='mp4-h264'}>Transparente — alfa nativo (MOV/MKV/WebM)</option>
+          <option value="black">Preto — vídeo convencional</option>
+          <option value="green">Verde puro (#00FF00) — Chroma Key</option>
+          <option value="blue">Azul puro (#0000FF) — Chroma Key alternativo</option>
         </select>
         {#if exportBackground === 'black'}
-          <p class="video-warning">O fundo preto torna as transições de opacidade visíveis até em players que ignoram o canal alfa, mas NÃO permite sobrepor o vídeo a outra filmagem.</p>
+          <p class="video-warning">O fundo preto permite reprodução convencional, mas não fornece transparência para sobreposição.</p>
+        {:else if exportBackground === 'green' || exportBackground === 'blue'}
+          <p class="video-warning">No editor, aplique Chroma Key para remover o fundo {exportBackground==='green'?'verde':'azul'}. O H.264 usa cor 4:2:0 e pode criar halos nas bordas; ajuste similaridade e suavização. Escolha uma cor que não apareça na arte.</p>
         {/if}
         {#if videoFormat === 'webm-vp9' && exportBackground === 'transparent'}
           <p class="video-warning">O WebM/VP9 usa alfa separado: alguns players exibem as cores sem aplicar a opacidade. Para qualidade máxima e transparência em editores compatíveis, compare com MOV QuickTime Animation (QTRLE) ou ProRes 4444.</p>
