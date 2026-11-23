@@ -1,5 +1,15 @@
 # Histórico de alterações — RDV Bus Studio
 
+## 0.1.0-alpha.9.3.12 — Integração inicial com Kdenlive
+
+- Novo botão **Kdenlive** no Desktop: seleciona MOV QuickTime Animation com transparência real e rasterização 2×.
+- Após exportação, opção **Preparar clipe para Kdenlive** gera `.mlt` de biblioteca MLT e um guia `.kdenlive-LEIA-ME.txt` ao lado do vídeo, com perfil Full HD, 30/60 FPS e duração exata.
+- O clipe auxiliar referencia o vídeo exportado; também é possível importar o MOV diretamente no Kdenlive. Não substitui um projeto `.kdenlive` completo, nem modifica projetos existentes.
+- Em MP4 verde/azul, o guia orienta aplicar Chroma Key: Basic manualmente na timeline.
+- Sem alterações nos codificadores FFmpeg, curvas de animação ou modos alpha existentes.
+- Testes MLT XML e limites de quadros adicionados; compatibilidade final com Kdenlive será testada no Acer Debian via RDP.
+- Builds continuam priorizando o runner próprio Debian; workflows hospedados não são acionados automaticamente.
+
 ## 0.1.0-alpha.9.3.11 — Publicação oficial no canal Atualizações
 
 - Preserva Chroma Key MP4 e formatos transparentes da Alpha 9.3.10.
