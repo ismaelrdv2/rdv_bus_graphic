@@ -1,7 +1,7 @@
 {
   "name": "rdv-bus",
   "private": true,
-  "version": "0.1.0-alpha.9.3.10",
+  "version": "0.1.0-alpha.9.3.11",
   "type": "module",
   "description": "RDV Bus Studio — editor de HUDs para vídeos de ônibus",
   "scripts": {
@@ -15,7 +15,7 @@
     "desktop:build": "tauri build",
     "desktop:build:linux": "tauri build --bundles appimage",
     "desktop:build:windows": "tauri build --bundles nsis",
-    "test:updates": "node tests/check-updates.mjs",
+    "test:updates": "node tests/check-updates.mjs && node tests/check-release-publication.mjs",
     "test:consolidation": "node tests/check-free-text-consolidation.mjs",
     "test:export": "node tests/check-export-modes.mjs"
   },
