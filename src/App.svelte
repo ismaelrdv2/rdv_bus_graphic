@@ -24,6 +24,7 @@
   import { beginVideo, pushVideoFrame, finishVideo, cancelVideo, exportFrameSvg, svgToPngBase64, VIDEO_FORMATS, type VideoFormat, type RasterQuality, type ExportBackground } from './lib/video';
   import { MAX_ELEMENTS, type TextFormatting, type TextAlign, type BulletMode, type ElementKind, type FreeTextStyle, type RichTextSettings, type TechnicalLayout, type HudElement, type HudStyle, type RDVProject, type TextField, type TextColorKey, type TextColorRole, type TextColorGroup, type PaletteColors, type PaletteId, type UiStatus } from './lib/types';
   import { isDesktop, loadAutosave, openProjectBrowser, openProjectNative, saveProject, writeAutosave } from './lib/projects';
+  import { KDENLIVE_OVERLAY_PRESET, prepareKdenliveClip } from './lib/kdenlive';
 
   let project: RDVProject = loadAutosave();
   let selectedId: string | null = project.elements[0]?.id || null;
@@ -43,6 +44,7 @@
   let videoFormat: VideoFormat = 'mov-qtrle';
   let rasterQuality: RasterQuality = 2;
   let exportBackground: ExportBackground = 'transparent';
+  let prepareForKdenlive = false;
   let exportingVideo = false;
   let cancelRequested = false;
   let exportProgress = 0;
@@ -561,7 +563,13 @@
     }
   }
 
-  function openVideoDialog(): void {
+  function openVideoDialog(kdenlive = false): void {
+    if(kdenlive){
+      videoFormat = KDENLIVE_OVERLAY_PRESET.format;
+      rasterQuality = KDENLIVE_OVERLAY_PRESET.quality;
+      exportBackground = KDENLIVE_OVERLAY_PRESET.background;
+      prepareForKdenlive = true;
+    }
     showExportVideo = true;
     if (!isDesktop()) notify('Para gerar vídeo, abra o RDV Bus no aplicativo desktop Tauri.', 'info');
   }
@@ -606,7 +614,19 @@
         await finishVideo(jobId);
         showExportVideo = false;
         outputDirectory = rememberOutputFile(output);
-        notify(`Vídeo exportado: ${output}`, 'success');
+        if (prepareForKdenlive) {
+          try {
+            const mlt = await prepareKdenliveClip({
+              path: output,width:project.canvas.width,height:project.canvas.height,
+              fps:project.canvas.fps,frames,background:effectiveBackground
+            });
+            notify(`Vídeo e clipe Kdenlive preparados: ${mlt}`, 'success');
+          } catch (error) {
+            notify(`Vídeo exportado, mas falhou o arquivo Kdenlive: ${error instanceof Error ? error.message : String(error)}`, 'error');
+          }
+        }else{
+          notify(`Vídeo exportado: ${output}`, 'success');
+        }
       } catch (error) {
         try { await cancelVideo(jobId); } catch { /* O processo pode ter encerrado. */ }
         throw error;
@@ -679,7 +699,8 @@
       <button class="button secondary-button" on:click={() => void saveCurrentProject()} title="Salvar projeto (Ctrl+S)"><Icon name="save" size={16}/><span>Salvar</span></button>
       {#if isDesktop()}<button class="button ghost-button" on:click={() => void openOutputFolder()} title={outputDirectory ? `Abrir pasta de saída: ${outputDirectory}` : 'Abrir pasta de saída'}><Icon name="folder" size={16}/><span>Abrir pasta de saída</span></button>{/if}
       <button class="button secondary-button" on:click={() => void exportSvg()} title="Exportar um quadro vetorial SVG"><Icon name="download" size={17}/><span>SVG</span></button>
-      <button class="button primary-button" on:click={openVideoDialog} title="Gerar vídeo animado com FFmpeg (desktop)"><Icon name="film" size={17}/><span>Exportar vídeo</span></button>
+      <button class="button primary-button" on:click={() => openVideoDialog()} title="Gerar vídeo animado com FFmpeg (desktop)"><Icon name="film" size={17}/><span>Exportar vídeo</span></button>
+      <button class="button secondary-button" on:click={() => openVideoDialog(true)} title="Preparar vídeo MOV transparente e clipe MLT para o Kdenlive"><Icon name="film" size={17}/><span>Kdenlive</span></button>
     </div>
   </header>
 
@@ -742,6 +763,13 @@
           {#each VIDEO_FORMATS as preset}<option value={preset.value}>{preset.label}</option>{/each}
         </select>
         <p class="export-description">{VIDEO_FORMATS.find(item => item.value === videoFormat)?.description}</p>
+        <label class="export-description" style="display:flex;align-items:center;gap:10px">
+          <input type="checkbox" bind:checked={prepareForKdenlive} disabled={exportingVideo}/>
+          Preparar clipe para Kdenlive (.mlt + guia ao lado do vídeo)
+        </label>
+        {#if prepareForKdenlive}
+          <p class="export-description">Recomendação: MOV QuickTime Animation + transparência + qualidade 2×. O arquivo .mlt é um clipe auxiliar de biblioteca; também é possível importar o vídeo diretamente na timeline do Kdenlive. No MP4 verde/azul, aplique Chroma Key no Kdenlive.</p>
+        {/if}
         <label for="raster-quality">Qualidade de bordas (SVG → PNG)</label>
         <select id="raster-quality" bind:value={rasterQuality} disabled={exportingVideo}>
           <option value={1}>Normal — 1× (mais rápido)</option>

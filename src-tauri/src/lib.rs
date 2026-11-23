@@ -165,6 +165,15 @@ fn video_cancel(state: State<'_, VideoState>, job_id: String) -> Result<(), Stri
     Ok(())
 }
 
+mod kdenlive;
+
+#[tauri::command]
+fn kdenlive_prepare_clip(
+    path: String, width: u32, height: u32, fps: u32, frames: u32, background: String
+) -> Result<String, String> {
+    kdenlive::prepare_clip(path, width, height, fps, frames, background)
+}
+
 // A pasta pública padrão do Desktop fica diretamente no diretório HOME
 // do usuário, não em Downloads. A UI permite selecionar outra pasta no diálogo.
 fn output_directory() -> Result<PathBuf, String> {
@@ -212,7 +221,7 @@ pub fn run() {
         .manage(VideoState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![video_begin, video_frame, video_finish, video_cancel, list_system_fonts, desktop_default_output_directory, desktop_open_output_directory])
+        .invoke_handler(tauri::generate_handler![video_begin, video_frame, video_finish, video_cancel, kdenlive_prepare_clip, list_system_fonts, desktop_default_output_directory, desktop_open_output_directory])
         .run(tauri::generate_context!())
         .expect("Falha ao iniciar o RDV Bus Studio");
 }
