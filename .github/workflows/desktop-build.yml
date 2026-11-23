@@ -3,9 +3,10 @@ name: RDV Bus Studio Desktop — AppImage e Windows EXE
 on:
   workflow_dispatch:
   pull_request:
-    branches: [main]
+    branches: [main, feature/chroma-key-and-alpha-frames]
   push:
     branches: [main]
+    tags: ['v0.1.0-alpha.*']
     paths-ignore:
       - '**/*.md'
 
@@ -60,7 +61,7 @@ jobs:
       - name: Publicar AppImage de teste
         uses: actions/upload-artifact@v4
         with:
-          name: RDV-Bus-Studio-Desktop-alpha9.3.10-Linux-AppImage
+          name: RDV-Bus-Studio-Desktop-alpha9.3.11-Linux-AppImage
           path: src-tauri/target/release/bundle/appimage/*.AppImage
           if-no-files-found: error
           retention-days: 14
@@ -101,14 +102,54 @@ jobs:
       - name: Publicar instalador Windows
         uses: actions/upload-artifact@v4
         with:
-          name: RDV-Bus-Studio-Desktop-alpha9.3.10-Windows-Instalador
+          name: RDV-Bus-Studio-Desktop-alpha9.3.11-Windows-Instalador
           path: src-tauri/target/release/bundle/nsis/*.exe
           if-no-files-found: error
           retention-days: 14
       - name: Publicar executável Windows sem instalador (experimental)
         uses: actions/upload-artifact@v4
         with:
-          name: RDV-Bus-Studio-Desktop-alpha9.3.10-Windows-EXE-Direto
+          name: RDV-Bus-Studio-Desktop-alpha9.3.11-Windows-EXE-Direto
           path: src-tauri/target/release/rdv-bus.exe
           if-no-files-found: warn
           retention-days: 14
+
+  publish-release:
+    name: Publicar pacotes aprovados para guia Atualizações
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    needs: [linux-appimage, windows-exe]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Confirmar tag da versão e código da main
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED="v$(node -p "require('./package.json').version")"
+          test "$GITHUB_REF_NAME" = "$EXPECTED" || { echo "Tag diferente da versão $EXPECTED"; exit 1; }
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main || { echo "A tag não foi criada a partir da main"; exit 1; }
+      - uses: actions/download-artifact@v4
+        with:
+          name: RDV-Bus-Studio-Desktop-alpha9.3.11-Linux-AppImage
+          path: release-assets/linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: RDV-Bus-Studio-Desktop-alpha9.3.11-Windows-Instalador
+          path: release-assets/windows
+      - name: Publicar Release oficial com binários das duas plataformas
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          APPIMAGE="$(find release-assets/linux -type f -name '*.AppImage' -print -quit)"
+          INSTALLER="$(find release-assets/windows -type f -iname '*setup*.exe' -print -quit)"
+          test -s "$APPIMAGE" || { echo "AppImage não encontrado"; exit 1; }
+          test -s "$INSTALLER" || { echo "Instalador NSIS não encontrado"; exit 1; }
+          sha256sum "$APPIMAGE" "$INSTALLER" > SHA256SUMS.txt
+          gh release create "$GITHUB_REF_NAME" "$APPIMAGE" "$INSTALLER" SHA256SUMS.txt --verify-tag --title "RDV Bus Studio Desktop ${GITHUB_REF_NAME#v}" --prerelease --generate-notes
