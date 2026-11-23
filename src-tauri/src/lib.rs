@@ -64,6 +64,7 @@ fn encoder_args(format: &str) -> Option<(&'static str, Vec<&'static str>)> {
         "mov-prores" => Some(("mov", vec!["-c:v", "prores_ks", "-profile:v", "4", "-pix_fmt", "yuva444p10le", "-alpha_bits", "16"])),
         "mkv-ffv1" => Some(("mkv", vec!["-c:v", "ffv1", "-level", "3", "-pix_fmt", "bgra"])),
         "webm-vp9" => Some(("webm", vec!["-c:v", "libvpx-vp9", "-pix_fmt", "yuva420p", "-auto-alt-ref", "0", "-lossless", "1", "-deadline", "good", "-cpu-used", "2"])),
+        "mp4-h264" => Some(("mp4", vec!["-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "17", "-preset", "medium", "-movflags", "+faststart"])),
         _ => None,
     }
 }
