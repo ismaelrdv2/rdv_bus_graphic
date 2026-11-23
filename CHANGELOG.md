@@ -1,5 +1,13 @@
 # Histórico de alterações — RDV Bus Studio
 
+## 0.1.0-alpha.9.3.11 — Publicação oficial no canal Atualizações
+
+- Preserva Chroma Key MP4 e formatos transparentes da Alpha 9.3.10.
+- Builds por tag SemVer na main validam Linux AppImage e Windows NSIS no GitHub Actions antes de publicar uma única GitHub Release com os dois pacotes e SHA256SUMS.
+- A tela Atualizações existente detectará a Release oficial de acordo com a plataforma, sem anunciar artefatos temporários de CI como versões instaláveis.
+- A instalação continua assistida: Windows executa NSIS sobre a versão anterior; Linux substitui manualmente a AppImage. Sem remoção de projetos e preferências.
+- Editor de vídeo: qualidade real do Chroma Key ainda depende de validação (issue #14).
+
 ## 0.1.0-alpha.9.3.10 — MP4 H.264 para Chroma Key
 
 - Novo preset MP4/H.264 via FFmpeg/libx264 (CRF 17, yuv420p) para sobrepor em editores com Chroma Key.
