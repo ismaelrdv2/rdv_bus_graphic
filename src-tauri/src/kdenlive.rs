@@ -116,7 +116,7 @@ mod kdenlive_tests {
         assert_ne!(first, second);
         assert!(Path::new(&first).is_file());
         assert!(Path::new(&second).is_file());
-        assert!(Path::new(&first).with_extension("txt").is_file() == false); // guia tem sufixo distinto
+        assert!(Path::new(&first.replace(".mlt", "-LEIA-ME.txt")).is_file());
         fs::remove_dir_all(&dir).unwrap();
     }
     #[test]
