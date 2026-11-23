@@ -151,5 +151,6 @@ jobs:
           INSTALLER="$(find release-assets/windows -type f -iname '*setup*.exe' -print -quit)"
           test -s "$APPIMAGE" || { echo "AppImage não encontrado"; exit 1; }
           test -s "$INSTALLER" || { echo "Instalador NSIS não encontrado"; exit 1; }
-          sha256sum "$APPIMAGE" "$INSTALLER" > SHA256SUMS.txt
+          echo "$(sha256sum "$APPIMAGE" | cut -d' ' -f1)  $(basename "$APPIMAGE")" > SHA256SUMS.txt
+          echo "$(sha256sum "$INSTALLER" | cut -d' ' -f1)  $(basename "$INSTALLER")" >> SHA256SUMS.txt
           gh release create "$GITHUB_REF_NAME" "$APPIMAGE" "$INSTALLER" SHA256SUMS.txt --verify-tag --title "RDV Bus Studio Desktop ${GITHUB_REF_NAME#v}" --prerelease --generate-notes
