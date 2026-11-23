@@ -1,5 +1,14 @@
 # Histórico de alterações — RDV Bus Studio
 
+## 0.1.0-alpha.9.3.10 — MP4 H.264 para Chroma Key
+
+- Novo preset MP4/H.264 via FFmpeg/libx264 (CRF 17, yuv420p) para sobrepor em editores com Chroma Key.
+- Fundos preto, verde puro (#00FF00) e azul puro (#0000FF); mantém MOV/QTRLE, ProRes 4444, MKV/FFV1 e WebM/VP9 com alfa.
+- O MP4 não é anunciado como transparente; se for escolhido com fundo alfa, a exportação usa verde e a UI desabilita essa combinação.
+- Mantidos FPS, qualidade 2× de rasterização SVG e opções existentes para Linux/Windows.
+- Ajuste de similaridade/borda no editor ainda pode ser necessário pela compressão YUV 4:2:0.
+- Alteração experimental, sujeita à validação de AppImage/Windows em GitHub Actions.
+
 > Política de versões: cada lançamento terá uma seção própria neste arquivo, atualizada no mesmo ZIP da versão. Registros estão em ordem decrescente. Atualizações planejadas não são apresentadas como recursos concluídos.
 
 ## 0.1.0-alpha.9.3.8 — Ficha técnica à direita alinhada à diagonal

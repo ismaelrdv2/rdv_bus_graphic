@@ -1,15 +1,17 @@
 import { invoke } from '@tauri-apps/api/core';
 
 export type RasterQuality = 1 | 2;
-export type ExportBackground = 'transparent' | 'black';
+export type ExportBackground = 'transparent' | 'black' | 'green' | 'blue';
+const BACKGROUND_COLORS:Record<Exclude<ExportBackground,'transparent'>,string>={black:'#000000',green:'#00ff00',blue:'#0000ff'};
 
-export type VideoFormat = 'mov-qtrle' | 'mov-prores' | 'mkv-ffv1' | 'webm-vp9';
+export type VideoFormat = 'mov-qtrle' | 'mov-prores' | 'mkv-ffv1' | 'webm-vp9' | 'mp4-h264';
 
 export const VIDEO_FORMATS: { value: VideoFormat; label: string; ext: string; description: string }[] = [
   { value: 'mov-qtrle', label: 'MOV — QuickTime Animation (sem perdas)', ext: 'mov', description: 'RGBA, arquivos grandes, indicado para edição' },
   { value: 'mov-prores', label: 'MOV — ProRes 4444', ext: 'mov', description: '10 bits com canal alfa, alta compatibilidade em editores' },
   { value: 'mkv-ffv1', label: 'MKV — FFV1 (sem perdas)', ext: 'mkv', description: 'RGBA sem perdas, para arquivamento e edição' },
   { value: 'webm-vp9', label: 'WebM — VP9 com alfa (4:2:0)', ext: 'webm', description: 'Alfa exige decodificador compatível e a subamostragem 4:2:0 reduz a definição de cores nas bordas.' },
+  { value: 'mp4-h264', label: 'MP4 — H.264 (Chroma Key ou fundo preto)', ext: 'mp4', description: 'Compatibilidade ampla; não possui canal alfa. Use verde/azul para aplicar Chroma Key no editor.' },
 ];
 
 /** O FFmpeg recebe PNGs sequenciais pelo stdin; nunca armazenamos todos em RAM. */
@@ -73,8 +75,8 @@ export async function svgToPngBase64(
     if (!ctx) throw new Error('Não foi possível inicializar o Canvas 2D.');
     ctx.clearRect(0, 0, width, height);
 
-    if (background === 'black') {
-      ctx.fillStyle = '#000000';
+    if (background !== 'transparent') {
+      ctx.fillStyle = BACKGROUND_COLORS[background];
       ctx.fillRect(0, 0, width, height);
     }
     if (quality === 1) {
