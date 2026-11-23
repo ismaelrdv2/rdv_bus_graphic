@@ -24,7 +24,7 @@ for(const fragment of [
  '<mlt LC_NUMERIC=', '<profile description=', '<chain id=', '<playlist id=',
  'frame_rate_num=', 'display_aspect_num=', 'let last = frames - 1',
  'escape_mlt_xml(', 'avformat', 'video.is_absolute()', 'video.is_file()',
- 'fs::write(&mlt', 'kdenlive-LEIA-ME.txt', 'Chroma Key: Basic',
+ 'OpenOptions::new()', 'kdenlive-LEIA-ME.txt', 'Chroma Key: Basic',
  'fn escapes_xml_and_preserves_exact_frame_count()', 'fn portrait_profile()'
 ]) assert(rust.includes(fragment),'MLT Kdenlive incompleto: '+fragment);
 assert(!rust.includes('Command::new'),'Nenhum shell deve ser chamado por arquivo MLT.');
