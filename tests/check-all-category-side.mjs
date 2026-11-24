@@ -33,7 +33,7 @@ for(const shape of [
  {width:260,scale:.75,margin:56}
 ]){
  const available=Math.max(0,1920-shape.width*shape.scale);
- const inset=Math.min(shape.margin,available/2);
+ const inset=Math.min(shape.margin,available/4);
  const left=inset,right=Math.max(0,available-inset);
  assert(left<=right);
  assert(Math.abs(left+right-available)<.001);
