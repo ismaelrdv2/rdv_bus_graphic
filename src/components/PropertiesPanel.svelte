@@ -34,6 +34,9 @@
   export let onFooter: (key:'footerMode'|'footerText'|'footerImageData', value:string | undefined) => void;
   export let onCanvas: (key: 'fps' | 'duration' | 'orientation', value: number | string) => void;
   export let onTechnicalSide: (side: 'left' | 'right') => void;
+  export let onProductionDuration: (seconds:number) => void=()=>{};
+  export let onProductionIncluded: (included:boolean) => void=()=>{};
+  export let onPhotoCredit: (enabled:boolean) => void=()=>{};
   export let onFreeTextStyle: (style: FreeTextStyle) => void;
   export let onFreeTextIcon: (icon: HudElement['freeTextIcon']) => void;
   export let onFreeTextDisplay: (mode: HudElement['freeTextDisplay']) => void;
@@ -157,6 +160,26 @@
     </div>
     {#if activeTab === 'content'}
     <section class="property-section"><h3>Conteúdo do elemento</h3>
+      <div class="production-category-settings">
+        <label class="field"><span>Duração do vídeo desta categoria (segundos)</span>
+          <input type="number" min="1" max="60" step="0.1"
+            value={selected.productionDuration??project.canvas.duration}
+            on:change={event=>onProductionDuration(Number(event.currentTarget.value))}/>
+        </label>
+        <label class="production-enabled"><input type="checkbox" checked={selected.productionIncluded!==false}
+          on:change={event=>onProductionIncluded(event.currentTarget.checked)}/>
+          Incluir esta categoria na produção por etapas
+        </label>
+        {#if selected.kind==='credit'}
+          <label class="field"><span>Subcategoria de crédito</span>
+            <select value={selected.productionRole==='photoCredit'?'photo':'film'}
+              on:change={event=>onPhotoCredit(event.currentTarget.value==='photo')}>
+              <option value="film">Crédito de filmagem</option>
+              <option value="photo">Crédito de fotografia</option>
+            </select>
+          </label>
+        {/if}
+      </div>
       {#if selected.kind === 'freeText'}
         <label class="field"><span>Estilo do texto livre</span>
           <select value={selected.freeTextStyle || 'classic'} on:change={(event) => onFreeTextStyle(event.currentTarget.value as FreeTextStyle)}>
