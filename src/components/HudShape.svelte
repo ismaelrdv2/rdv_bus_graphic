@@ -17,7 +17,7 @@
   import { clamp } from '../lib/timing';
   import { technicalRowTextX, technicalTextAvailableWidth } from '../lib/technicalGeometry';
   import { DEFAULT_RICH_TEXT, layoutRichText, parseRuns, alignedX, textAnchor, type MeasureRich } from '../lib/richtext';
-  import { compactTextWeights, singleLineText } from '../lib/compactText';
+  import { compactTextWeights, singleLineText, fitStudioLine } from '../lib/compactText';
   import { visualMotionFrame } from '../lib/visualAnimation';
   import { studioOnlyStyle } from '../lib/freeTextModes';
 
@@ -116,10 +116,14 @@
   $: centeredCompactText = !compactWeights.stacked;
   // Centraliza na região textual, deslocada apenas quando há ícone social.
   $: compactCenterX = compactLabelX + compactLabelWidth / 2;
-  $: bodyLeft = fullPage ? fullMargin : freeSocial ? 100 : 34;
-  $: bodyWidth = Math.max(60, w - 2 * bodyLeft);
-  $: bodyStart = fullPage ? Math.max(215, height * .22) : 73 * sy;
-  $: bodyAreaHeight = fullPage ? height - bodyStart - (fields.line2 && element.showFullPageNote!==false ? Math.max(fullMargin,145):fullMargin) : Math.max(14, height - bodyStart - (studioPresentationBar?32:10));
+  $: studioClassic = freeText && element.freeTextStyle==='classic';
+  $: classicLeft = Math.min(w*.5,freeSocial?100:34);
+  $: classicRight = Math.max(classicLeft+1,w-Math.min(34,w*.12));
+  $: classicWidth = classicRight-classicLeft;
+  $: bodyLeft = fullPage ? fullMargin : studioClassic ? classicLeft : freeSocial ? 100 : 34;
+  $: bodyWidth = studioClassic?classicWidth:Math.max(60, w - 2 * bodyLeft);
+  $: bodyStart = fullPage ? Math.max(215, height * .22) : studioClassic?height*.37:73 * sy;
+  $: bodyAreaHeight = fullPage ? height - bodyStart - (fields.line2 && element.showFullPageNote!==false ? Math.max(fullMargin,145):fullMargin) : Math.max(14, height - bodyStart - (studioClassic?height*.035:studioPresentationBar?32:10));
   $: bodyLayout = layoutRichText(fields.line1, bodyWidth, bodySize, 1.35, rich.bullets, rich.bodyBold, rich.bodyItalic, measureRich);
   $: scrollProgress = clamp(duration > 0 ? time / duration : 0, 0, 1) * (rich.scrollSpeed / 100);
   $: scrollOffset = bodyStart + bodyAreaHeight - scrollProgress * (bodyAreaHeight + bodyLayout.contentHeight);
@@ -138,6 +142,28 @@
     if (!measured) return preferred;
     return Math.max(8, Math.min(preferred, preferred * available / measured * .985));
   }
+  // Medição usa a família e os estilos reais, inclusive as escolhas da edição inline.
+  function classicFit(el:HudElement,key:string,value:string,preferred:number,maxSize:number,available:number,spacing:number,family:string,bold:boolean,italic:boolean,richRuns=false){
+    const f=el.textFormatting?.[key];
+    const requested=typeof f?.size==='number'&&Number.isFinite(f.size)?f.size*textFactor:preferred;
+    const actualFamily=f?.family?fontStack(f.family):family;
+    const actualBold=f?.bold??bold,actualItalic=f?.italic??italic;
+    const runs=richRuns?parseRuns(value):[{text:value,bold:false,italic:false}];
+    const measure=(font:number)=>runs.reduce((sum,run)=>{
+      if(typeof document==='undefined')return sum+[...run.text].length*font*.65;
+      measureContext??=document.createElement('canvas').getContext('2d');
+      if(!measureContext)return sum+[...run.text].length*font*.65;
+      measureContext.font=`${(actualItalic||run.italic)?'italic ':''}${(actualBold||run.bold)?'800 ':'400 '}${font}px ${actualFamily}`;
+      return sum+measureContext.measureText(run.text).width;
+    },0);
+    return fitStudioLine(Math.min(maxSize,requested),available,spacing,runs.reduce((n,run)=>n+[...run.text].length,0),measure);
+  }
+  function classicStyle(el:HudElement,key:string):string|undefined{
+    return fieldTextStyle(el,key)?.split(';').filter(s=>!s.startsWith('font-size:')).join(';');
+  }
+  $: classicTitle = classicFit(element,'heading',fields.heading,headingSize,height*.245,classicWidth,3,fontFamily,rich.titleBold,rich.titleItalic);
+  $: classicMain = classicFit(element,'line1',fields.line1,bodySize,height*.30,classicWidth,0,fontFamily,rich.bodyBold,rich.bodyItalic,true);
+  $: classicSecondary = classicFit(element,'line2',fields.line2,Math.min(23*textFactor,height*.17),height*.20,classicWidth,0,fontFamily,false,false);
   function lineWidth(runs: {text:string;bold:boolean;italic:boolean}[], font:number, baseBold:boolean, baseItalic:boolean):number {
     return runs.reduce((sum,run) => sum + measureRich(run.text,font,baseBold||run.bold,baseItalic||run.italic),0);
   }
@@ -381,7 +407,7 @@
     </g>
   {:else if freeText && (element.freeTextStyle === 'classic' || studioPresentationBar)}
     <defs>
-      <clipPath id={contentClipId}><rect x={freeSocial?104:34} y={bodyStart} width={Math.max(45,w-(freeSocial?138:68))} height={bodyAreaHeight}/></clipPath>
+      <clipPath id={contentClipId}><rect x={studioClassic?classicLeft:freeSocial?104:34} y={bodyStart} width={studioClassic?classicWidth:Math.max(45,w-(freeSocial?138:68))} height={bodyAreaHeight}/></clipPath>
       <linearGradient id={gradId} x1="0" x2="1" y1="0" y2="1">
         <stop stop-color={paint.background}/><stop offset="1" stop-color={bg}/>
       </linearGradient>
@@ -396,8 +422,8 @@
         <SocialIcon icon={element.freeTextIcon || 'none'} x={20} y={Math.max(12,height/2-28)} size={56} color={accent} framed={true}/>
       </g>
     {/if}
-    <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={freeSocial?100:34} y={42*sy} font-size={scaledText(fields.heading,Math.min(headingSize,height*.24),w-70)} fill={textColor(element,'heading','secondary')} font-family={fontFamily} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'} letter-spacing="3">{fields.heading}</text>
-    <path d={`M${freeSocial?100:34} ${58*sy} H${Math.min(w-38,520)}`} stroke={paint.edge} stroke-width="2"/>
+    <text opacity={studioHeadingAlpha} data-edit-field="heading" style={studioClassic?classicStyle(element,'heading'):fieldTextStyle(element,'heading')} x={studioClassic?classicLeft:freeSocial?100:34} y={studioClassic?height*.275:42*sy} font-size={studioClassic?classicTitle.size:scaledText(fields.heading,Math.min(headingSize,height*.24),w-70)} fill={textColor(element,'heading','secondary')} font-family={fontFamily} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'} letter-spacing={studioClassic?classicTitle.spacing:3}>{fields.heading}</text>
+    <path d={`M${studioClassic?classicLeft:freeSocial?100:34} ${studioClassic?height*.35:58*sy} H${studioClassic?Math.min(classicRight,classicLeft+420):Math.min(w-38,520)}`} stroke={paint.edge} stroke-width="2"/>
     <g clip-path={`url(#${contentClipId})`}>
       {#if studioPresentationBar && !compactWeights.stacked}
         <g opacity={compactWeights.first*studioValueAlpha}>
@@ -418,10 +444,10 @@
         </text>
       {:else if rich.scroll === 'none' && fields.line2 && !fields.line1.includes('\n') && rich.bullets === 'none'}
         <!-- Compatibilidade com a cartela da alpha.5: título, mensagem e subtítulo. -->
-        <text opacity={studioValueAlpha} data-edit-field="line1" style={fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,bodyLeft,bodyWidth)} y={height*.63} text-anchor={textAnchor(rich.alignment)} xml:space="preserve" font-family={fontFamily} font-size={scaledText(fields.line1,Math.min(bodySize,height*.35),bodyWidth)} fill={textColor(element,'line1','white')} font-weight={rich.bodyBold?'800':'400'} font-style={rich.bodyItalic?'italic':'normal'} text-decoration={rich.bodyUnderline?'underline':'none'}>
+        <text opacity={studioValueAlpha} data-edit-field="line1" style={studioClassic?classicStyle(element,'line1'):fieldTextStyle(element,'line1')} x={alignedX(rich.alignment,bodyLeft,bodyWidth)} y={studioClassic?height*.65:height*.63} text-anchor={textAnchor(rich.alignment)} xml:space="preserve" font-family={fontFamily} font-size={studioClassic?classicMain.size:scaledText(fields.line1,Math.min(bodySize,height*.35),bodyWidth)} fill={textColor(element,'line1','white')} font-weight={rich.bodyBold?'800':'400'} font-style={rich.bodyItalic?'italic':'normal'} text-decoration={rich.bodyUnderline?'underline':'none'}>
           {#each parseRuns(fields.line1) as run}<tspan font-weight={run.bold?'800':(rich.bodyBold?'800':'400')} font-style={run.italic?'italic':(rich.bodyItalic?'italic':'normal')} text-decoration={run.underline||rich.bodyUnderline?'underline':'none'}>{run.text}</tspan>{/each}
         </text>
-        <text opacity={studioValueAlpha} data-edit-field="line2" style={fieldTextStyle(element,'line2')} x={alignedX(rich.alignment,bodyLeft,bodyWidth)} y={height*.92} text-anchor={textAnchor(rich.alignment)} font-family={fontFamily} font-size={scaledText(fields.line2,Math.min(23*textFactor,height*.17),bodyWidth)} fill={textColor(element,'line2','secondary')}>{fields.line2}</text>
+        <text opacity={studioValueAlpha} data-edit-field="line2" style={studioClassic?classicStyle(element,'line2'):fieldTextStyle(element,'line2')} x={alignedX(rich.alignment,bodyLeft,bodyWidth)} y={studioClassic?height*.89:height*.92} text-anchor={textAnchor(rich.alignment)} font-family={fontFamily} font-size={studioClassic?classicSecondary.size:scaledText(fields.line2,Math.min(23*textFactor,height*.17),bodyWidth)} fill={textColor(element,'line2','secondary')}>{fields.line2}</text>
       {:else}
         <g transform={rich.scroll==='vertical' ? `translate(0 ${scrollOffset-bodyStart})` : ''}>
           {#each bodyLayout.lines as line, index}

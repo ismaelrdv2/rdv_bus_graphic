@@ -19,3 +19,11 @@ export function compactTextWeights(mode: CompactTextDisplay | undefined, time: n
     default: return { first: 1, second: 1, stacked: true };
   }
 }
+
+/** Ajusta proporcionalmente a fonte e o tracking, sem distorcer os glifos. */
+export function fitStudioLine(preferred:number,available:number,letterSpacing:number,glyphCount:number,measure:(size:number)=>number){
+  const size=Math.max(1,preferred),spacing=Math.max(0,letterSpacing);
+  const used=measure(size)+Math.max(0,glyphCount)*spacing;
+  const ratio=used>0?Math.min(1,Math.max(1,available-4)/used):1;
+  return {size:size*ratio,spacing:spacing*ratio};
+}
