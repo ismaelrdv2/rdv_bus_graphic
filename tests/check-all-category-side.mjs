@@ -18,7 +18,7 @@ const fn=app.slice(app.indexOf('  function updateTechnicalSide('),
 assert(fn.includes('changeElement(selectedId, element => {'));
 assert(fn.includes("x: fullscreen||bottom?0:side==='left'?inset:Math.max(0,available-inset)"));
 assert(fn.includes('y:element.style.y'));
-assert(fn.includes("const inset=bar?0:Math.min(56,available/2)"));
+assert(fn.includes("const inset=bar?0:Math.min(56,available/4)"));
 assert(fn.includes('technicalSide:side'));
 assert(validation.includes('technicalSide,'));
 assert(!validation.includes("((technical || freeText) ? { technicalSide } : {})"));
