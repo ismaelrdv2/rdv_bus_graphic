@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const app=read('src/App.svelte'),props=read('src/components/PropertiesPanel.svelte'),css=read('src/app.css');
-assert.equal(JSON.parse(read('package.json')).version,'0.1.0-alpha.9.3.21');
+assert.equal(JSON.parse(read('package.json')).version,'0.1.0-alpha.9.3.22');
 assert(app.includes('production-rail-button'));
 assert(app.includes('Produção · RDV Bus Studio'));
 assert(app.includes('aria-label="Produção de vídeo, SVG e projeto"'));

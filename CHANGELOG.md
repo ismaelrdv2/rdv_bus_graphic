@@ -1,5 +1,11 @@
 # Histórico de alterações — RDV Bus Studio
 
+## [0.1.0-alpha.9.3.22] — Opacidade global e progresso independente
+
+- Controle global da opacidade da cor de fundo na paleta, preservado nos projetos e presets.
+- Janela de produção em andamento separada das configurações, com progresso, cancelamento e fechamento automático.
+- Aplicação do ajuste aos modelos Studio/Clássico e Navigator, sem alterar a opacidade dos textos.
+
 ## [0.1.0-alpha.9.3.21] — Cartela Studio
 
 - Ajuste de títulos e textos da Cartela Studio com margens reais, ícone social, tracking e fontes proporcionais. Mantém a interface de produção já centralizada.
