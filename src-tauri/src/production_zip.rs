@@ -111,7 +111,7 @@ pub fn archive(stage:String,output:String,names:Vec<String>)->Result<String,Stri
             le32(&mut out,m.size).map_err(|e|e.to_string())?;
             le32(&mut out,m.size).map_err(|e|e.to_string())?;
             le16(&mut out,name.len() as u16).map_err(|e|e.to_string())?;
-            for _ in 0..5{le16(&mut out,0).map_err(|e|e.to_string())?;}
+            for _ in 0..4{le16(&mut out,0).map_err(|e|e.to_string())?;}
             le32(&mut out,0).map_err(|e|e.to_string())?;
             le32(&mut out,m.offset).map_err(|e|e.to_string())?;
             out.write_all(name).map_err(|e|e.to_string())?;
