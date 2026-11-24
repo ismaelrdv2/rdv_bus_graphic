@@ -17,7 +17,7 @@
     "desktop:build:windows": "tauri build --bundles nsis",
     "test:updates": "node tests/check-updates.mjs && node tests/check-release-publication.mjs",
     "test:consolidation": "node tests/check-free-text-consolidation.mjs",
-    "test:export": "node tests/check-export-modes.mjs && node tests/check-kdenlive.mjs && node tests/check-production-panel.mjs && node tests/check-batch-production.mjs"
+    "test:export": "node tests/check-export-modes.mjs && node tests/check-kdenlive.mjs && node tests/check-production-panel.mjs && node tests/check-batch-production.mjs && node tests/check-all-category-side.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
