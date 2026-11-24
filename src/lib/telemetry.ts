@@ -1,5 +1,6 @@
 export interface Sample { t:number; lat:number; lon:number; speed?:number; bearing?:number; accuracy?:number; street?:string }
-export interface Track { demo:boolean; points:Sample[] }
+export interface ManualKey { time:number; speedKmh:number; street:string; lat?:number; lon?:number }
+export interface Track { demo:boolean; points:Sample[]; manualKeys?:ManualKey[]; manualDuration?:number }
 export interface MapLine { coords:[number,number][]; name?:string }
 export interface Palette { primary:string; secondary:string; background:string }
 export interface View { width:number; height:number; corner:string; scale:number; opacity:number; heading:boolean; tilt:boolean; radius:number; autoZoom:boolean; theme:string; gauge:string; map:boolean; palette:Palette }
@@ -21,6 +22,7 @@ export function normalizeTrack(raw:unknown,demo=false):Track {
  return {demo,points:clean};
 }
 export function at(track:Track,t:number,maxGap=5000):Sample|null{
+ if(track.manualKeys)return manualAt(track.manualKeys,t);
  const p=track.points;if(!finite(t)||!p.length||t<p[0].t||t>p[p.length-1].t)return null;
  let lo=0,hi=p.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(p[m].t<=t)lo=m;else hi=m;}
  const a=p[lo],b=p[hi],dt=b.t-a.t;
@@ -38,7 +40,7 @@ export function parseTrack(text:string,filename:string):Track {
  }
  if(/\.csv$/i.test(filename)){const lines=text.trim().split(/\r?\n/),sep=lines[0].includes(';')?';':',';const fields=lines.shift()!.toLowerCase().replace(/^\uFEFF/,'').split(sep).map(s=>s.trim());const col=(row:string[],...keys:string[])=>row[fields.findIndex(x=>keys.includes(x))];
  return normalizeTrack(lines.map(line=>{const r=line.split(sep),v=col(r,'t','time','timestamp'),speed=col(r,'speed_mps','speed'),km=col(r,'speed_kmh');return {t:/^\d{13}$/.test(v||'')?Number(v):Date.parse(v||''),lat:Number(col(r,'lat','latitude')||NaN),lon:Number(col(r,'lon','longitude')||NaN),speed:km?Number(km)/3.6:speed?Number(speed):undefined,bearing:col(r,'bearing')?Number(col(r,'bearing')):undefined};}));}
- const o=JSON.parse(text);return normalizeTrack(Array.isArray(o)?o:o.points,o.demo===true);
+ const o=JSON.parse(text);if(o?.format==='rdv-manual-v1')return makeManualTrack(o.keys,o.duration);return normalizeTrack(Array.isArray(o)?o:o.points,o.demo===true);
 }
 export function demoTrack():Track {
  const t=Date.UTC(2026,0,1,12),points:Sample[]=[];let lat=-15.6,lon=-56.1;
@@ -61,6 +63,7 @@ export async function mp4Creation(file:Blob):Promise<number|null>{
 const esc=(s:unknown)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
 const color=(s:string,f:string)=>/^#[0-9a-f]{6}$/i.test(s)?s:f;
 export function frameSvg(track:Track,t:number,v:View,roads:MapLine[]=[]):string{
+ if(track.manualKeys&&!manualHasMap(track))v={...v,map:false};
  const s=at(track,t),W=v.width,H=v.height,P=color(v.palette.primary,'#E2BA5A'),S=color(v.palette.secondary,'#B98BE8'),B=color(v.palette.background,'#200F31');
  const w=400,h=v.map?246:100,k=clamp(v.scale,.3,2.5)*Math.min(W,H)/1080;
  const x=v.corner.includes('right')?W-w*k-24:24,y=v.corner.includes('bottom')?H-h*k-24:24;
@@ -73,11 +76,11 @@ export function frameSvg(track:Track,t:number,v:View,roads:MapLine[]=[]):string{
  const route=track.points.filter(p=>Math.abs(p.t-t)<180000||distance(center,p)<r*2).map(p=>[p.lon,p.lat] as [number,number]);
  const past=track.points.filter(p=>p.t<=t&&distance(center,p)<r*2).map(p=>[p.lon,p.lat] as [number,number]);if(s)past.push([s.lon,s.lat]);
  const grid=track.demo&&!roads.length?Array.from({length:9},(_,i)=>'<path d="M'+(i*50)+' 48 V218 M8 '+(48+i*22)+' H392" stroke="'+line+'" stroke-width="4"/>').join(''):'';
- map='<defs><clipPath id="mapclip"><rect x="8" y="48" width="384" height="168"/></clipPath></defs><rect x="8" y="48" width="384" height="168" rx="3" fill="'+bg+'"/><g clip-path="url(#mapclip)">'+grid+local.map(l=>'<path d="'+path(l.coords)+'" stroke="'+line+'" stroke-width="5" stroke-linejoin="round" fill="none"/>').join('')+'<path d="'+path(route)+'" stroke="'+S+'" stroke-width="4" stroke-dasharray="7 5" fill="none"/><path d="'+path(past)+'" stroke="'+P+'" stroke-width="5" stroke-linejoin="round" fill="none"/>'+(s?'<g transform="translate(200 132) rotate('+(v.heading?0:s.bearing??0)+')"><path d="M0 -13 L-9 10 L0 5 L9 10Z" fill="#fff" stroke="'+B+'" stroke-width="2"/></g>':'')+'<text x="17" y="208" font-size="10" fill="'+fg+'">'+(track.demo?'MAPA DEMONSTRATIVO':roads.length?'Mapa local importado':'Traçado GPS · sem cartografia')+'</text><text x="380" y="63" text-anchor="end" font-size="11" fill="'+fg+'">'+(v.heading?'↑':'N ↑')+'</text></g>';
+ map='<defs><clipPath id="mapclip"><rect x="8" y="48" width="384" height="168"/></clipPath></defs><rect x="8" y="48" width="384" height="168" rx="3" fill="'+bg+'"/><g clip-path="url(#mapclip)">'+grid+local.map(l=>'<path d="'+path(l.coords)+'" stroke="'+line+'" stroke-width="5" stroke-linejoin="round" fill="none"/>').join('')+'<path d="'+path(route)+'" stroke="'+S+'" stroke-width="4" stroke-dasharray="7 5" fill="none"/><path d="'+path(past)+'" stroke="'+P+'" stroke-width="5" stroke-linejoin="round" fill="none"/>'+(s?'<g transform="translate(200 132) rotate('+(v.heading?0:s.bearing??0)+')"><path d="M0 -13 L-9 10 L0 5 L9 10Z" fill="#fff" stroke="'+B+'" stroke-width="2"/></g>':'')+'<text x="17" y="208" font-size="10" fill="'+fg+'">'+(track.manualKeys?'TRAJETO ESTIMADO':track.demo?'MAPA DEMONSTRATIVO':roads.length?'Mapa local importado':'Traçado GPS · sem cartografia')+'</text><text x="380" y="63" text-anchor="end" font-size="11" fill="'+fg+'">'+(v.heading?'↑':'N ↑')+'</text></g>';
  }
- const speed=s?.speed===undefined?'—':Math.round(s.speed*3.6).toString();const street=s?.street??(s?'Via não identificada':'GPS indisponível');
+ const speed=s?.speed===undefined?'—':Math.round(s.speed*3.6).toString();const street=s?.street??(s?'Via não identificada':track.manualKeys?'Sem dados manuais neste instante':'GPS indisponível');
  const analog=v.gauge==='analog'&&s?.speed!==undefined?'<path d="M274 38 A36 36 0 0 1 346 38" fill="none" stroke="'+S+'" stroke-width="3"/><path d="M310 38 l'+(29*Math.cos(Math.PI*(1-clamp(s.speed*3.6/100,0,1)))).toFixed(2)+' '+(-29*Math.sin(Math.PI*(1-clamp(s.speed*3.6/100,0,1)))).toFixed(2)+'" stroke="'+P+'" stroke-width="3"/>':'';
- return '<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><g transform="translate('+x+' '+y+') scale('+k+')" opacity="'+clamp(v.opacity,.15,1)+'" font-family="Arial,sans-serif"><rect width="'+w+'" height="'+h+'" rx="10" fill="'+B+'" stroke="'+S+'" stroke-width="2"/><rect x="0" y="10" width="4" height="'+(h-20)+'" fill="'+P+'"/><text x="15" y="34" fill="'+P+'" font-size="29" font-weight="bold">'+speed+'</text><text x="86" y="34" fill="'+S+'" font-size="13">km/h</text>'+analog+'<text x="385" y="24" fill="'+S+'" text-anchor="end" font-size="10">'+(track.demo?'DEMONSTRAÇÃO':'GPS')+'</text>'+map+'<text x="15" y="'+(h-13)+'" fill="#fff" font-size="13">'+esc(street.slice(0,47))+'</text></g></svg>';
+ return '<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><g transform="translate('+x+' '+y+') scale('+k+')" opacity="'+clamp(v.opacity,.15,1)+'" font-family="Arial,sans-serif"><rect width="'+w+'" height="'+h+'" rx="10" fill="'+B+'" stroke="'+S+'" stroke-width="2"/><rect x="0" y="10" width="4" height="'+(h-20)+'" fill="'+P+'"/><text x="15" y="34" fill="'+P+'" font-size="29" font-weight="bold">'+speed+'</text><text x="86" y="34" fill="'+S+'" font-size="13">km/h</text>'+analog+'<text x="385" y="24" fill="'+S+'" text-anchor="end" font-size="10">'+(track.manualKeys?'ESTIMADO · MANUAL':track.demo?'DEMONSTRAÇÃO':'GPS')+'</text>'+map+'<text x="15" y="'+(h-13)+'" fill="#fff" font-size="13">'+esc(street.slice(0,47))+'</text></g></svg>';
 }
 
 /** Fração aproximada do vídeo com amostras válidas; não confunde coincidência temporal com validação de campo. */
@@ -88,9 +91,40 @@ export function coverage(track:Track,start:number,duration:number):number{
  return valid/n;
 }
 export function bestAlignment(track:Track,creation:number|null,duration:number){
+ if(track.manualKeys)return {start:0,origin:'start' as const,manual:true};
  const first=track.points[0].t;
  if(creation===null)return {start:first,origin:'start' as const,manual:true};
  const a=coverage(track,creation,duration),b=coverage(track,creation-duration*1000,duration);
  if(track.demo&&a===0&&b===0)return {start:first,origin:'start' as const,manual:true};
  return b>a?{start:creation-duration*1000,origin:'end' as const,manual:false}:{start:creation,origin:'start' as const,manual:false};
+}
+
+/** Pontos manuais usam segundos do vídeo, sem data GPS inventada. */
+export function makeManualTrack(raw:unknown,duration:number):Track {
+ if(!Array.isArray(raw)||raw.length>10000||!finite(duration)||duration<=0||duration>86400)throw Error('Projeto manual inválido.');
+ const keys:ManualKey[]=[];
+ for(const k of raw){
+   if(!k||!finite(k.time)||k.time<0||k.time>86400||!finite(k.speedKmh)||k.speedKmh<0||k.speedKmh>300)throw Error('Tempo ou velocidade inválidos.');
+   const has=k.lat!==undefined||k.lon!==undefined;
+   if(has&&(!finite(k.lat)||!finite(k.lon)||Math.abs(k.lat)>90||Math.abs(k.lon)>180))throw Error('Informe latitude e longitude válidas, ou deixe ambas vazias.');
+   const key:ManualKey={time:Math.round(k.time*1000)/1000,speedKmh:k.speedKmh,street:typeof k.street==='string'?k.street.slice(0,120):'',...(has?{lat:k.lat,lon:k.lon}:{})};
+   const i=keys.findIndex(p=>p.time===key.time);if(i<0)keys.push(key);else keys[i]=key;
+ }
+ keys.sort((a,b)=>a.time-b.time);
+ const located=keys.length>=2&&keys.every(k=>finite(k.lat)&&finite(k.lon));
+ const points:Sample[]=located?keys.map(k=>({t:k.time*1000,lat:k.lat!,lon:k.lon!,speed:k.speedKmh/3.6,street:k.street})):[{t:0,lat:NaN,lon:NaN}];
+ return {demo:false,points,manualKeys:keys,manualDuration:duration};
+}
+export function manualHasMap(track:Track){return !!track.manualKeys&&track.manualKeys.length>=2&&track.manualKeys.every(k=>finite(k.lat)&&finite(k.lon));}
+export function manualAt(keys:ManualKey[],ms:number):Sample|null{
+ const t=ms/1000;if(!finite(t)||!keys.length||t<keys[0].time||t>keys[keys.length-1].time)return null;
+ let lo=0,hi=keys.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(keys[m].time<=t)lo=m;else hi=m;}
+ const a=keys[lo],b=keys[hi],f=b.time===a.time?0:clamp((t-a.time)/(b.time-a.time),0,1);
+ const located=finite(a.lat)&&finite(a.lon)&&finite(b.lat)&&finite(b.lon);
+ let lat=NaN,lon=NaN,bearing:number|undefined;
+ if(located){lat=a.lat!+(b.lat!-a.lat!)*f;lon=a.lon!+(((b.lon!-a.lon!+540)%360)-180)*f;const p={t:0,lat:a.lat!,lon:a.lon!},q={t:0,lat:b.lat!,lon:b.lon!};if(distance(p,q)>2)bearing=direction(p,q);}
+ return {t:ms,lat,lon,bearing,speed:(a.speedKmh+(b.speedKmh-a.speedKmh)*f)/3.6,street:(f>=1?b.street:a.street)||undefined};
+}
+export function serializeTrack(track:Track,duration:number):string{
+ return JSON.stringify(track.manualKeys?{format:'rdv-manual-v1',duration,keys:track.manualKeys}:track,null,2);
 }

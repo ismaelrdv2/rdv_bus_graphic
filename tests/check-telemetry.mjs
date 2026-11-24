@@ -16,3 +16,13 @@ assert.equal(m.bestAlignment(demo,demo.points[60].t,60).origin,'end');
 assert.equal(m.bestAlignment(demo,Date.UTC(2027,0,1),53).start,demo.points[0].t);
 assert.equal(m.coverage(demo,Date.UTC(2027,0,1),60),0);
 const ui=readFileSync(new URL('../src/components/Navigator.svelte',import.meta.url),'utf8');assert(ui.includes('Sincronizar automaticamente')&&ui.includes('--safe-area-inset-top')&&ui.includes('Gerar MP4 de telemetria'));
+
+const manual=m.makeManualTrack([{time:0,speedKmh:0,street:'A'},{time:10,speedKmh:40,street:'B'}],15);
+assert.equal(m.at(manual,5000).speed*3.6,20);assert.equal(m.at(manual,5000).street,'A');assert.equal(m.at(manual,10000).street,'B');assert.equal(m.at(manual,12000),null);
+assert(!m.manualHasMap(manual));assert(!m.frameSvg(manual,5000,view).includes('mapclip'));assert(m.frameSvg(manual,5000,view).includes('ESTIMADO'));
+assert.equal(m.parseTrack(m.serializeTrack(manual,15),'manual.rdvgps').manualKeys.length,2);
+assert(!m.serializeTrack(manual,15).includes('"lat"'));
+const located=m.makeManualTrack([{time:0,speedKmh:20,street:'A',lat:0,lon:0},{time:10,speedKmh:40,street:'B',lat:0,lon:.001}],10);
+assert(m.manualHasMap(located));assert(m.frameSvg(located,5000,view).includes('TRAJETO ESTIMADO'));assert(Math.abs(m.at(located,5000).lon-.0005)<1e-9);
+assert.throws(()=>m.makeManualTrack([{time:0,speedKmh:-1}],10));assert.throws(()=>m.makeManualTrack([{time:0,speedKmh:5,lat:0}],10));
+console.log('Manual: interpolação, limites, vias, coordenadas opcionais e persistência OK.');

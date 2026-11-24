@@ -1,5 +1,10 @@
 # Histórico de alterações — RDV Bus Studio
 
+## [0.1.0-alpha.9.3.18] — Telemetria manual
+
+- Editor por pontos-chave no tempo do vídeo, velocidade, vias e coordenadas opcionais.
+- Interpolação, identificação de estimativas, projeto RDVGPS manual e exportação MOV/MP4.
+
 ## [0.1.0-alpha.9.3.17] — Navigator: sincronização e interface
 
 - Assistente de sincronização GPS, cobertura, ajuste por ponto e abas.
