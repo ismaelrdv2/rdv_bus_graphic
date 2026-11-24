@@ -666,69 +666,108 @@
     if (!isDesktop()) notify('Para gerar vídeo, abra o RDV Bus no aplicativo desktop Tauri.', 'info');
   }
 
-  async function exportVideo(): Promise<void> {
-    if (exportingVideo) return;
-    if (!isDesktop()) return notify('Exportação de vídeo disponível somente no aplicativo desktop Tauri. Use npm run desktop:dev.', 'error');
-    const preset = VIDEO_FORMATS.find(item => item.value === videoFormat) ?? VIDEO_FORMATS[0];
-    // H.264 não tem canal alfa. Mesmo que o formato mude antes da reatividade da UI,
-    // nunca gere MP4 com fundo transparente (que seria interpretado como preto).
-    const effectiveBackground: ExportBackground = videoFormat === 'mp4-h264' && exportBackground === 'transparent' ? 'green' : exportBackground;
-    const cleanName = project.name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50) || 'rdv_bus';
+  /** Renderiza uma única categoria, sem mexer no restante do projeto salvo. */
+  async function renderVideoFile(snapshot:RDVProject,output:string):Promise<number> {
+    const frames=Math.round(snapshot.canvas.duration*snapshot.canvas.fps);
+    if(frames<1||frames>1800)throw new Error('Duração individual excede o limite de 1.800 quadros para esta resolução/FPS.');
+    const effectiveBackground:ExportBackground=videoFormat==='mp4-h264'&&exportBackground==='transparent'?'green':exportBackground;
+    renderingProject=snapshot;exportTime=0;
+    await tick();
+    const canvas=document.createElement('canvas');
+    const jobId=await beginVideo(output,snapshot.canvas.width,snapshot.canvas.height,snapshot.canvas.fps,frames,videoFormat);
     try {
-      const output = await nativeSave({ title: 'Exportar vídeo RDV Bus', defaultPath: joinOutputPath(await getOutputDirectory(), `${cleanName}.${preset.ext}`), filters: [{ name: preset.label, extensions: [preset.ext] }] });
-      if (!output) return;
-      stopPlayback();
-      exportingVideo = true;
-      cancelRequested = false;
-      exportProgress = 0;
-      selectedVideoName = output;
-      await tick();
-      const canvas = document.createElement('canvas');
-      const frames = Math.round(project.canvas.duration * project.canvas.fps);
-      const jobId = await beginVideo(output, project.canvas.width, project.canvas.height, project.canvas.fps, frames, videoFormat);
-      try {
-        for (let index = 0; index < frames; index++) {
-          if (cancelRequested) throw new Error('Exportação cancelada.');
-          exportTime = exportFrameTime(index, frames, project.canvas.duration);
-          await tick();
-          const svg = document.querySelector<SVGSVGElement>('.export-render-stage .scene-svg');
-          if (!svg) throw new Error('Quadro SVG de exportação não encontrado.');
-          // O SVG declara tamanho intrínseco ampliado, preservando o viewBox original.
-          // Assim o WebView realmente rasteriza os vetores a 2×, em vez de esticar
-          // um bitmap já rasterizado a 1080p.
-          const xml = exportFrameSvg(svg, project.canvas.width * rasterQuality, project.canvas.height * rasterQuality);
-          const data = await svgToPngBase64(xml, project.canvas.width, project.canvas.height, canvas, rasterQuality, effectiveBackground);
-          await pushVideoFrame(jobId, data);
-          exportProgress = (index + 1) / frames;
-          // Libera o loop de eventos periodicamente para atualizar o painel de progresso.
-          if (index % 8 === 0) await new Promise<void>(resolve => setTimeout(resolve, 0));
-        }
-        await finishVideo(jobId);
-        showExportVideo = false;
-        outputDirectory = rememberOutputFile(output);
-        if (prepareForKdenlive) {
-          try {
-            const mlt = await prepareKdenliveClip({
-              path: output,width:project.canvas.width,height:project.canvas.height,
-              fps:project.canvas.fps,frames,background:effectiveBackground
-            });
-            notify(`Vídeo e clipe Kdenlive preparados: ${mlt}`, 'success');
-          } catch (error) {
-            notify(`Vídeo exportado, mas falhou o arquivo Kdenlive: ${error instanceof Error ? error.message : String(error)}`, 'error');
-          }
-        }else{
-          notify(`Vídeo exportado: ${output}`, 'success');
-        }
-      } catch (error) {
-        try { await cancelVideo(jobId); } catch { /* O processo pode ter encerrado. */ }
-        throw error;
+      for(let index=0;index<frames;index++){
+        if(cancelRequested)throw new Error('Produção cancelada.');
+        exportTime=exportFrameTime(index,frames,snapshot.canvas.duration);
+        await tick();
+        const svg=document.querySelector<SVGSVGElement>('.export-render-stage .scene-svg');
+        if(!svg)throw new Error('Quadro de exportação indisponível.');
+        const xml=exportFrameSvg(svg,snapshot.canvas.width*rasterQuality,snapshot.canvas.height*rasterQuality);
+        const data=await svgToPngBase64(xml,snapshot.canvas.width,snapshot.canvas.height,canvas,rasterQuality,effectiveBackground);
+        await pushVideoFrame(jobId,data);
+        exportProgress=batchCount>0?
+          (batchCurrent+(index+1)/frames)/batchCount:(index+1)/frames;
+        if(index%8===0)await new Promise<void>(resolve=>setTimeout(resolve,0));
       }
-    } catch (error) {
-      notify(`Falha ao gerar vídeo: ${error instanceof Error ? error.message : String(error)}`, 'error');
-    } finally {
-      exportingVideo = false;
-      cancelRequested = false;
-      selectedVideoName = '';
+      await finishVideo(jobId);
+      return frames;
+    } catch(error) {
+      try{await cancelVideo(jobId);}catch{/* FFmpeg pode ter encerrado */}
+      throw error;
+    }
+  }
+  async function exportVideo():Promise<void>{
+    if(exportingVideo)return;
+    if(!isDesktop())return notify('Produção de vídeo exige o aplicativo Desktop Tauri.','error');
+    const element=selected??project.elements.find(el=>el.visible);
+    if(!element)return notify('Selecione uma categoria para gerar seu vídeo.','error');
+    const preset=VIDEO_FORMATS.find(item=>item.value===videoFormat)??VIDEO_FORMATS[0];
+    const cleanName=(project.name+'_'+element.title).normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,75)||'rdv_bus';
+    const output=await nativeSave({title:'Produzir vídeo da categoria',defaultPath:joinOutputPath(await getOutputDirectory(),
+      cleanName+'.'+preset.ext),filters:[{name:preset.label,extensions:[preset.ext]}]});
+    if(!output)return;
+    stopPlayback();exportingVideo=true;cancelRequested=false;exportProgress=0;
+    batchCount=0;selectedVideoName=output;
+    const snapshot=snapshotForElement(element);
+    try{
+      const frames=await renderVideoFile(snapshot,output);
+      outputDirectory=rememberOutputFile(output);
+      showExportVideo=false;
+      if(prepareForKdenlive){
+        try{
+          const mlt=await prepareKdenliveClip({path:output,width:snapshot.canvas.width,
+            height:snapshot.canvas.height,fps:snapshot.canvas.fps,frames,
+            background:videoFormat==='mp4-h264'&&exportBackground==='transparent'?'green':exportBackground});
+          notify('Vídeo e clipe Kdenlive preparados: '+mlt,'success');
+        }catch(error){
+          notify('Vídeo exportado, mas falhou o arquivo Kdenlive: '+String(error),'error');
+        }
+      }else notify('Vídeo da categoria exportado: '+output,'success');
+    }catch(error){notify('Falha ao gerar vídeo: '+String(error),'error');}
+    finally{exportingVideo=false;cancelRequested=false;renderingProject=project;selectedVideoName='';}
+  }
+  /** Passo a passo: gera vídeos separados e os agrega sem sobrescrever arquivos. */
+  async function produceWizardZip():Promise<void>{
+    if(exportingVideo)return;
+    if(!isDesktop())return notify('O ZIP de vídeos exige o aplicativo Desktop Tauri.','error');
+    const list=collectWizardElements();
+    if(!list.length)return notify('Marque ao menos uma categoria para gerar o ZIP.','error');
+    if(list.length>24)return notify('Máximo de 24 vídeos por produção.','error');
+    const preset=VIDEO_FORMATS.find(item=>item.value===videoFormat)??VIDEO_FORMATS[0];
+    for(const item of list){
+      if(Math.round((item.element.productionDuration??project.canvas.duration)*project.canvas.fps)>1800)
+        return notify('A categoria '+item.element.title+' excede 1.800 quadros; reduza a duração ou FPS.','error');
+    }
+    const safeProject=project.name.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,60)||'RDV_Bus';
+    const zipPath=await nativeSave({title:'Salvar produção completa RDV Bus',defaultPath:joinOutputPath(await getOutputDirectory(),
+      safeProject+'_Producao.zip'),filters:[{name:'Produção ZIP',extensions:['zip']}]});
+    if(!zipPath)return;
+    let stage:string|undefined;
+    stopPlayback();exportingVideo=true;cancelRequested=false;exportProgress=0;
+    batchCount=list.length;batchCurrent=0;
+    try{
+      stage=await invoke<string>('production_stage_create');
+      const filenames:string[]=[];
+      for(const [index,item] of list.entries()){
+        if(cancelRequested)throw new Error('Produção cancelada.');
+        batchCurrent=index;batchLabel=item.element.title;
+        const filename=String(index+1).padStart(2,'0')+'_'+item.name+'.'+preset.ext;
+        selectedVideoName='Etapa '+(index+1)+'/'+list.length+' · '+item.element.title;
+        await renderVideoFile(snapshotForElement(item.element),joinOutputPath(stage,filename));
+        filenames.push(filename);
+      }
+      if(cancelRequested)throw new Error('Produção cancelada.');
+      selectedVideoName='Compactando '+list.length+' vídeos…';
+      await invoke('production_bundle_zip',{stage,output:zipPath,files:filenames});
+      outputDirectory=rememberOutputFile(zipPath);showExportVideo=false;
+      notify('Produção concluída: '+list.length+' vídeos no ZIP '+zipPath,'success');
+    }catch(error){
+      notify('Falha na produção em lote: '+String(error),'error');
+    }finally{
+      if(stage)await invoke('production_stage_cleanup',{stage}).catch(()=>{});
+      batchCount=0;batchCurrent=0;batchLabel='';renderingProject=project;
+      exportingVideo=false;cancelRequested=false;selectedVideoName='';
     }
   }
 
@@ -836,7 +875,7 @@
 
 {#if exportingVideo}
   <div class="export-render-stage" aria-hidden="true" style={`width:${project.canvas.width}px;height:${project.canvas.height}px`}>
-    <ScenePreview {project} selectedId={null} time={exportTime} onSelect={() => {}} onMove={() => {}} />
+    <ScenePreview project={renderingProject} selectedId={null} time={exportTime} onSelect={() => {}} onMove={() => {}} />
   </div>
 {/if}
 
