@@ -165,6 +165,40 @@ fn video_cancel(state: State<'_, VideoState>, job_id: String) -> Result<(), Stri
     Ok(())
 }
 
+#[cfg(target_os="linux")]
+thread_local! {static PRODUCTION_INHIBIT: std::cell::Cell<u32> = const {std::cell::Cell::new(0)};}
+#[tauri::command]
+async fn production_keep_awake(app: tauri::AppHandle, enabled: bool) -> Result<bool,String>{
+    #[cfg(target_os="linux")]
+    {
+        use gtk::prelude::{GtkApplicationExt,GtkWindowExt};
+        let main=app.clone();
+        let (tx,rx)=std::sync::mpsc::channel();
+        app.run_on_main_thread(move||{
+            let result=(|| -> Result<bool,String>{
+                let web=main.get_webview_window("main").ok_or("Janela indisponível")?;
+                let win=web.gtk_window().map_err(|e|e.to_string())?;
+                let gtk_app=win.application().ok_or("Sessão GTK indisponível")?;
+                PRODUCTION_INHIBIT.with(|slot|{
+                    let old=slot.get();
+                    if enabled {
+                        if old!=0{return Ok(true);}
+                        let cookie=gtk_app.inhibit(Some(&win),gtk::ApplicationInhibitFlags::IDLE|gtk::ApplicationInhibitFlags::SUSPEND,Some("RDV Bus Studio: produção de vídeo"));
+                        slot.set(cookie);Ok(cookie!=0)
+                    }else{
+                        if old!=0{gtk_app.uninhibit(old);slot.set(0);}
+                        Ok(true)
+                    }
+                })
+            })();
+            let _=tx.send(result);
+        }).map_err(|e|e.to_string())?;
+        return tauri::async_runtime::spawn_blocking(move||rx.recv().map_err(|e|e.to_string())).await.map_err(|e|e.to_string())??;
+    }
+    #[cfg(not(target_os="linux"))]
+    {let _=(app,enabled);Ok(false)}
+}
+
 mod kdenlive;
 mod production_zip;
 
@@ -231,7 +265,7 @@ pub fn run() {
         .manage(VideoState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![video_begin, video_frame, video_finish, video_cancel, kdenlive_prepare_clip, production_stage_create, production_stage_cleanup, production_bundle_zip, list_system_fonts, desktop_default_output_directory, desktop_open_output_directory])
+        .invoke_handler(tauri::generate_handler![production_keep_awake, video_begin, video_frame, video_finish, video_cancel, kdenlive_prepare_clip, production_stage_create, production_stage_cleanup, production_bundle_zip, list_system_fonts, desktop_default_output_directory, desktop_open_output_directory])
         .run(tauri::generate_context!())
         .expect("Falha ao iniciar o RDV Bus Studio");
 }

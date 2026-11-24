@@ -11,7 +11,7 @@
   import PropertiesPanel from './components/PropertiesPanel.svelte';
   import ScenePreview from './components/ScenePreview.svelte';
   import Timeline from './components/Timeline.svelte';
-  import { copyLocation, duplicateElement, makeElement, newProject } from './lib/templates';
+  import { copyLocation, removeExtraLocation, duplicateElement, makeElement, newProject } from './lib/templates';
   import { APP_VERSION } from './lib/types';
   import { clamp, exportFrameTime } from './lib/timing';
   import { isBar, isBottomBar, PORTRAIT_BAR_HEIGHT, isCompactCartela, standardizeCard, CREDIT_CARD_HEIGHT } from './lib/geometry';
@@ -22,7 +22,7 @@
   import type { EditableTextKey } from './lib/inlineText';
   import { legacyScrollRecommendedDuration } from './lib/legacy';
   import { canonicalFreeTextStyle, studioOnlyStyle, labelBarDimensions, estimatedLabelWidth, type LabelBarSize } from './lib/freeTextModes';
-  import { beginVideo, pushVideoFrame, finishVideo, cancelVideo, exportFrameSvg, svgToPngBase64, VIDEO_FORMATS, type VideoFormat, type RasterQuality, type ExportBackground } from './lib/video';
+  import { setProductionAwake, beginVideo, pushVideoFrame, finishVideo, cancelVideo, exportFrameSvg, svgToPngBase64, VIDEO_FORMATS, type VideoFormat, type RasterQuality, type ExportBackground } from './lib/video';
   import { MAX_ELEMENTS, type TextFormatting, type TextAlign, type BulletMode, type ElementKind, type FreeTextStyle, type RichTextSettings, type TechnicalLayout, type HudElement, type HudStyle, type RDVProject, type TextField, type TextColorKey, type TextColorRole, type TextColorGroup, type PaletteColors, type PaletteId, type UiStatus } from './lib/types';
   import { isDesktop, loadAutosave, openProjectBrowser, openProjectNative, saveProject, writeAutosave } from './lib/projects';
   import { KDENLIVE_OVERLAY_PRESET, prepareKdenliveClip } from './lib/kdenlive';
@@ -38,7 +38,7 @@
     if(!path)return 'Exportação cancelada.';
     const frames=Math.ceil(duration*fps);if(frames<1||frames>216000)throw Error('Duração de exportação inválida.');
     const canvas=document.createElement('canvas');let job:string|undefined;
-    try{job=await beginVideo(path,width,height,fps,frames,mode==='alpha'?'mov-qtrle':'mp4-h264');for(let i=0;i<frames;i++){if(cancel())throw Error('Exportação cancelada.');const png=await svgToPngBase64(render(i/fps),width,height,canvas,1,mode==='alpha'?'transparent':mode);await pushVideoFrame(job,png);progress(i+1,frames);}if(cancel())throw Error('Exportação cancelada.');const result=await finishVideo(job);job=undefined;return result;}finally{if(job)await cancelVideo(job).catch(()=>{});}
+    try{await setProductionAwake(true);job=await beginVideo(path,width,height,fps,frames,mode==='alpha'?'mov-qtrle':'mp4-h264');for(let i=0;i<frames;i++){if(cancel())throw Error('Exportação cancelada.');const png=await svgToPngBase64(render(i/fps),width,height,canvas,1,mode==='alpha'?'transparent':mode);await pushVideoFrame(job,png);progress(i+1,frames);}if(cancel())throw Error('Exportação cancelada.');const result=await finishVideo(job);job=undefined;return result;}finally{if(job)await cancelVideo(job).catch(()=>{});await setProductionAwake(false);}
   }
   let project: RDVProject = loadAutosave();
   let selectedId: string | null = project.elements[0]?.id || null;
@@ -544,6 +544,11 @@
     if(exportingVideo||project.elements.length>=MAX_ELEMENTS)return;
     addElement('location');
   }
+  function deleteWizardLocation():void {
+    if(exportingVideo||!selectedId)return;
+    if(!confirm('Excluir este local adicional? Os demais locais serão mantidos.'))return;
+    try{const result=removeExtraLocation(project.elements,selectedId);stopPlayback();applyChange({...project,elements:result.elements});selectedId=result.selectedId;notify('Local adicional excluído.','success');}catch(error){notify(String(error),'error');}
+  }
   function choosePhotoWizard():void {
     wizardCreditType='photo';chooseWizardElement('credit',true);
   }
@@ -748,6 +753,7 @@
     batchCount=0;selectedVideoName=output;
     const snapshot=snapshotForElement(element);
     try{
+      await setProductionAwake(true);
       const frames=await renderVideoFile(snapshot,output);
       outputDirectory=rememberOutputFile(output);
       showExportVideo=false;
@@ -762,7 +768,7 @@
         }
       }else notify('Vídeo da categoria exportado: '+output,'success');
     }catch(error){notify('Falha ao gerar vídeo: '+String(error),'error');}
-    finally{exportingVideo=false;cancelRequested=false;renderingProject=project;selectedVideoName='';}
+    finally{await setProductionAwake(false);exportingVideo=false;cancelRequested=false;renderingProject=project;selectedVideoName='';}
   }
   /** Passo a passo: gera vídeos separados e os agrega sem sobrescrever arquivos. */
   async function produceWizardZip():Promise<void>{
@@ -784,6 +790,7 @@
     stopPlayback();exportingVideo=true;cancelRequested=false;exportProgress=0;
     batchCount=list.length;batchCurrent=0;
     try{
+      await setProductionAwake(true);
       stage=await invoke<string>('production_stage_create');
       const filenames:string[]=[];
       for(const [index,item] of list.entries()){
@@ -803,6 +810,7 @@
       notify('Falha na produção em lote: '+String(error),'error');
     }finally{
       if(stage)await invoke('production_stage_cleanup',{stage}).catch(()=>{});
+      await setProductionAwake(false);
       batchCount=0;batchCurrent=0;batchLabel='';renderingProject=project;
       exportingVideo=false;cancelRequested=false;selectedVideoName='';
     }
@@ -898,6 +906,7 @@
                   on:click={()=>selectedId=place.id}>Local {i+1}</button>
               {/each}
               <button class="button secondary-button" on:click={addWizardLocation}>+ Adicionar local</button>
+              {#if project.elements.filter(el=>el.kind==='location').findIndex(el=>el.id===selectedId)>0}<button class="button secondary-button location-delete" disabled={exportingVideo} on:click={deleteWizardLocation}>Excluir local</button>{/if}
             {/if}
             {#if WIZARD_STEPS[wizardIndex].kind==='credit'}
               <button class="button secondary-button" class:active-wizard-item={wizardCreditType==='film'}
@@ -962,6 +971,8 @@
     <div class="help-dialog production-dialog" role="dialog" aria-modal="true" aria-label="Produção de vídeo, SVG e projeto">
       <div class="dialog-heading"><div><Icon name="film"/><strong>Produção · RDV Bus Studio</strong></div><button class="icon-button" aria-label="Fechar" disabled={exportingVideo} on:click={() => showExportVideo = false}>×</button></div>
       <div class="dialog-content video-export-content">
+        <label class="production-project-name">Nome do projeto<input value={project.name} maxlength="120" disabled={exportingVideo} on:input={event=>applyChange({...project,name:event.currentTarget.value})}/></label>
+        <p class="production-stay-note" role="note">Durante a produção, o aplicativo solicitará que a tela permaneça acesa. É recomendável permanecer nesta tela até o término do procedimento.</p>
         <p>Escolha entre produzir a categoria selecionada ou seguir o assistente para vários vídeos em um ZIP.</p>
         <div class="production-mode-desktop" role="group" aria-label="Modo de produção">
           <button type="button" class:chosen={productionMode==='manual'} disabled={exportingVideo}

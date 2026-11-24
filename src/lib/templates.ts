@@ -131,3 +131,9 @@ export function copyLocation(previous:HudElement):HudElement {
   if(previous.kind!=='location')throw new Error('Apenas localizações podem ser usadas como origem.');
   return {...structuredClone(previous),id:uniqueId(),productionIncluded:true};
 }
+
+export function removeExtraLocation(elements:HudElement[],id:string):{elements:HudElement[];selectedId:string}{
+  const places=elements.filter(el=>el.kind==='location'),index=places.findIndex(el=>el.id===id);
+  if(index<=0)throw new Error('Selecione um local adicional.');
+  return {elements:elements.filter(el=>el.id!==id),selectedId:places[index-1].id};
+}

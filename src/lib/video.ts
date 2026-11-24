@@ -108,3 +108,12 @@ export async function svgToPngBase64(
     URL.revokeObjectURL(url);
   }
 }
+
+let screenLock:WakeLockSentinel|null=null;
+/** Inibidor nativo Linux; Screen Wake Lock como alternativa em ambientes compatíveis. */
+export async function setProductionAwake(enabled:boolean):Promise<boolean>{
+  if(!enabled){try{await invoke('production_keep_awake',{enabled:false});}catch{}try{await screenLock?.release();}catch{}screenLock=null;return true;}
+  try{if(await invoke<boolean>('production_keep_awake',{enabled:true}))return true;}catch{}
+  try{if(navigator.wakeLock){screenLock=await navigator.wakeLock.request('screen');return true;}}catch{}
+  console.warn('O ambiente não concedeu a proteção de tela.');return false;
+}

@@ -1,6 +1,6 @@
 [package]
 name = "rdv-bus"
-version = "0.1.0-alpha.9.3.19"
+version = "0.1.0-alpha.9.3.20"
 description = "RDV Bus Studio"
 authors = ["RDV Bus"]
 edition = "2021"
@@ -18,3 +18,6 @@ tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 base64 = "0.22"
 fontdb = "0.24"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"

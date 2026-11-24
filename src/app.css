@@ -148,3 +148,5 @@ select:disabled { opacity: .62; }
 .wizard-desktop-nav{display:flex;gap:9px;justify-content:flex-end}
 .wizard-desktop-nav .button{min-height:35px}
 @media(max-width:1140px){.wizard-desktop-bar{padding:8px}.wizard-desktop-checkbox{margin-left:0}}
+
+.production-project-name{display:grid;gap:6px;font-size:13px;font-weight:700;margin:8px 0}.production-project-name input{width:100%;padding:10px;border:1px solid #69468a;border-radius:8px;background:#2c1e3c;color:inherit;font:inherit}.production-stay-note{border:1px solid #806139;border-radius:8px;padding:10px;color:#f1d18b;background:#352839;font-size:13px;line-height:1.5}.location-delete{color:#ffb9b9!important;border-color:#a85965!important}
