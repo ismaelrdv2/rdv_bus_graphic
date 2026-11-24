@@ -442,7 +442,11 @@
     changeElement(selectedId, element => ({
       ...element,
       technicalSide: side,
-      style: { ...element.style, x: isBottomBar(element,project.canvas.width,project.canvas.height) ? 0 : side === 'left' ? 0 : Math.max(0, project.canvas.width - element.style.width * element.style.scaleX), y: isBottomBar(element,project.canvas.width,project.canvas.height) ? project.canvas.height-PORTRAIT_BAR_HEIGHT*element.style.scaleY : 0 },
+      style: { ...element.style,
+        x: isBottomBar(element,project.canvas.width,project.canvas.height) ? 0 : side === 'left' ? 0 : Math.max(0, project.canvas.width - element.style.width * element.style.scaleX),
+        y: isBottomBar(element,project.canvas.width,project.canvas.height) ? project.canvas.height-PORTRAIT_BAR_HEIGHT*element.style.scaleY
+          : element.kind==='freeText' && element.freeTextStyle==='legacyPresentationBar' ? element.style.y : 0
+      },
     }));
   }
 
@@ -672,7 +676,7 @@
     else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'o') { event.preventDefault(); void openCurrentProject(); }
     else if (!editing && (event.key === 'Delete' || event.key === 'Backspace') && selectedId) { event.preventDefault(); deleteSelected(); }
     else if (!editing && event.code === 'Space' && !event.repeat) { event.preventDefault(); togglePlayback(); }
-    else if (event.key === 'Escape') { showHelp = false; showSettings = false; }
+    else if (event.key === 'Escape') { showHelp = false; showSettings = false; if(!exportingVideo)showExportVideo = false; }
   }
 
   onDestroy(() => {
