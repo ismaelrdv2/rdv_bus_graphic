@@ -125,3 +125,9 @@ export function duplicateElement(original: HudElement): HudElement {
     style: { ...original.style, x: Math.min(1850, original.style.x + 28), y: Math.min(1040, original.style.y + 28) },
   };
 }
+
+/** Um novo local mantém exatamente a composição anterior, sem deslocar a cartela. */
+export function copyLocation(previous:HudElement):HudElement {
+  if(previous.kind!=='location')throw new Error('Apenas localizações podem ser usadas como origem.');
+  return {...structuredClone(previous),id:uniqueId(),productionIncluded:true};
+}

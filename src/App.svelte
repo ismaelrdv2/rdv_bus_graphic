@@ -11,7 +11,7 @@
   import PropertiesPanel from './components/PropertiesPanel.svelte';
   import ScenePreview from './components/ScenePreview.svelte';
   import Timeline from './components/Timeline.svelte';
-  import { duplicateElement, makeElement, newProject } from './lib/templates';
+  import { copyLocation, duplicateElement, makeElement, newProject } from './lib/templates';
   import { APP_VERSION } from './lib/types';
   import { clamp, exportFrameTime } from './lib/timing';
   import { isBar, isBottomBar, PORTRAIT_BAR_HEIGHT, isCompactCartela, standardizeCard, CREDIT_CARD_HEIGHT } from './lib/geometry';
@@ -115,6 +115,15 @@
 
   function addElement(kind: ElementKind): void {
     if (project.elements.length >= MAX_ELEMENTS) return notify(`Limite de ${MAX_ELEMENTS} elementos atingido.`, 'error');
+    const previous=kind==='location'?project.elements.filter(el=>el.kind==='location').at(-1):undefined;
+    if(previous){
+      const element=copyLocation(previous);
+      applyChange({...project,elements:[...project.elements,element]});
+      selectedId=element.id;
+      time=Math.min(1.65,(element.productionDuration??project.canvas.duration)/2);
+      notify('Novo local criado a partir do anterior.', 'success');
+      return;
+    }
     const element = makeElement(kind);
     const colors = project.palette?.colors || DEFAULT_PALETTE.colors;
     element.style = {...element.style,accent:colors.primary,secondary:colors.secondary,background:colors.background};
