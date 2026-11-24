@@ -1,5 +1,11 @@
 # Histórico de alterações — RDV Bus Studio
 
+## [0.1.0-alpha.9.3.25] — FFmpeg externo e AppImage
+
+- FFmpeg do sistema executado sem LD_LIBRARY_PATH, LD_PRELOAD e LD_AUDIT herdados do AppImage; PATH exclui diretórios internos do pacote. Ambiente do Studio preservado.
+- Verificação de inicialização do FFmpeg antes da renderização, diagnóstico permanente também na produção individual.
+- Teste de regressão com biblioteca incompatível simulada e codificação FFV1 real.
+
 ## [0.1.0-alpha.9.3.24] — Produção ZIP de vídeos grandes
 
 - ZIP64 automático, sem limites artificiais de 1 GB por vídeo ou 3,7 GB por lote, com CRC em fluxo.

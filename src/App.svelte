@@ -773,9 +773,11 @@
     const preset=VIDEO_FORMATS.find(item=>item.value===videoFormat)??VIDEO_FORMATS[0];
     const cleanName=(project.name+'_'+element.title).normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
       .replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,75)||'rdv_bus';
-    const output=await nativeSave({title:'Produzir vídeo da categoria',defaultPath:joinOutputPath(await getOutputDirectory(),
-      cleanName+'.'+preset.ext),filters:[{name:preset.label,extensions:[preset.ext]}]});
+    let output:string|null;
+    try{output=await nativeSave({title:'Produzir vídeo da categoria',defaultPath:joinOutputPath(await getOutputDirectory(),
+      cleanName+'.'+preset.ext),filters:[{name:preset.label,extensions:[preset.ext]}]});}catch(error){productionError='Falha ao escolher arquivo: '+String(error);return;}
     if(!output)return;
+    productionError='';
     stopPlayback();showExportVideo=false;exportingVideo=true;cancelRequested=false;exportProgress=0;
     batchCount=0;selectedVideoName=output;
     const snapshot=snapshotForElement(element);
@@ -794,7 +796,7 @@
           notify('Vídeo exportado, mas falhou o arquivo Kdenlive: '+String(error),'error');
         }
       }else notify('Vídeo da categoria exportado: '+output,'success');
-    }catch(error){notify('Falha ao gerar vídeo: '+String(error),'error');}
+    }catch(error){if(cancelRequested){notify('Produção cancelada.','info');}else{productionError='Falha ao gerar vídeo ('+element.title+', '+videoFormat+'): '+String(error);notify('Falha ao gerar vídeo. Consulte os detalhes.','error');}}
     finally{await setProductionAwake(false);exportingVideo=false;cancelRequested=false;renderingProject=project;selectedVideoName='';}
   }
   /** Passo a passo: gera vídeos separados e os agrega sem sobrescrever arquivos. */
@@ -810,8 +812,9 @@
         return notify('A categoria '+item.element.title+' excede 1.800 quadros; reduza a duração ou FPS.','error');
     }
     const safeProject=project.name.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,60)||'RDV_Bus';
-    const zipPath=await nativeSave({title:'Salvar produção completa RDV Bus',defaultPath:joinOutputPath(await getOutputDirectory(),
-      safeProject+'_Producao.zip'),filters:[{name:'Produção ZIP',extensions:['zip']}]});
+    let zipPath:string|null;
+    try{zipPath=await nativeSave({title:'Salvar produção completa RDV Bus',defaultPath:joinOutputPath(await getOutputDirectory(),
+      safeProject+'_Producao.zip'),filters:[{name:'Produção ZIP',extensions:['zip']}]});}catch(error){productionError='Falha ao escolher ZIP: '+String(error);return;}
     if(!zipPath)return;
     let stage:string|undefined;
     let keepStage=false;

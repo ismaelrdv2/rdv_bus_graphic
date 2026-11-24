@@ -41,21 +41,19 @@ struct VideoJob {
     written: u32,
 }
 
-fn executable(app: &tauri::AppHandle) -> PathBuf {
-    // Permite fornecer um FFmpeg estático/bundled em versões futuras.
-    if let Ok(custom) = env::var("RDV_FFMPEG") {
-        if !custom.trim().is_empty() {
-            return PathBuf::from(custom);
-        }
+mod ffmpeg_runtime;
+
+fn ffmpeg_command(app:&tauri::AppHandle)->Command{
+    if let Ok(custom)=env::var("RDV_FFMPEG"){
+        if !custom.trim().is_empty(){return ffmpeg_runtime::host_command(PathBuf::from(custom));}
     }
-    let filename = if cfg!(windows) { "ffmpeg.exe" } else { "ffmpeg" };
-    if let Ok(resource) = app.path().resource_dir() {
-        let candidate = resource.join("ffmpeg").join(filename);
-        if candidate.is_file() {
-            return candidate;
-        }
+    // A separately bundled FFmpeg can intentionally use the AppImage libraries.
+    let filename=if cfg!(windows){"ffmpeg.exe"}else{"ffmpeg"};
+    if let Ok(resource)=app.path().resource_dir(){
+        let candidate=resource.join("ffmpeg").join(filename);
+        if candidate.is_file(){return Command::new(candidate);}
     }
-    PathBuf::from(filename) // Busca no PATH em ambiente de desenvolvimento.
+    ffmpeg_runtime::host_command(ffmpeg_runtime::system_ffmpeg())
 }
 
 fn encoder_args(format: &str) -> Option<(&'static str, Vec<&'static str>)> {
@@ -102,7 +100,15 @@ fn video_begin(
     if active.is_some() {
         return Err("Já existe uma exportação de vídeo em andamento".into());
     }
-    let mut cmd = Command::new(executable(&app));
+    // Detect loader or missing executable errors before opening a video file or rendering frames.
+    let mut probe=ffmpeg_command(&app);
+    let program=probe.get_program().to_string_lossy().into_owned();
+    let result=probe.arg("-version").output().map_err(|e|format!("Não foi possível executar FFmpeg ({program}): {e}"))?;
+    if !result.status.success(){
+        let stderr=String::from_utf8_lossy(&result.stderr);
+        return Err(format!("FFmpeg não iniciou ({program}, {}): {}. Verifique o FFmpeg no terminal fora do AppImage.",result.status,stderr.chars().take(3000).collect::<String>()));
+    }
+    let mut cmd = ffmpeg_command(&app);
     cmd.args(["-hide_banner", "-loglevel", "error", "-y", "-f", "image2pipe", "-framerate", &fps.to_string(), "-vcodec", "png", "-i", "pipe:0", "-an"]);
     cmd.args(args);
     cmd.arg(&output).stdin(Stdio::piped()).stdout(Stdio::null()).stderr(Stdio::piped());
@@ -251,7 +257,7 @@ fn desktop_open_output_directory(path: Option<String>) -> Result<String, String>
     if !dir.is_dir() { return Err(format!("Pasta de saída não encontrada: {}", dir.display())); }
     // Argumento separado: evita executar comandos de shell com caminhos de usuário.
     #[cfg(target_os = "linux")]
-    let mut command = Command::new("xdg-open");
+    let mut command = ffmpeg_runtime::host_command("xdg-open");
     #[cfg(target_os = "windows")]
     let mut command = Command::new("explorer.exe");
     #[cfg(target_os = "macos")]
