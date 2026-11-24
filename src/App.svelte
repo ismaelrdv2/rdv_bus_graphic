@@ -847,6 +847,46 @@
     {/if}
 
     <main class="editor-main">
+      {#if productionMode==='wizard'}
+        <section class="wizard-desktop-bar" aria-label="Assistente de produção">
+          <div class="wizard-desktop-heading">
+            <strong>Passo {wizardIndex+1} de {WIZARD_STEPS.length}: {WIZARD_STEPS[wizardIndex].label}</strong>
+            <button class="button secondary-button" disabled={exportingVideo} on:click={()=>productionMode='manual'}>Modo manual</button>
+          </div>
+          <div class="wizard-desktop-controls">
+            {#if WIZARD_STEPS[wizardIndex].kind==='location'}
+              {#each project.elements.filter(el=>el.kind==='location') as place,i}
+                <button class="button secondary-button" class:active-wizard-item={selectedId===place.id}
+                  on:click={()=>selectedId=place.id}>Local {i+1}</button>
+              {/each}
+              <button class="button secondary-button" on:click={addWizardLocation}>+ Adicionar local</button>
+            {/if}
+            {#if WIZARD_STEPS[wizardIndex].kind==='credit'}
+              <button class="button secondary-button" class:active-wizard-item={wizardCreditType==='film'}
+                on:click={chooseFilmWizard}>Crédito de filmagem</button>
+              <button class="button secondary-button" class:active-wizard-item={wizardCreditType==='photo'}
+                on:click={choosePhotoWizard}>Crédito de fotos</button>
+            {/if}
+            {#if selected}
+              <label class="wizard-desktop-checkbox"><input type="checkbox" checked={selected.productionIncluded!==false}
+                on:change={event=>updateSelectedProductionIncluded(event.currentTarget.checked)}/>
+                Incluir {selected.title} no ZIP
+              </label>
+            {/if}
+          </div>
+          <div class="wizard-desktop-nav">
+            <button class="button secondary-button" disabled={wizardIndex===0||exportingVideo}
+              on:click={()=>goWizardStep(wizardIndex-1)}>‹ Voltar</button>
+            {#if wizardIndex<WIZARD_STEPS.length-1}
+              <button class="button primary-button" disabled={exportingVideo}
+                on:click={()=>goWizardStep(wizardIndex+1)}>Avançar ›</button>
+            {:else}
+              <button class="button primary-button" disabled={exportingVideo}
+                on:click={()=>openVideoDialog()}>✓ Produzir ZIP</button>
+            {/if}
+          </div>
+        </section>
+      {/if}
       <div class="canvas-toolbar">
         <div class="canvas-title"><Icon name="layout" size={17}/><strong>Editor de cena</strong><span class="breadcrumb-separator">/</span><span>Composição principal</span></div>
         <div class="canvas-toolbar-right"><button class="canvas-chip preview-toggle" class:preview-toggle-active={previewBackground === 'black'} aria-pressed={previewBackground === 'black'} title="Alternar fundo preto e transparência quadriculada" on:click={() => previewBackground = previewBackground === 'black' ? 'checker' : 'black'}><Icon name="layers" size={13}/> {previewBackground === 'black' ? 'Fundo preto' : 'Quadriculado'}</button><span class="canvas-chip"><span class="chip-dot"></span>Pré-visualização SVG</span><span class="canvas-chip resolution-chip">{project.canvas.width} × {project.canvas.height}</span></div>
@@ -884,7 +924,16 @@
     <div class="help-dialog production-dialog" role="dialog" aria-modal="true" aria-label="Produção de vídeo, SVG e projeto">
       <div class="dialog-heading"><div><Icon name="film"/><strong>Produção · RDV Bus Studio</strong></div><button class="icon-button" aria-label="Fechar" disabled={exportingVideo} on:click={() => showExportVideo = false}>×</button></div>
       <div class="dialog-content video-export-content">
-        <p>Escolha o formato de saída e a composição. Os elementos continuam sendo personalizados nas suas próprias categorias.</p>
+        <p>Escolha entre produzir a categoria selecionada ou seguir o assistente para vários vídeos em um ZIP.</p>
+        <div class="production-mode-desktop" role="group" aria-label="Modo de produção">
+          <button type="button" class:chosen={productionMode==='manual'} disabled={exportingVideo}
+            on:click={()=>productionMode='manual'}>Manual · categoria selecionada</button>
+          <button type="button" class:chosen={productionMode==='wizard'} disabled={exportingVideo}
+            on:click={startWizard}>Passo a passo · ZIP</button>
+        </div>
+        {#if productionMode==='wizard'}
+          <p class="export-description">Ordem: ficha técnica, linha, data, locais, créditos de filmagem/fotos, motorista e texto livre. As caixas desmarcadas não entram no ZIP; cada elemento tem duração própria.</p>
+        {/if}
         <div class="production-project-controls">
           <label for="production-orientation">Proporção e resolução</label>
           <select id="production-orientation" value={project.canvas.width===1080?'portrait':'landscape'} disabled={exportingVideo}
@@ -897,9 +946,10 @@
             on:change={event=>changeCanvas('fps',Number(event.currentTarget.value))}>
             <option value="30">30 FPS</option><option value="60">60 FPS</option>
           </select>
-          <label for="production-duration">Duração (segundos)</label>
-          <input id="production-duration" type="number" min="1" max="30" step="0.1" value={project.canvas.duration}
-            disabled={exportingVideo} on:change={event=>changeCanvas('duration',Number(event.currentTarget.value))}/>
+          <label for="production-duration">Duração da categoria selecionada (segundos)</label>
+          <input id="production-duration" type="number" min="1" max="60" step="0.1"
+            value={selected?.productionDuration??project.canvas.duration}
+            disabled={exportingVideo} on:change={event=>selected?updateSelectedProductionDuration(Number(event.currentTarget.value)):changeCanvas('duration',Number(event.currentTarget.value))}/>
         </div>
         <div class="production-quick-actions">
           <button type="button" class="button secondary-button" disabled={exportingVideo} on:click={() => void exportSvg()}><Icon name="download" size={16}/> Exportar quadro SVG</button>
@@ -952,7 +1002,7 @@
         {#if exportingVideo}
           <label for="export-progress">Gerando vídeo: {Math.round(exportProgress * 100)}%</label>
           <progress id="export-progress" value={exportProgress} max="1" style="width:100%"></progress>
-          <p class="export-description">{selectedVideoName}</p>
+          <p class="export-description">{selectedVideoName} {batchCount>0?`· ${batchCurrent+1}/${batchCount}: ${batchLabel}`:''}</p>
         {/if}
       </div>
       <div class="dialog-actions">
@@ -960,7 +1010,8 @@
           <button class="button secondary-button" on:click={() => cancelRequested = true} disabled={cancelRequested}>Cancelar geração</button>
         {:else}
           <button class="button ghost-button" on:click={() => showExportVideo = false}>Voltar à edição</button>
-          <button class="button primary-button" on:click={() => void exportVideo()} disabled={!isDesktop()}><Icon name="film" size={16}/> Gerar vídeo</button>
+          <button class="button primary-button" on:click={() => void (productionMode==='wizard'?produceWizardZip():exportVideo())}
+            disabled={!isDesktop()}><Icon name="film" size={16}/> {productionMode==='wizard'?'Produzir ZIP':'Gerar vídeo da categoria'}</button>
         {/if}
       </div>
     </div>
