@@ -64,7 +64,11 @@
 
   $: selected = project.elements.find(element => element.id === selectedId) || null;
   $: autosaveOk = writeAutosave(project);
-  $: totalFrames = Math.round((selected?.productionDuration??project.canvas.duration) * project.canvas.fps);
+  $: activeDuration=selected?.productionDuration??project.canvas.duration;
+  $: totalFrames = Math.round(activeDuration * project.canvas.fps);
+  $: timelineProject={...project,canvas:{...project.canvas,duration:activeDuration}};
+  $: editorPreviewProject=productionMode==='wizard'&&selected?
+    {...timelineProject,elements:[{...selected,visible:true}]}:timelineProject;
   const WIZARD_STEPS:{kind:ElementKind;label:string}[]=[
     {kind:'technical',label:'Ficha técnica'},{kind:'route',label:'Linha'},
     {kind:'date',label:'Data'},{kind:'location',label:'Local'},
@@ -335,7 +339,8 @@
     ];
     if (!needed.length) return;
     const seconds = Math.ceil(Math.max(...needed) * 10) / 10;
-    applyChange({ ...project, canvas: { ...project.canvas, duration: Math.min(30, seconds) } });
+    if(selectedId)changeElement(selectedId,element=>({...element,productionDuration:Math.min(60,seconds)}));
+    else applyChange({ ...project, canvas: { ...project.canvas, duration: Math.min(30, seconds) } });
     notify(seconds > 30 ? `Rolagem requer aproximadamente ${seconds.toFixed(1)} s. Esta alpha limita a duração a 30 s.`
       : `Duração ajustada para ${seconds.toFixed(1)} s, incluindo entrada e saída.`, seconds > 30 ? 'info' : 'success');
   }
@@ -571,7 +576,7 @@
     if (!playing) return;
     const delta = lastFrame === null ? 0 : Math.min((timestamp - lastFrame) / 1000, 0.1);
     lastFrame = timestamp;
-    time = time + delta >= project.canvas.duration ? 0 : time + delta;
+    time = time + delta >= activeDuration ? 0 : time + delta;
     frameHandle = requestAnimationFrame(animationFrame);
   }
 
@@ -584,14 +589,14 @@
 
   function togglePlayback(): void {
     if (playing) { stopPlayback(); return; }
-    if (time >= project.canvas.duration) time = 0;
+    if (time >= activeDuration) time = 0;
     playing = true;
     lastFrame = null;
     frameHandle = requestAnimationFrame(animationFrame);
   }
 
   function seek(value: number): void {
-    time = clamp(value, 0, project.canvas.duration);
+    time = clamp(value, 0, activeDuration);
     lastFrame = null;
   }
 
@@ -895,7 +900,7 @@
         <div class="canvas-stack">
           <div class="canvas-top-caption"><span><Icon name="maximize" size={15}/> Monitor de pré-visualização</span><span>{project.canvas.width === 1080 ? '9:16' : '16:9'} · SVG com transparência</span></div>
           <div class="canvas-bezel">
-            <div class="stage-checker" class:stage-black={previewBackground === 'black'} class:portrait-stage={project.canvas.width === 1080} style={`aspect-ratio: ${project.canvas.width} / ${project.canvas.height}`}><ScenePreview {project} {selectedId} {time} onSelect={(id) => selectedId = id} onMove={moveElement} onResize={resizeElement}
+            <div class="stage-checker" class:stage-black={previewBackground === 'black'} class:portrait-stage={project.canvas.width === 1080} style={`aspect-ratio: ${project.canvas.width} / ${project.canvas.height}`}><ScenePreview project={editorPreviewProject} {selectedId} {time} onSelect={(id) => selectedId = id} onMove={moveElement} onResize={resizeElement}
               onBeginEdit={stopPlayback} onEditField={editTextDirect} onEditCaption={editCaptionDirect}
               onTextFormat={editTextFormatting} onParagraphFormat={editParagraphDirect} {systemFonts}/>
 </div>
@@ -903,7 +908,7 @@
           <div class="canvas-bottom-bar"><span><span class="live-indicator"></span> Cena editável</span><span>Clique no texto para editar · arraste o painel para mover · alças para redimensionar</span><span>{project.elements.filter(e => e.visible).length} visíveis de {project.elements.length}</span></div>
         </div>
       </div>
-      <div class="timeline-panel"><Timeline {project} {selectedId} {time} {playing} onTogglePlay={togglePlayback} onStop={stopAndRewind} onSeek={seek} onSelect={(id) => selectedId = id}/></div>
+      <div class="timeline-panel"><Timeline project={timelineProject} {selectedId} {time} {playing} onTogglePlay={togglePlayback} onStop={stopAndRewind} onSeek={seek} onSelect={(id) => selectedId = id}/></div>
     </main>
 
     <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onShineToggle={updateSelectedShine} onDiagonalGlowToggle={updateSelectedDiagonalGlow} onDiagonalGlowIntensity={updateSelectedDiagonalIntensity} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onFooter={updateSelectedFooter} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onProductionDuration={updateSelectedProductionDuration} onProductionIncluded={updateSelectedProductionIncluded} onPhotoCredit={updateSelectedPhotoCredit} onTechnicalLayout={updateTechnicalLayout}
