@@ -461,7 +461,7 @@
       const bottom=isBottomBar(element,project.canvas.width,project.canvas.height);
       const bar=isBar(element);
       const available=Math.max(0,project.canvas.width-element.style.width*element.style.scaleX);
-      const inset=bar?0:Math.min(56,available/2);
+      const inset=bar?0:Math.min(56,available/4);
       return {
         ...element,technicalSide:side,
         style:{...element.style,
