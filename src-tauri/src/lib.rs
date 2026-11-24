@@ -166,6 +166,16 @@ fn video_cancel(state: State<'_, VideoState>, job_id: String) -> Result<(), Stri
 }
 
 mod kdenlive;
+mod production_zip;
+
+#[tauri::command]
+fn production_stage_create() -> Result<String,String>{production_zip::stage_create()}
+#[tauri::command]
+fn production_stage_cleanup(stage:String) -> Result<(),String>{production_zip::stage_cleanup(stage)}
+#[tauri::command]
+fn production_bundle_zip(stage:String,output:String,files:Vec<String>)->Result<String,String>{
+    production_zip::archive(stage,output,files)
+}
 
 #[tauri::command]
 fn kdenlive_prepare_clip(
