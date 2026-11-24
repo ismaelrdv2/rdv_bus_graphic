@@ -6,8 +6,9 @@ const rust=read('src-tauri/src/kdenlive.rs');
 const native=read('src-tauri/src/lib.rs');
 const bridge=read('src/lib/kdenlive.ts');
 const pkg=JSON.parse(read('package.json'));
-assert.equal(pkg.version,'0.1.0-alpha.9.3.12');
-assert(app.includes('openVideoDialog(true)'),'Botao de Kdenlive nao encontrado');
+assert.equal(pkg.version,'0.1.0-alpha.9.3.13');
+assert(app.includes("Produção · RDV Bus Studio"),'Painel Produção ausente');
+assert(app.includes('videoFormat=KDENLIVE_OVERLAY_PRESET.format'),'Preset Kdenlive ausente');
 assert(app.includes('KDENLIVE_OVERLAY_PRESET'));
 assert(app.includes('prepareForKdenlive'));
 assert(app.includes('await finishVideo(jobId);'));
@@ -24,7 +25,7 @@ for(const fragment of [
  '<mlt LC_NUMERIC=', '<profile description=', '<chain id=', '<playlist id=',
  'frame_rate_num=', 'display_aspect_num=', 'let last = frames - 1',
  'escape_mlt_xml(', 'avformat', 'video.is_absolute()', 'video.is_file()',
- 'OpenOptions::new()', 'kdenlive-LEIA-ME.txt', 'Chroma Key: Basic',
+ 'OpenOptions::new()', 'rdv-kdenlive{suffix}-LEIA-ME.txt', 'Chroma Key: Basic',
  'fn escapes_xml_and_preserves_exact_frame_count()', 'fn portrait_profile()'
 ]) assert(rust.includes(fragment),'MLT Kdenlive incompleto: '+fragment);
 assert(!rust.includes('Command::new'),'Nenhum shell deve ser chamado por arquivo MLT.');

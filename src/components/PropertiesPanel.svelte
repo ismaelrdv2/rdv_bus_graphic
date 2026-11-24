@@ -234,6 +234,14 @@
           </select>
         </label>
       {/if}
+      {#if !bottomBar && ((selected.kind==='technical' && (selected.technicalLayout || 'side')==='side') ||
+        (selected.kind==='freeText' && ['technicalBar','legacyPresentationBar'].includes(selected.freeTextStyle || '')))}
+        <label class="field"><span>Posição da {selected.kind==='technical'?'ficha técnica':'barra de texto livre'}</span>
+          <select value={selected.technicalSide || 'left'} on:change={(event)=>onTechnicalSide(event.currentTarget.value as 'left' | 'right')}>
+            <option value="left">À esquerda</option><option value="right">À direita</option>
+          </select>
+        </label>
+      {/if}
       {#if selected.kind==='freeText' && studioOnlyStyle(selected.freeTextStyle)}
         <p class="inspector-hint">Este formato utiliza exclusivamente o padrão visual Studio.</p>
       {:else}
@@ -431,9 +439,6 @@
 
       <label class="field"><span class="range-head">Opacidade <b>{selected.style.opacity}%</b></span><input type="range" min="0" max="100" step="1" value={selected.style.opacity} on:input={(event) => onStyle('opacity', Number(event.currentTarget.value))}/></label>
       {#if bottomBar}<p class="inspector-hint">Em 9:16, a faixa técnica se ajusta automaticamente à parte inferior. Use escala vertical ou a alça superior para ajustar sua altura.</p>{/if}
-      {#if !bottomBar && ((selected.kind === 'technical' && !['fullscreen','legacyFullscreen'].includes(selected.technicalLayout || '')) || (selected.kind === 'freeText' && selected.freeTextStyle === 'technicalBar'))}
-        <label class="field"><span>Lado da faixa técnica</span><select value={selected.technicalSide || 'left'} on:change={(event) => onTechnicalSide(event.currentTarget.value as 'left' | 'right')}><option value="left">Esquerdo — referência B 692</option><option value="right">Direito — referência 1171</option></select></label>
-      {/if}
       <div class="two-fields">
         <label class="field"><span>Posição X</span><input disabled={isFullscreen || bottomBar} type="number" min="0" max={project.canvas.width} value={selected.style.x} on:change={(event) => onStyle('x', Number(event.currentTarget.value))}/></label>
         <label class="field"><span>Posição Y</span><input disabled={isFullscreen || bottomBar} type="number" min="0" max={project.canvas.height} value={selected.style.y} on:change={(event) => onStyle('y', Number(event.currentTarget.value))}/></label>
@@ -489,24 +494,18 @@
       <PalettePanel palette={project.palette || DEFAULT_PALETTE} onPreset={onPalettePreset} onColor={onPaletteColor} onAllText={onAllProjectText} />
     {/if}
   {:else}
-    <div class="inspector-tabs" role="tablist" aria-label="Configurações do projeto">
-      <button type="button" role="tab" class:inspector-tab-active={activeTab === 'project'} aria-selected={activeTab === 'project'} on:click={() => activeTab = 'project'}>Vídeo</button>
-      <button type="button" role="tab" class:inspector-tab-active={activeTab === 'palette'} aria-selected={activeTab === 'palette'} on:click={() => activeTab = 'palette'}>Paleta</button>
+    <div class="selected-heading"><div class="selected-icon"><Icon name="layers" size={23}/></div>
+      <div><strong>Projeto</strong><small>Personalização geral</small></div>
     </div>
-    {#if activeTab === 'palette'}
+    <section class="property-section">
+      <h3>Paleta do projeto</h3>
       <PalettePanel palette={project.palette || DEFAULT_PALETTE} onPreset={onPalettePreset} onColor={onPaletteColor} onAllText={onAllProjectText} />
-    {:else}
-    <div class="selected-heading"><div class="selected-icon"><Icon name="layout" size={23}/></div><div><strong>Projeto</strong><small>Configurações gerais</small></div></div>
-    <section class="property-section"><h3>Vídeo</h3>
-      <label class="field"><span>Formato da composição</span><select value={project.canvas.width === 1080 ? 'portrait' : 'landscape'} on:change={(event) => onCanvas('orientation', event.currentTarget.value)}><option value="landscape">Horizontal · 1920 × 1080</option><option value="portrait">Vertical · 1080 × 1920</option></select></label>
-      <label class="field"><span>Taxa de quadros</span><select value={project.canvas.fps} on:change={(event) => onCanvas('fps', Number(event.currentTarget.value))}><option value="60">60 FPS</option><option value="30">30 FPS</option></select></label>
-      <label class="field"><span>Duração (segundos)</span><input type="number" min="1" max="30" step="0.1" value={project.canvas.duration} on:change={(event) => onCanvas('duration', Number(event.currentTarget.value))}/></label>
     </section>
-      <section class="property-section"><h3>Cartelas compactas</h3>
-        <p class="inspector-hint">Padronize localização, data, linha, motorista, crédito e etiqueta livre com as dimensões da cartela de crédito (550 × 102 px). Não altera os modos especiais.</p>
-        <button type="button" class="button secondary-button fill" on:click={onStandardizeAll}>Padronizar cartelas existentes</button>
-      </section>
-      <section class="property-section"><h3>Sobre esta versão</h3><p class="info-copy">Editor vetorial SVG com paletas personalizáveis. Exportação de vídeo pelo Tauri.</p></section>
-    {/if}
+    <section class="property-section">
+      <h3>Cartelas compactas</h3>
+      <p class="inspector-hint">Padronize etiquetas, créditos, localização, data, linha e motorista com as dimensões da cartela de crédito.</p>
+      <button type="button" class="button secondary-button fill" on:click={onStandardizeAll}>Padronizar cartelas existentes</button>
+    </section>
+    <p class="inspector-hint">Proporção, FPS, duração e formatos de exportação estão em Produção, no rodapé da barra lateral.</p>
   {/if}
 </div>

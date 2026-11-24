@@ -442,7 +442,11 @@
     changeElement(selectedId, element => ({
       ...element,
       technicalSide: side,
-      style: { ...element.style, x: isBottomBar(element,project.canvas.width,project.canvas.height) ? 0 : side === 'left' ? 0 : Math.max(0, project.canvas.width - element.style.width * element.style.scaleX), y: isBottomBar(element,project.canvas.width,project.canvas.height) ? project.canvas.height-PORTRAIT_BAR_HEIGHT*element.style.scaleY : 0 },
+      style: { ...element.style,
+        x: isBottomBar(element,project.canvas.width,project.canvas.height) ? 0 : side === 'left' ? 0 : Math.max(0, project.canvas.width - element.style.width * element.style.scaleX),
+        y: isBottomBar(element,project.canvas.width,project.canvas.height) ? project.canvas.height-PORTRAIT_BAR_HEIGHT*element.style.scaleY
+          : element.kind==='freeText' && element.freeTextStyle==='legacyPresentationBar' ? element.style.y : 0
+      },
     }));
   }
 
@@ -672,7 +676,7 @@
     else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'o') { event.preventDefault(); void openCurrentProject(); }
     else if (!editing && (event.key === 'Delete' || event.key === 'Backspace') && selectedId) { event.preventDefault(); deleteSelected(); }
     else if (!editing && event.code === 'Space' && !event.repeat) { event.preventDefault(); togglePlayback(); }
-    else if (event.key === 'Escape') { showHelp = false; showSettings = false; }
+    else if (event.key === 'Escape') { showHelp = false; showSettings = false; if(!exportingVideo)showExportVideo = false; }
   }
 
   onDestroy(() => {
@@ -697,10 +701,7 @@
       <button class="button ghost-button" on:click={resetProject} title="Criar novo projeto"><Icon name="plus" size={16}/><span>Novo</span></button>
       <button class="button ghost-button" on:click={() => void openCurrentProject()} title="Abrir projeto (Ctrl+O)"><Icon name="folder" size={16}/><span>Abrir</span></button>
       <button class="button secondary-button" on:click={() => void saveCurrentProject()} title="Salvar projeto (Ctrl+S)"><Icon name="save" size={16}/><span>Salvar</span></button>
-      {#if isDesktop()}<button class="button ghost-button" on:click={() => void openOutputFolder()} title={outputDirectory ? `Abrir pasta de saída: ${outputDirectory}` : 'Abrir pasta de saída'}><Icon name="folder" size={16}/><span>Abrir pasta de saída</span></button>{/if}
-      <button class="button secondary-button" on:click={() => void exportSvg()} title="Exportar um quadro vetorial SVG"><Icon name="download" size={17}/><span>SVG</span></button>
-      <button class="button primary-button" on:click={() => openVideoDialog()} title="Gerar vídeo animado com FFmpeg (desktop)"><Icon name="film" size={17}/><span>Exportar vídeo</span></button>
-      <button class="button secondary-button" on:click={() => openVideoDialog(true)} title="Preparar vídeo MOV transparente e clipe MLT para o Kdenlive"><Icon name="film" size={17}/><span>Kdenlive</span></button>
+      <button class="button primary-button" on:click={() => openVideoDialog()} title="Abrir Produção: formatos, renderização, SVG e Kdenlive"><Icon name="film" size={17}/><span>Produção</span></button>
     </div>
   </header>
 
@@ -709,6 +710,7 @@
       <button class:rail-active={showLibrary} class="rail-button" aria-label="Biblioteca de elementos" title="Biblioteca" on:click={() => showLibrary = !showLibrary}><Icon name="grid" size={21}/><small>Elementos</small></button>
       <button class="rail-button" aria-label="Propriedades do projeto" title="Projeto" on:click={() => { selectedId = null; showLibrary = true; }}><Icon name="layers" size={21}/><small>Projeto</small></button>
       <div class="rail-spacer"></div>
+      <button class="rail-button production-rail-button" aria-label="Abrir Produção" title="Produção de arquivos" on:click={() => openVideoDialog()}><Icon name="film" size={22}/><small>Produção</small></button>
       <button class="rail-button" aria-label="Ajuda" on:click={() => showHelp = true} title="Ajuda"><Icon name="info" size={21}/><small>Ajuda</small></button>
       <button class="rail-button" aria-label="Configurações" on:click={() => { selectedId = null; showSettings = true; }} title="Configurações"><Icon name="settings" size={21}/><small>Config.</small></button>
     </nav>
@@ -752,10 +754,36 @@
 
 {#if showExportVideo}
   <div class="dialog-backdrop" role="presentation">
-    <div class="help-dialog" role="dialog" aria-modal="true" aria-label="Exportar vídeo animado">
-      <div class="dialog-heading"><div><Icon name="film"/><strong>Exportar vídeo: alfa ou Chroma Key</strong></div><button class="icon-button" aria-label="Fechar" disabled={exportingVideo} on:click={() => showExportVideo = false}>×</button></div>
+    <div class="help-dialog production-dialog" role="dialog" aria-modal="true" aria-label="Produção de vídeo, SVG e projeto">
+      <div class="dialog-heading"><div><Icon name="film"/><strong>Produção · RDV Bus Studio</strong></div><button class="icon-button" aria-label="Fechar" disabled={exportingVideo} on:click={() => showExportVideo = false}>×</button></div>
       <div class="dialog-content video-export-content">
-        <p>Gera {totalFrames} quadros a {project.canvas.fps} FPS em {project.canvas.width} × {project.canvas.height}. Para vídeo com canal alfa escolha MOV, MKV ou WebM; para MP4 use Chroma Key com fundo verde/azul.</p>
+        <p>Escolha o formato de saída e a composição. Os elementos continuam sendo personalizados nas suas próprias categorias.</p>
+        <div class="production-project-controls">
+          <label for="production-orientation">Proporção e resolução</label>
+          <select id="production-orientation" value={project.canvas.width===1080?'portrait':'landscape'} disabled={exportingVideo}
+            on:change={event=>changeCanvas('orientation',event.currentTarget.value)}>
+            <option value="landscape">16:9 · 1920 × 1080</option>
+            <option value="portrait">9:16 · 1080 × 1920</option>
+          </select>
+          <label for="production-fps">Quadros por segundo</label>
+          <select id="production-fps" value={project.canvas.fps} disabled={exportingVideo}
+            on:change={event=>changeCanvas('fps',Number(event.currentTarget.value))}>
+            <option value="30">30 FPS</option><option value="60">60 FPS</option>
+          </select>
+          <label for="production-duration">Duração (segundos)</label>
+          <input id="production-duration" type="number" min="1" max="30" step="0.1" value={project.canvas.duration}
+            disabled={exportingVideo} on:change={event=>changeCanvas('duration',Number(event.currentTarget.value))}/>
+        </div>
+        <div class="production-quick-actions">
+          <button type="button" class="button secondary-button" disabled={exportingVideo} on:click={() => void exportSvg()}><Icon name="download" size={16}/> Exportar quadro SVG</button>
+          <button type="button" class="button secondary-button" disabled={exportingVideo} on:click={() => void saveCurrentProject()}><Icon name="save" size={16}/> Salvar projeto JSON</button>
+          <button type="button" class="button secondary-button" disabled={exportingVideo}
+            on:click={() => { videoFormat=KDENLIVE_OVERLAY_PRESET.format; rasterQuality=KDENLIVE_OVERLAY_PRESET.quality;
+              exportBackground=KDENLIVE_OVERLAY_PRESET.background;prepareForKdenlive=true; }}>
+            <Icon name="film" size={16}/> Preset Kdenlive · MOV alfa
+          </button>
+        </div>
+        <p class="export-description">Saída: {totalFrames} quadros, {project.canvas.fps} FPS e {project.canvas.width} × {project.canvas.height}. Para MP4, selecione Chroma Key verde/azul; para transparência, MOV/MKV/WebM.</p>
         {#if isDesktop()}<p class="export-description">Pasta de saída: <code>{outputDirectory || '~/RDV Bus Studio'}</code> <button class="button ghost-button" on:click={() => void openOutputFolder()} disabled={exportingVideo}><Icon name="folder" size={15}/> Abrir pasta</button></p>{/if}
         <label for="video-format">Formato de vídeo</label>
         <select id="video-format" bind:value={videoFormat} disabled={exportingVideo}
@@ -804,7 +832,7 @@
         {#if exportingVideo}
           <button class="button secondary-button" on:click={() => cancelRequested = true} disabled={cancelRequested}>Cancelar geração</button>
         {:else}
-          <button class="button ghost-button" on:click={() => showExportVideo = false}>Voltar</button>
+          <button class="button ghost-button" on:click={() => showExportVideo = false}>Voltar à edição</button>
           <button class="button primary-button" on:click={() => void exportVideo()} disabled={!isDesktop()}><Icon name="film" size={16}/> Gerar vídeo</button>
         {/if}
       </div>
