@@ -129,3 +129,22 @@ select:disabled { opacity: .62; }
 .production-dialog .dialog-actions{padding:14px 20px;border-top:1px solid #533e66;display:flex;justify-content:flex-end;gap:10px}
 .production-dialog .video-export-content select{max-width:100%;min-height:39px}
 @media(max-height:730px){.production-dialog{max-height:94vh}.production-dialog .dialog-content{padding:12px 20px}}
+
+/* Alpha 9.3.14 — controles próprios por elemento e produção passo a passo. */
+.production-category-settings{display:flex;flex-direction:column;gap:10px;background:#2a1a35;border:1px solid #67487a;border-radius:10px;padding:12px}
+.production-category-settings input[type="number"]{width:100%}
+.production-enabled{display:flex;align-items:center;gap:9px;color:#efd8a2;font-size:11px;line-height:1.4;cursor:pointer}
+.production-enabled input{accent-color:#e8c273;width:18px;height:18px;flex:0 0 auto}
+.production-mode-desktop{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.production-mode-desktop button{padding:10px;min-height:42px;color:#f7e7f4;background:#392643;border:1px solid #735580;border-radius:10px;font-weight:700}
+.production-mode-desktop button.chosen{background:#63466e;border-color:#e5bf6d;color:#f9e2a8}
+.wizard-desktop-bar{flex:none;display:flex;flex-direction:column;gap:9px;padding:11px 16px;background:#2c193a;border-bottom:1px solid #7c587d}
+.wizard-desktop-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#f0cd80}
+.wizard-desktop-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wizard-desktop-controls button{min-height:33px;height:auto;padding:6px 10px}
+.wizard-desktop-controls .active-wizard-item{border-color:#edcb79;background:#594267}
+.wizard-desktop-checkbox{margin-left:auto;display:inline-flex;gap:7px;align-items:center;font-size:11px;color:#f3e3f4}
+.wizard-desktop-checkbox input{accent-color:#e8c16b}
+.wizard-desktop-nav{display:flex;gap:9px;justify-content:flex-end}
+.wizard-desktop-nav .button{min-height:35px}
+@media(max-width:1140px){.wizard-desktop-bar{padding:8px}.wizard-desktop-checkbox{margin-left:0}}
