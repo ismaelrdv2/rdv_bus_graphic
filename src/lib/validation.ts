@@ -97,7 +97,7 @@ export function validateProject(raw: unknown): RDVProject {
       ...(typeof item.footerImageData === 'string' && item.footerImageData.length < 5_600_000
         && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(item.footerImageData)
         ? {footerImageData:item.footerImageData} : {}),
-      ...((technical || freeText) ? { technicalSide } : {}),
+      technicalSide,
       ...(technical ? {technicalLayout: item.technicalLayout === 'legacyFullscreen' ? 'legacyFullscreen' as const : item.technicalLayout === 'fullscreen' ? 'fullscreen' as const : 'side' as const} : {}),
       ...(freeText ? { freeTextStyle, freeTextCaptions: captions,
         scrollBarSize: ['small','medium','large'].includes(String(item.scrollBarSize)) ? item.scrollBarSize as HudElement['scrollBarSize'] : item.freeTextStyle==='legacyFullBar'?'large' as const:item.freeTextStyle==='legacyHalfBar'?'medium' as const:'small' as const,
