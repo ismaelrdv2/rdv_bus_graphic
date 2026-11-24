@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
-  import { isTauri } from '@tauri-apps/api/core';
+  import { invoke, isTauri } from '@tauri-apps/api/core';
   import { save as nativeSave } from '@tauri-apps/plugin-dialog';
   import { writeTextFile } from '@tauri-apps/plugin-fs';
   import { getOutputDirectory, joinOutputPath, openOutputDirectory, rememberOutputFile } from './lib/output';
@@ -41,6 +41,11 @@
   let previewBackground: 'black' | 'checker' = 'black';
   let autosaveOk = true;
   let showExportVideo = false;
+  let productionMode:'manual'|'wizard'='manual';
+  let wizardIndex=0;
+  let wizardCreditType:'film'|'photo'='film';
+  let renderingProject:RDVProject=project;
+  let batchCount=0,batchCurrent=0,batchLabel='';
   let videoFormat: VideoFormat = 'mov-qtrle';
   let rasterQuality: RasterQuality = 2;
   let exportBackground: ExportBackground = 'transparent';
@@ -59,7 +64,13 @@
 
   $: selected = project.elements.find(element => element.id === selectedId) || null;
   $: autosaveOk = writeAutosave(project);
-  $: totalFrames = Math.round(project.canvas.duration * project.canvas.fps);
+  $: totalFrames = Math.round((selected?.productionDuration??project.canvas.duration) * project.canvas.fps);
+  const WIZARD_STEPS:{kind:ElementKind;label:string}[]=[
+    {kind:'technical',label:'Ficha técnica'},{kind:'route',label:'Linha'},
+    {kind:'date',label:'Data'},{kind:'location',label:'Local'},
+    {kind:'credit',label:'Crédito da filmagem / fotos'},
+    {kind:'driver',label:'Motorista'},{kind:'freeText',label:'Texto livre'}
+  ];
 
   function notify(text: string, kind: UiStatus['kind'] = 'info'): void {
     status = { kind, text };
@@ -450,6 +461,83 @@
     }));
   }
 
+  function updateSelectedProductionDuration(seconds:number):void {
+    if(!selectedId||exportingVideo)return;
+    changeElement(selectedId,element=>({...element,
+      productionDuration:Math.max(1,Math.min(60,Number.isFinite(seconds)?seconds:5.3))}));
+  }
+  function updateSelectedProductionIncluded(value:boolean):void {
+    if(!selectedId||exportingVideo)return;
+    changeElement(selectedId,element=>({...element,productionIncluded:value}));
+  }
+  function updateSelectedPhotoCredit(photo:boolean):void {
+    if(!selectedId||exportingVideo)return;
+    changeElement(selectedId,element=>element.kind!=='credit'?element:{
+      ...element,productionRole:photo?'photoCredit':undefined,
+      fields:{...element.fields,heading:photo?'CRÉDITO FOTOGRÁFICO':'CRÉDITO DE FILMAGEM'}
+    });
+  }
+  function wizardElementKind(kind:ElementKind,photo=false):HudElement|undefined {
+    return project.elements.find(el=>el.kind===kind&&
+      (kind!=='credit'||(photo?el.productionRole==='photoCredit':el.productionRole!=='photoCredit')));
+  }
+  function chooseWizardElement(kind:ElementKind,photo=false):void {
+    let target=wizardElementKind(kind,photo);
+    if(!target){
+      if(project.elements.length>=MAX_ELEMENTS){notify('Limite de elementos atingido.','error');return;}
+      target=makeElement(kind);
+      if(photo)target={...target,productionRole:'photoCredit',
+        fields:{...target.fields,heading:'CRÉDITO FOTOGRÁFICO',line1:'Fotografia',line2:'RDV Bus'}};
+      applyChange({...project,elements:[...project.elements,target]});
+    }
+    selectedId=target.id;stopPlayback();
+  }
+  function goWizardStep(index:number):void {
+    if(exportingVideo)return;
+    wizardIndex=Math.max(0,Math.min(WIZARD_STEPS.length-1,index));
+    wizardCreditType='film';
+    chooseWizardElement(WIZARD_STEPS[wizardIndex].kind);
+  }
+  function startWizard():void {
+    if(exportingVideo)return;
+    productionMode='wizard';showExportVideo=false;
+    goWizardStep(0);
+  }
+  function addWizardLocation():void {
+    if(exportingVideo||project.elements.length>=MAX_ELEMENTS)return;
+    addElement('location');
+  }
+  function choosePhotoWizard():void {
+    wizardCreditType='photo';chooseWizardElement('credit',true);
+  }
+  function chooseFilmWizard():void {
+    wizardCreditType='film';chooseWizardElement('credit',false);
+  }
+  function snapshotForElement(element:HudElement):RDVProject {
+    const duration=Math.max(1,Math.min(60,element.productionDuration??project.canvas.duration));
+    return {...project,canvas:{...project.canvas,duration},
+      elements:[{...element,visible:true}]};
+  }
+  const batchKeys:{key:string;kind:ElementKind;photo?:boolean}[]=[
+    {key:'Ficha_Tecnica',kind:'technical'},{key:'Linha',kind:'route'},
+    {key:'Data',kind:'date'},{key:'Local',kind:'location'},
+    {key:'Credito_Filmagem',kind:'credit'},
+    {key:'Credito_Fotografico',kind:'credit',photo:true},
+    {key:'Motorista',kind:'driver'},{key:'Texto_Livre',kind:'freeText'}
+  ];
+  function collectWizardElements():{name:string;element:HudElement}[] {
+    const result:{name:string;element:HudElement}[]=[];
+    for(const category of batchKeys){
+      const rows=project.elements.filter(element=>element.kind===category.kind
+        && element.productionIncluded!==false
+        && (category.kind!=='credit'||Boolean(element.productionRole==='photoCredit')===Boolean(category.photo)));
+      for(const [j,element] of rows.entries()){
+        const safe=category.kind==='location'?'Local_'+(j+1):category.key+(j?'_'+(j+1):'');
+        result.push({name:safe,element});
+      }
+    }
+    return result;
+  }
   function changeCanvas(key: 'fps' | 'duration' | 'orientation', value: number | string): void {
     if (key === 'orientation') {
       const portrait = value === 'portrait';
@@ -739,7 +827,7 @@
       <div class="timeline-panel"><Timeline {project} {selectedId} {time} {playing} onTogglePlay={togglePlayback} onStop={stopAndRewind} onSeek={seek} onSelect={(id) => selectedId = id}/></div>
     </main>
 
-    <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onShineToggle={updateSelectedShine} onDiagonalGlowToggle={updateSelectedDiagonalGlow} onDiagonalGlowIntensity={updateSelectedDiagonalIntensity} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onFooter={updateSelectedFooter} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onTechnicalLayout={updateTechnicalLayout}
+    <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onShineToggle={updateSelectedShine} onDiagonalGlowToggle={updateSelectedDiagonalGlow} onDiagonalGlowIntensity={updateSelectedDiagonalIntensity} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onFooter={updateSelectedFooter} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onProductionDuration={updateSelectedProductionDuration} onProductionIncluded={updateSelectedProductionIncluded} onPhotoCredit={updateSelectedPhotoCredit} onTechnicalLayout={updateTechnicalLayout}
       {systemFonts} onFontFamily={updateSelectedFontFamily} onVisualPreset={updateSelectedVisualPreset} onFitScrollDuration={fitSelectedScrollDuration} onRichText={updateRichText} onFreeTextStyle={changeFreeTextStyle} onLabelBarSize={updateLabelBarSize} onAutoFitLabel={setLabelAutoFit} onFreeTextNote={updateSelectedFreeTextNote} onFreeTextIcon={updateSelectedFreeTextIcon} onFreeTextDisplay={updateSelectedFreeTextDisplay} onFreeTextCaption={updateFreeTextCaption} onResetScale={resetSelectedScale} onStandardizeSelected={standardizeSelectedCard} onStandardizeAll={standardizeAllCards} onSelectNone={() => selectedId = null}/></aside>
   </div>
 
