@@ -10,3 +10,9 @@ const view={width:1920,height:1080,corner:'bottom-right',scale:1,opacity:1,headi
 assert(m.frameSvg(demo,demo.points[20].t,view).includes('DEMONSTRAÇÃO'));assert(m.frameSvg(demo,demo.points[20].t,view).includes('#ff0000'));
 assert.equal(m.parseMap(JSON.stringify({type:'FeatureCollection',features:[{geometry:{type:'LineString',coordinates:[[0,0],[1,1]]}}]})).length,1);
 console.log('Telemetria: normalização, interpolação, lacunas, CSV, mapa e SVG OK.');
+
+assert.equal(m.coverage(demo,demo.points[0].t,60),1);
+assert.equal(m.bestAlignment(demo,demo.points[60].t,60).origin,'end');
+assert.equal(m.bestAlignment(demo,Date.UTC(2027,0,1),53).start,demo.points[0].t);
+assert.equal(m.coverage(demo,Date.UTC(2027,0,1),60),0);
+const ui=readFileSync(new URL('../src/components/Navigator.svelte',import.meta.url),'utf8');assert(ui.includes('Sincronizar automaticamente')&&ui.includes('--safe-area-inset-top')&&ui.includes('Gerar MP4 de telemetria'));

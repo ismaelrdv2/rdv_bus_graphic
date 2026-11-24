@@ -1,5 +1,10 @@
 # Histórico de alterações — RDV Bus Studio
 
+## [0.1.0-alpha.9.3.17] — Navigator: sincronização e interface
+
+- Assistente de sincronização GPS, cobertura, ajuste por ponto e abas.
+- Exportação MP4 com Chroma Key e MOV alfa, quadro a quadro.
+
 ## [0.1.0-alpha.9.3.16] — Paleta global de produção
 
 - Navigator experimental: importação de GPS e MP4, sincronização manual, mapa local, demonstração e exportação MOV alfa.

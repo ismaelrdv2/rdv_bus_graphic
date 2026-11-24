@@ -79,3 +79,18 @@ export function frameSvg(track:Track,t:number,v:View,roads:MapLine[]=[]):string{
  const analog=v.gauge==='analog'&&s?.speed!==undefined?'<path d="M274 38 A36 36 0 0 1 346 38" fill="none" stroke="'+S+'" stroke-width="3"/><path d="M310 38 l'+(29*Math.cos(Math.PI*(1-clamp(s.speed*3.6/100,0,1)))).toFixed(2)+' '+(-29*Math.sin(Math.PI*(1-clamp(s.speed*3.6/100,0,1)))).toFixed(2)+'" stroke="'+P+'" stroke-width="3"/>':'';
  return '<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><g transform="translate('+x+' '+y+') scale('+k+')" opacity="'+clamp(v.opacity,.15,1)+'" font-family="Arial,sans-serif"><rect width="'+w+'" height="'+h+'" rx="10" fill="'+B+'" stroke="'+S+'" stroke-width="2"/><rect x="0" y="10" width="4" height="'+(h-20)+'" fill="'+P+'"/><text x="15" y="34" fill="'+P+'" font-size="29" font-weight="bold">'+speed+'</text><text x="86" y="34" fill="'+S+'" font-size="13">km/h</text>'+analog+'<text x="385" y="24" fill="'+S+'" text-anchor="end" font-size="10">'+(track.demo?'DEMONSTRAÇÃO':'GPS')+'</text>'+map+'<text x="15" y="'+(h-13)+'" fill="#fff" font-size="13">'+esc(street.slice(0,47))+'</text></g></svg>';
 }
+
+/** Fração aproximada do vídeo com amostras válidas; não confunde coincidência temporal com validação de campo. */
+export function coverage(track:Track,start:number,duration:number):number{
+ if(!Number.isFinite(start)||!Number.isFinite(duration)||duration<=0)return 0;
+ const n=Math.min(600,Math.max(1,Math.ceil(duration)));
+ let valid=0;for(let i=0;i<n;i++)if(at(track,start+(i+.5)*duration*1000/n))valid++;
+ return valid/n;
+}
+export function bestAlignment(track:Track,creation:number|null,duration:number){
+ const first=track.points[0].t;
+ if(creation===null)return {start:first,origin:'start' as const,manual:true};
+ const a=coverage(track,creation,duration),b=coverage(track,creation-duration*1000,duration);
+ if(track.demo&&a===0&&b===0)return {start:first,origin:'start' as const,manual:true};
+ return b>a?{start:creation-duration*1000,origin:'end' as const,manual:false}:{start:creation,origin:'start' as const,manual:false};
+}

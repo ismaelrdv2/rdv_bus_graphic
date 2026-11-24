@@ -32,13 +32,13 @@
     if(isTauri()){const path=await nativeSave({defaultPath:joinOutputPath(await getOutputDirectory(),name)});if(path)await writeTextFile(path,content);}
     else{const u=URL.createObjectURL(new Blob([content],{type:mime}));const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),5000);}
   }
-  async function renderNavigator(width:number,height:number,duration:number,fps:30|60,render:(t:number)=>string,progress:(n:number,total:number)=>void,cancel:()=>boolean):Promise<string>{
+  async function renderNavigator(width:number,height:number,duration:number,fps:30|60,render:(t:number)=>string,progress:(n:number,total:number)=>void,cancel:()=>boolean,mode:'alpha'|'green'|'blue'|'black'):Promise<string>{
     if(!isTauri())throw Error('Disponível no Desktop nativo.');
-    const path=await nativeSave({defaultPath:joinOutputPath(await getOutputDirectory(),'RDV_Navigator.mov'),filters:[{name:'QuickTime Animation',extensions:['mov']}]});
+    const ext=mode==='alpha'?'mov':'mp4';const path=await nativeSave({defaultPath:joinOutputPath(await getOutputDirectory(),'RDV_Navigator.'+ext),filters:[{name:mode==='alpha'?'QuickTime Animation':'MP4 H.264',extensions:[ext]}]});
     if(!path)return 'Exportação cancelada.';
     const frames=Math.ceil(duration*fps);if(frames<1||frames>216000)throw Error('Duração de exportação inválida.');
     const canvas=document.createElement('canvas');let job:string|undefined;
-    try{job=await beginVideo(path,width,height,fps,frames,'mov-qtrle');for(let i=0;i<frames;i++){if(cancel())throw Error('Exportação cancelada.');const png=await svgToPngBase64(render(i/fps),width,height,canvas,1,'transparent');await pushVideoFrame(job,png);progress(i+1,frames);}if(cancel())throw Error('Exportação cancelada.');const result=await finishVideo(job);job=undefined;return result;}finally{if(job)await cancelVideo(job).catch(()=>{});}
+    try{job=await beginVideo(path,width,height,fps,frames,mode==='alpha'?'mov-qtrle':'mp4-h264');for(let i=0;i<frames;i++){if(cancel())throw Error('Exportação cancelada.');const png=await svgToPngBase64(render(i/fps),width,height,canvas,1,mode==='alpha'?'transparent':mode);await pushVideoFrame(job,png);progress(i+1,frames);}if(cancel())throw Error('Exportação cancelada.');const result=await finishVideo(job);job=undefined;return result;}finally{if(job)await cancelVideo(job).catch(()=>{});}
   }
   let project: RDVProject = loadAutosave();
   let selectedId: string | null = project.elements[0]?.id || null;

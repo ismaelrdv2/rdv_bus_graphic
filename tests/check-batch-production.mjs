@@ -6,7 +6,7 @@ const props=read('src/components/PropertiesPanel.svelte');
 const validate=read('src/lib/validation.ts');
 const native=read('src-tauri/src/lib.rs');
 const zip=read('src-tauri/src/production_zip.rs');
-assert.equal(JSON.parse(read('package.json')).version,'0.1.0-alpha.9.3.16');
+assert.equal(JSON.parse(read('package.json')).version,'0.1.0-alpha.9.3.17');
 for(const k of ['technical','route','date','location','credit','driver','freeText'])
  assert(app.includes("kind:'"+k+"'"),'Etapa ausente: '+k);
 assert(app.indexOf("kind:'technical'")<app.indexOf("kind:'route'"));
