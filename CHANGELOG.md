@@ -1,5 +1,13 @@
 # Histórico de alterações — RDV Bus Studio
 
+## 0.1.0-alpha.9.3.13 — Produção centralizada e barras por categoria
+
+- Novo acesso **Produção** na parte inferior da navegação Desktop; recursos SVG, formato de vídeo, transparência, Chroma Key e preset Kdenlive reunidos no mesmo diálogo.
+- Parâmetros gerais de duração, 16:9/9:16 e 30/60 FPS agora estão em Produção; ao selecionar nenhum elemento, o painel lateral fica dedicado à paleta e à personalização do projeto.
+- Posição esquerda/direita da ficha técnica e da faixa de texto livre transferida de Dimensões para a aba **Conteúdo** do respectivo elemento.
+- Mantida a exportação por FFmpeg, MOV com alfa, MP4, WebM, MKV, SVG, preparação MLT, salvamento de projeto JSON e todos os elementos anteriores.
+- Código encaminhado para o Acer Debian; AppImage atualizado depende da instalação das bibliotecas nativas de Tauri já identificadas na instalação.
+
 ## 0.1.0-alpha.9.3.12 — Integração inicial com Kdenlive
 
 - Novo botão **Kdenlive** no Desktop: seleciona MOV QuickTime Animation com transparência real e rasterização 2×.
