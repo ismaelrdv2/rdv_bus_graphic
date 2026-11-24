@@ -62,7 +62,7 @@ fn encoder_args(format: &str) -> Option<(&'static str, Vec<&'static str>)> {
     match format {
         "mov-qtrle" => Some(("mov", vec!["-c:v", "qtrle", "-pix_fmt", "argb"])),
         "mov-prores" => Some(("mov", vec!["-c:v", "prores_ks", "-profile:v", "4", "-pix_fmt", "yuva444p10le", "-alpha_bits", "16"])),
-        "mkv-ffv1" => Some(("mkv", vec!["-c:v", "ffv1", "-level", "3", "-pix_fmt", "bgra"])),
+        "mkv-ffv1" => Some(("mkv", vec!["-c:v", "ffv1", "-level", "3", "-pix_fmt", "bgra", "-threads", "2"])),
         "webm-vp9" => Some(("webm", vec!["-c:v", "libvpx-vp9", "-pix_fmt", "yuva420p", "-auto-alt-ref", "0", "-lossless", "1", "-deadline", "good", "-cpu-used", "2"])),
         "mp4-h264" => Some(("mp4", vec!["-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "17", "-preset", "medium", "-movflags", "+faststart"])),
         _ => None,
@@ -125,8 +125,15 @@ fn video_frame(state: State<'_, VideoState>, job_id: String, data: String) -> Re
     if bytes.len() < 8 || !bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
         return Err("O quadro recebido não é um PNG válido".into());
     }
-    job.input.as_mut().ok_or("FFmpeg encerrado")?
-        .write_all(&bytes).map_err(|e| format!("Erro ao enviar quadro ao FFmpeg: {e}"))?;
+    let result=job.input.as_mut().ok_or("FFmpeg encerrado")?.write_all(&bytes);
+    if let Err(e)=result{
+        let mut failed=active.take().ok_or("Vídeo indisponível")?;
+        drop(failed.input.take());
+        let details=failed.child.wait_with_output().map(|o|String::from_utf8_lossy(&o.stderr).chars().take(2000).collect::<String>()).unwrap_or_default();
+        let _=fs::remove_file(&failed.output);
+        return Err(format!("FFmpeg falhou ao receber quadro: {e}. {details}"));
+    }
+    let job=active.as_mut().ok_or("Vídeo indisponível")?;
     job.written += 1;
     Ok(())
 }
@@ -203,12 +210,12 @@ mod kdenlive;
 mod production_zip;
 
 #[tauri::command]
-fn production_stage_create() -> Result<String,String>{production_zip::stage_create()}
+fn production_stage_create(output:Option<String>) -> Result<String,String>{production_zip::stage_create(output)}
 #[tauri::command]
 fn production_stage_cleanup(stage:String) -> Result<(),String>{production_zip::stage_cleanup(stage)}
 #[tauri::command]
-fn production_bundle_zip(stage:String,output:String,files:Vec<String>)->Result<String,String>{
-    production_zip::archive(stage,output,files)
+async fn production_bundle_zip(stage:String,output:String,files:Vec<String>)->Result<String,String>{
+    tauri::async_runtime::spawn_blocking(move||production_zip::archive(stage,output,files)).await.map_err(|e|e.to_string())?
 }
 
 #[tauri::command]

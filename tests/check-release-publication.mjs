@@ -4,7 +4,7 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const workflow=read('.github/workflows/desktop-build.yml');
 const app=JSON.parse(read('package.json'));
 const tauri=JSON.parse(read('src-tauri/tauri.conf.json'));
-assert.equal(app.version,'0.1.0-alpha.9.3.23');
+assert.equal(app.version,'0.1.0-alpha.9.3.24');
 assert.equal(tauri.version,app.version);
 assert(workflow.includes('workflow_dispatch:'),'Modo economia: release deve exigir início manual');
 assert(workflow.includes("if: github.ref_type == 'tag'"),'Não publicar releases de PR/branches');

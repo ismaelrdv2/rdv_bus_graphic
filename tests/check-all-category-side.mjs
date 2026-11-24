@@ -6,7 +6,7 @@ const panel=read('src/components/PropertiesPanel.svelte');
 const templates=read('src/lib/templates.ts');
 const validation=read('src/lib/validation.ts');
 const pkg=JSON.parse(read('package.json'));
-assert.equal(pkg.version,'0.1.0-alpha.9.3.23');
+assert.equal(pkg.version,'0.1.0-alpha.9.3.24');
 const content=panel.slice(panel.indexOf("{#if activeTab === 'content'}"),
   panel.indexOf("{:else if activeTab === 'typography'}"));
 assert(content.includes('Posição horizontal de {KIND_INFO[selected.kind].label}'));

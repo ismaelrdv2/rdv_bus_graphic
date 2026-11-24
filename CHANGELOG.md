@@ -1,5 +1,11 @@
 # Histórico de alterações — RDV Bus Studio
 
+## [0.1.0-alpha.9.3.24] — Produção ZIP de vídeos grandes
+
+- ZIP64 automático, sem limites artificiais de 1 GB por vídeo ou 3,7 GB por lote, com CRC em fluxo.
+- Arquivos temporários no disco de destino, verificação antecipada de arquivo existente e preservação dos vídeos caso a compactação falhe.
+- Erro persistente com etapa e detalhes do FFmpeg; FFV1 com dois threads de codificação.
+
 ## [0.1.0-alpha.9.3.23] — Espaço de trabalho por categoria
 
 - Removida a linha do tempo de camadas do editor principal; controle simples de reprodução e posição da animação, como no Mobile.

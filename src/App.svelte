@@ -48,6 +48,7 @@
   let frameHandle: number | null = null;
   let fileInput: HTMLInputElement;
   let status: UiStatus | null = null;
+  let productionError='';
   let statusTimer: ReturnType<typeof setTimeout> | null = null;
   let showHelp = false;
   let showSettings = false;
@@ -813,29 +814,38 @@
       safeProject+'_Producao.zip'),filters:[{name:'Produção ZIP',extensions:['zip']}]});
     if(!zipPath)return;
     let stage:string|undefined;
+    let keepStage=false;
+    let step='Preparando produção';
+    productionError='';
     stopPlayback();showExportVideo=false;exportingVideo=true;cancelRequested=false;exportProgress=0;
     batchCount=list.length;batchCurrent=0;
     try{
       await setProductionAwake(true);
-      stage=await invoke<string>('production_stage_create');
+      stage=await invoke<string>('production_stage_create',{output:zipPath});
       const filenames:string[]=[];
       for(const [index,item] of list.entries()){
         if(cancelRequested)throw new Error('Produção cancelada.');
         batchCurrent=index;batchLabel=item.element.title;
         const filename=String(index+1).padStart(2,'0')+'_'+item.name+'.'+preset.ext;
         selectedVideoName='Etapa '+(index+1)+'/'+list.length+' · '+item.element.title;
+        step=selectedVideoName;
         await renderVideoFile(snapshotForElement(item.element),joinOutputPath(stage,filename));
         filenames.push(filename);
       }
       if(cancelRequested)throw new Error('Produção cancelada.');
       selectedVideoName='Compactando '+list.length+' vídeos…';
+      step=selectedVideoName;keepStage=true;
       await invoke('production_bundle_zip',{stage,output:zipPath,files:filenames});
+      keepStage=false;
       outputDirectory=rememberOutputFile(zipPath);showExportVideo=false;
       notify('Produção concluída: '+list.length+' vídeos no ZIP '+zipPath,'success');
     }catch(error){
-      notify('Falha na produção em lote: '+String(error),'error');
+      if(cancelRequested){notify('Produção cancelada.','info');}else{
+        productionError=step+': '+String(error)+(keepStage&&stage?'\nVídeos já produzidos preservados em: '+stage:'');
+        notify('Falha na produção em lote. Consulte os detalhes.','error');
+      }
     }finally{
-      if(stage)await invoke('production_stage_cleanup',{stage}).catch(()=>{});
+      if(stage&&!keepStage)await invoke('production_stage_cleanup',{stage}).catch(()=>{});
       await setProductionAwake(false);
       batchCount=0;batchCurrent=0;batchLabel='';renderingProject=project;
       exportingVideo=false;cancelRequested=false;selectedVideoName='';
@@ -1095,6 +1105,13 @@
   </div>
 {/if}
 
+{#if productionError&&!exportingVideo}
+  <div class="dialog-backdrop" role="presentation"><div class="help-dialog" role="dialog" aria-modal="true" aria-label="Erro de produção">
+    <div class="dialog-heading"><strong>Falha na produção</strong><button class="icon-button" aria-label="Fechar" on:click={()=>productionError=''}>×</button></div>
+    <div class="dialog-content"><textarea readonly rows="8" aria-label="Detalhes do erro" style="width:100%;box-sizing:border-box;resize:vertical">{productionError}</textarea><p>Copie os detalhes para o diagnóstico.</p></div>
+    <button class="button primary-button dialog-close" on:click={()=>productionError=''}>Fechar</button>
+  </div></div>
+{/if}
 {#if status}
   <div class:toast-error={status.kind === 'error'} class="toast" role="status"><Icon name={status.kind === 'error' ? 'alert-circle' : status.kind === 'success' ? 'check' : 'info'} size={18}/><span>{status.text}</span><button aria-label="Fechar aviso" on:click={() => status = null}>×</button></div>
 {/if}
