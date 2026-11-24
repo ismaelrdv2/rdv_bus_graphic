@@ -1,5 +1,13 @@
 # Histórico de alterações — RDV Bus Studio
 
+## 0.1.0-alpha.9.3.15 — Posicionamento horizontal isolado por elemento
+
+- Controle À esquerda/À direita agora aparece na aba Conteúdo de todas as categorias, não apenas nas barras.
+- O movimento de lado respeita margem de segurança e preserva a posição vertical e os ajustes de cada elemento, sem alterar os outros.
+- O projeto JSON salva e restaura a escolha de lado de cada cartela, inclusive linha, data, localização, créditos, motorista, slide e imagem de canto.
+- Modos de tela inteira e barras inferiores em 9:16 permanecem preenchendo o quadro; o lado individual fica preservado ao retornar aos formatos laterais.
+- Testes de regressão específicos e nova compilação AppImage via runner Acer Debian 13.
+
 ## 0.1.0-alpha.9.3.14 — Produção por etapas e duração individual
 
 - Botão Produção alterna **Manual** (vídeo da categoria/elemento selecionado) e **Passo a passo** (diversos vídeos individuais compactados em ZIP).
