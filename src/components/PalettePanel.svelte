@@ -3,6 +3,7 @@
   import type { PaletteColors, PaletteId, ProjectPalette, TextColorRole } from '../lib/types';
 
   export let palette: ProjectPalette;
+  export let onBackgroundOpacity: (value:number)=>void;
   export let onPreset: (value: PaletteId) => void;
   export let onColor: (key: keyof PaletteColors, value: string) => void;
   export let onAllText: (role: TextColorRole) => void;
@@ -66,6 +67,10 @@
       </div>
     </div>
   {/each}
+  <label class="field"><span>Opacidade da cor de fundo · {palette.backgroundOpacity??100}%</span>
+    <input aria-label="Opacidade da cor de fundo" type="range" min="0" max="100" step="1" value={palette.backgroundOpacity??100} on:input={event=>onBackgroundOpacity(Number(event.currentTarget.value))}/>
+  </label>
+  <p class="inspector-hint">Ajuste global para todas as categorias, sem alterar textos, ícones e detalhes. Para transparência parcial real, exporte com canal alfa; Chroma Key pode misturar as cores.</p>
   {#if invalidColor}<p class="error-text" role="alert">{invalidColor}</p>{/if}
   <div class="palette-color-group">
     <label class="field"><span>Cor de todos os textos do projeto</span>

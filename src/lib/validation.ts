@@ -145,6 +145,7 @@ export function validateProject(raw: unknown): RDVProject {
   const paletteRawColors = isObject(paletteRaw.colors) ? paletteRaw.colors : {};
   const palettePreset = PALETTE_PRESETS.find(p => p.id === paletteRaw.preset);
   const palette: import('./types').ProjectPalette = {
+    backgroundOpacity:safeNumber(paletteRaw.backgroundOpacity,100,0,100),
     preset: paletteRaw.preset === 'custom' ? 'custom' as PaletteId : palettePreset?.id || DEFAULT_PALETTE.preset,
     colors: {
       primary: safeColor(paletteRawColors.primary, palettePreset?.colors.primary || DEFAULT_COLORS.primary),

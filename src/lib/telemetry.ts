@@ -3,7 +3,7 @@ export interface ManualKey { time:number; speedKmh:number; street:string; lat?:n
 export interface Track { demo:boolean; points:Sample[]; manualKeys?:ManualKey[]; manualDuration?:number }
 export interface MapLine { coords:[number,number][]; name?:string }
 export interface Palette { primary:string; secondary:string; background:string }
-export interface View { width:number; height:number; corner:string; scale:number; opacity:number; heading:boolean; tilt:boolean; radius:number; autoZoom:boolean; theme:string; gauge:string; map:boolean; palette:Palette }
+export interface View { width:number; height:number; corner:string; scale:number; opacity:number; heading:boolean; tilt:boolean; radius:number; autoZoom:boolean; theme:string; gauge:string; map:boolean; palette:Palette; backgroundOpacity?:number }
 const rad=Math.PI/180;
 const finite=(n:unknown):n is number=>typeof n==='number'&&Number.isFinite(n);
 const clamp=(n:number,a:number,b:number)=>Math.max(a,Math.min(b,n));
@@ -80,7 +80,7 @@ export function frameSvg(track:Track,t:number,v:View,roads:MapLine[]=[]):string{
  }
  const speed=s?.speed===undefined?'—':Math.round(s.speed*3.6).toString();const street=s?.street??(s?'Via não identificada':track.manualKeys?'Sem dados manuais neste instante':'GPS indisponível');
  const analog=v.gauge==='analog'&&s?.speed!==undefined?'<path d="M274 38 A36 36 0 0 1 346 38" fill="none" stroke="'+S+'" stroke-width="3"/><path d="M310 38 l'+(29*Math.cos(Math.PI*(1-clamp(s.speed*3.6/100,0,1)))).toFixed(2)+' '+(-29*Math.sin(Math.PI*(1-clamp(s.speed*3.6/100,0,1)))).toFixed(2)+'" stroke="'+P+'" stroke-width="3"/>':'';
- return '<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><g transform="translate('+x+' '+y+') scale('+k+')" opacity="'+clamp(v.opacity,.15,1)+'" font-family="Arial,sans-serif"><rect width="'+w+'" height="'+h+'" rx="10" fill="'+B+'" stroke="'+S+'" stroke-width="2"/><rect x="0" y="10" width="4" height="'+(h-20)+'" fill="'+P+'"/><text x="15" y="34" fill="'+P+'" font-size="29" font-weight="bold">'+speed+'</text><text x="86" y="34" fill="'+S+'" font-size="13">km/h</text>'+analog+'<text x="385" y="24" fill="'+S+'" text-anchor="end" font-size="10">'+(track.manualKeys?'ESTIMADO · MANUAL':track.demo?'DEMONSTRAÇÃO':'GPS')+'</text>'+map+'<text x="15" y="'+(h-13)+'" fill="#fff" font-size="13">'+esc(street.slice(0,47))+'</text></g></svg>';
+ return '<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'"><g transform="translate('+x+' '+y+') scale('+k+')" opacity="'+clamp(v.opacity,.15,1)+'" font-family="Arial,sans-serif"><rect width="'+w+'" height="'+h+'" rx="10" fill="'+B+'" fill-opacity="'+clamp((v.backgroundOpacity??100)/100,0,1)+'" stroke="'+S+'" stroke-width="2"/><rect x="0" y="10" width="4" height="'+(h-20)+'" fill="'+P+'"/><text x="15" y="34" fill="'+P+'" font-size="29" font-weight="bold">'+speed+'</text><text x="86" y="34" fill="'+S+'" font-size="13">km/h</text>'+analog+'<text x="385" y="24" fill="'+S+'" text-anchor="end" font-size="10">'+(track.manualKeys?'ESTIMADO · MANUAL':track.demo?'DEMONSTRAÇÃO':'GPS')+'</text>'+map+'<text x="15" y="'+(h-13)+'" fill="#fff" font-size="13">'+esc(street.slice(0,47))+'</text></g></svg>';
 }
 
 /** Fração aproximada do vídeo com amostras válidas; não confunde coincidência temporal com validação de campo. */

@@ -263,7 +263,7 @@
         y="0" width={motionWidth*motion.reveal} height={motionHeight}/></clipPath></defs>
       <g transform={`translate(${motionWidth/2} ${motionHeight/2}) scale(${motion.scale}) translate(${-motionWidth/2} ${-motionHeight/2})`}>
         <g clip-path={clipped?`url(#${motionClipId})`:undefined}>
-          <HudShape {element} canvasHeight={project.canvas.height} {time} duration={project.canvas.duration} canvasWidth={project.canvas.width}/>
+          <HudShape element={{...element,style:{...element.style,backgroundOpacity:project.palette?.backgroundOpacity??100}}} canvasHeight={project.canvas.height} {time} duration={project.canvas.duration} canvasWidth={project.canvas.width}/>
         </g>
       </g>
       {#if selectedId === element.id}

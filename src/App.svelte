@@ -5,6 +5,7 @@
   import { writeTextFile } from '@tauri-apps/plugin-fs';
   import { getOutputDirectory, joinOutputPath, openOutputDirectory, rememberOutputFile } from './lib/output';
   import Icon from './components/Icon.svelte';
+  import ProductionProgress from './components/ProductionProgress.svelte';
   import Navigator from './components/Navigator.svelte';
   import UpdateCenter from './components/UpdateCenter.svelte';
   import LibraryPanel from './components/LibraryPanel.svelte';
@@ -192,10 +193,14 @@
     notify('Cores dos textos atualizadas em todos os elementos.', 'success');
   }
 
+  function changeBackgroundOpacity(value:number):void {
+    if(exportingVideo)return;
+    applyChange({...project,palette:{...(project.palette??DEFAULT_PALETTE),backgroundOpacity:Math.max(0,Math.min(100,value))}});
+  }
   function applyPalette(preset: PaletteId, colors: PaletteColors): void {
     applyChange({
       ...project,
-      palette:{preset,colors:{...colors}},
+      palette:{...project.palette,preset,colors:{...colors}},
       elements:project.elements.map(element=>({...element,style:{...element.style,
         accent:colors.primary,secondary:colors.secondary,background:colors.background}})),
     });
@@ -749,7 +754,7 @@
     const output=await nativeSave({title:'Produzir vídeo da categoria',defaultPath:joinOutputPath(await getOutputDirectory(),
       cleanName+'.'+preset.ext),filters:[{name:preset.label,extensions:[preset.ext]}]});
     if(!output)return;
-    stopPlayback();exportingVideo=true;cancelRequested=false;exportProgress=0;
+    stopPlayback();showExportVideo=false;exportingVideo=true;cancelRequested=false;exportProgress=0;
     batchCount=0;selectedVideoName=output;
     const snapshot=snapshotForElement(element);
     try{
@@ -787,7 +792,7 @@
       safeProject+'_Producao.zip'),filters:[{name:'Produção ZIP',extensions:['zip']}]});
     if(!zipPath)return;
     let stage:string|undefined;
-    stopPlayback();exportingVideo=true;cancelRequested=false;exportProgress=0;
+    stopPlayback();showExportVideo=false;exportingVideo=true;cancelRequested=false;exportProgress=0;
     batchCount=list.length;batchCurrent=0;
     try{
       await setProductionAwake(true);
@@ -953,7 +958,7 @@
       <div class="timeline-panel"><Timeline project={timelineProject} {selectedId} {time} {playing} onTogglePlay={togglePlayback} onStop={stopAndRewind} onSeek={seek} onSelect={(id) => selectedId = id}/></div>
     </main>
 
-    <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onShineToggle={updateSelectedShine} onDiagonalGlowToggle={updateSelectedDiagonalGlow} onDiagonalGlowIntensity={updateSelectedDiagonalIntensity} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onFooter={updateSelectedFooter} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onProductionDuration={updateSelectedProductionDuration} onProductionIncluded={updateSelectedProductionIncluded} onPhotoCredit={updateSelectedPhotoCredit} onTechnicalLayout={updateTechnicalLayout}
+    <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onBackgroundOpacity={changeBackgroundOpacity} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onShineToggle={updateSelectedShine} onDiagonalGlowToggle={updateSelectedDiagonalGlow} onDiagonalGlowIntensity={updateSelectedDiagonalIntensity} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onFooter={updateSelectedFooter} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onProductionDuration={updateSelectedProductionDuration} onProductionIncluded={updateSelectedProductionIncluded} onPhotoCredit={updateSelectedPhotoCredit} onTechnicalLayout={updateTechnicalLayout}
       {systemFonts} onFontFamily={updateSelectedFontFamily} onVisualPreset={updateSelectedVisualPreset} onFitScrollDuration={fitSelectedScrollDuration} onRichText={updateRichText} onFreeTextStyle={changeFreeTextStyle} onLabelBarSize={updateLabelBarSize} onAutoFitLabel={setLabelAutoFit} onFreeTextNote={updateSelectedFreeTextNote} onFreeTextIcon={updateSelectedFreeTextIcon} onFreeTextDisplay={updateSelectedFreeTextDisplay} onFreeTextCaption={updateFreeTextCaption} onResetScale={resetSelectedScale} onStandardizeSelected={standardizeSelectedCard} onStandardizeAll={standardizeAllCards} onSelectNone={() => selectedId = null}/></aside>
   </div>
 
@@ -966,6 +971,9 @@
   </div>
 {/if}
 
+{#if exportingVideo}
+  <ProductionProgress projectName={project.name} progress={exportProgress} detail={selectedVideoName} cancelling={cancelRequested} onCancel={()=>cancelRequested=true}/>
+{/if}
 {#if showExportVideo}
   <div class="dialog-backdrop" role="presentation">
     <div class="help-dialog production-dialog" role="dialog" aria-modal="true" aria-label="Produção de vídeo, SVG e projeto">
@@ -1048,20 +1056,11 @@
         {#if !isDesktop()}
           <p class="video-warning">A exportação de vídeo funciona no aplicativo Tauri. No navegador, use o botão SVG; para vídeo, execute <code>npm run desktop:dev</code> com FFmpeg instalado.</p>
         {/if}
-        {#if exportingVideo}
-          <label for="export-progress">Gerando vídeo: {Math.round(exportProgress * 100)}%</label>
-          <progress id="export-progress" value={exportProgress} max="1" style="width:100%"></progress>
-          <p class="export-description">{selectedVideoName} {batchCount>0?`· ${batchCurrent+1}/${batchCount}: ${batchLabel}`:''}</p>
-        {/if}
       </div>
       <div class="dialog-actions">
-        {#if exportingVideo}
-          <button class="button secondary-button" on:click={() => cancelRequested = true} disabled={cancelRequested}>Cancelar geração</button>
-        {:else}
           <button class="button ghost-button" on:click={() => showExportVideo = false}>Voltar à edição</button>
           <button class="button primary-button" on:click={() => void (productionMode==='wizard'?produceWizardZip():exportVideo())}
             disabled={!isDesktop()}><Icon name="film" size={16}/> {productionMode==='wizard'?'Produzir ZIP':'Gerar vídeo da categoria'}</button>
-        {/if}
       </div>
     </div>
   </div>
@@ -1093,4 +1092,4 @@
   </div>
 {/if}
 
-{#if showNavigator}<Navigator palette={project.palette?.colors||DEFAULT_PALETTE.colors} onClose={()=>showNavigator=false} saveText={saveNavigatorText} renderVideo={renderNavigator}/>{/if}
+{#if showNavigator}<Navigator palette={project.palette?.colors||DEFAULT_PALETTE.colors} backgroundOpacity={project.palette?.backgroundOpacity??100} projectName={project.name} onClose={()=>showNavigator=false} saveText={saveNavigatorText} renderVideo={renderNavigator}/>{/if}

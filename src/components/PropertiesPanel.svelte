@@ -20,6 +20,7 @@
   export let onProjectTextGroup: (group: TextColorGroup, role: TextColorRole) => void;
   export let onAllSelectedText: (role: TextColorRole) => void;
   export let onAllProjectText: (role: TextColorRole) => void;
+  export let onBackgroundOpacity: (value:number)=>void;
   export let onPalettePreset: (preset: PaletteId) => void;
   export let onPaletteColor: (key: keyof PaletteColors, color: string) => void;
 
@@ -517,7 +518,7 @@
       {/if}
     </section>
     {:else if activeTab === 'palette'}
-      <PalettePanel palette={project.palette || DEFAULT_PALETTE} onPreset={onPalettePreset} onColor={onPaletteColor} onAllText={onAllProjectText} />
+      <PalettePanel palette={project.palette || DEFAULT_PALETTE} onPreset={onPalettePreset} {onBackgroundOpacity} onColor={onPaletteColor} onAllText={onAllProjectText} />
     {/if}
   {:else}
     <div class="selected-heading"><div class="selected-icon"><Icon name="layers" size={23}/></div>
@@ -525,7 +526,7 @@
     </div>
     <section class="property-section">
       <h3>Paleta do projeto</h3>
-      <PalettePanel palette={project.palette || DEFAULT_PALETTE} onPreset={onPalettePreset} onColor={onPaletteColor} onAllText={onAllProjectText} />
+      <PalettePanel palette={project.palette || DEFAULT_PALETTE} onPreset={onPalettePreset} {onBackgroundOpacity} onColor={onPaletteColor} onAllText={onAllProjectText} />
     </section>
     <section class="property-section">
       <h3>Cartelas compactas</h3>
