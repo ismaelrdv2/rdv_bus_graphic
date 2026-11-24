@@ -20,7 +20,7 @@ assert(bridge.includes('quality: 2'));
 assert(bridge.includes("invoke<string>('kdenlive_prepare_clip',options)"));
 assert(native.includes('mod kdenlive;'));
 assert(native.includes('kdenlive::prepare_clip('));
-assert(native.includes('kdenlive_prepare_clip, list_system_fonts'));
+assert(native.includes('kdenlive_prepare_clip')&&native.includes('list_system_fonts')&&native.includes('production_bundle_zip'));
 for(const fragment of [
  '<mlt LC_NUMERIC=', '<profile description=', '<chain id=', '<playlist id=',
  'frame_rate_num=', 'display_aspect_num=', 'let last = frames - 1',
