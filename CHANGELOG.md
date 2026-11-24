@@ -1,5 +1,9 @@
 # Histórico de alterações — RDV Bus Studio
 
+## [0.1.0-alpha.9.3.21] — Cartela Studio
+
+- Ajuste de títulos e textos da Cartela Studio com margens reais, ícone social, tracking e fontes proporcionais. Mantém a interface de produção já centralizada.
+
 ## [0.1.0-alpha.9.3.20] — Produção e locais
 
 - Exclusão de local adicional com confirmação e seleção do local anterior.
