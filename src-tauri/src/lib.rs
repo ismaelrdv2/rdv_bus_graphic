@@ -231,7 +231,7 @@ pub fn run() {
         .manage(VideoState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![video_begin, video_frame, video_finish, video_cancel, kdenlive_prepare_clip, list_system_fonts, desktop_default_output_directory, desktop_open_output_directory])
+        .invoke_handler(tauri::generate_handler![video_begin, video_frame, video_finish, video_cancel, kdenlive_prepare_clip, production_stage_create, production_stage_cleanup, production_bundle_zip, list_system_fonts, desktop_default_output_directory, desktop_open_output_directory])
         .run(tauri::generate_context!())
         .expect("Falha ao iniciar o RDV Bus Studio");
 }
