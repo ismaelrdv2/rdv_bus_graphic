@@ -454,16 +454,23 @@
   }
 
   function updateTechnicalSide(side: 'left' | 'right'): void {
-    if (!selectedId) return;
-    changeElement(selectedId, element => ({
-      ...element,
-      technicalSide: side,
-      style: { ...element.style,
-        x: isBottomBar(element,project.canvas.width,project.canvas.height) ? 0 : side === 'left' ? 0 : Math.max(0, project.canvas.width - element.style.width * element.style.scaleX),
-        y: isBottomBar(element,project.canvas.width,project.canvas.height) ? project.canvas.height-PORTRAIT_BAR_HEIGHT*element.style.scaleY
-          : element.kind==='freeText' && element.freeTextStyle==='legacyPresentationBar' ? element.style.y : 0
-      },
-    }));
+    if (!selectedId || exportingVideo) return;
+    changeElement(selectedId, element => {
+      const fullscreen=(element.kind==='technical' && ['fullscreen','legacyFullscreen'].includes(element.technicalLayout||'')) ||
+        (element.kind==='freeText' && ['fullTechnical','fullPage','legacyPresentationSlide','newsSlide'].includes(element.freeTextStyle||''));
+      const bottom=isBottomBar(element,project.canvas.width,project.canvas.height);
+      const bar=isBar(element);
+      const available=Math.max(0,project.canvas.width-element.style.width*element.style.scaleX);
+      const inset=bar?0:Math.min(56,available/2);
+      return {
+        ...element,technicalSide:side,
+        style:{...element.style,
+          x: fullscreen||bottom?0:side==='left'?inset:Math.max(0,available-inset),
+          // Nunca reiniciar Y: cada categoria mantém sua altura individual.
+          y:element.style.y
+        }
+      };
+    });
   }
 
   function updateSelectedProductionDuration(seconds:number):void {
