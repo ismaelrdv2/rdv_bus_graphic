@@ -498,6 +498,8 @@
     if(!target){
       if(project.elements.length>=MAX_ELEMENTS){notify('Limite de elementos atingido.','error');return;}
       target=makeElement(kind);
+      const colors=project.palette?.colors || DEFAULT_PALETTE.colors;
+      target={...target,style:{...target.style,accent:colors.primary,secondary:colors.secondary,background:colors.background}};
       if(photo)target={...target,productionRole:'photoCredit',
         fields:{...target.fields,heading:'CRÉDITO FOTOGRÁFICO',line1:'Fotografia',line2:'RDV Bus'}};
       applyChange({...project,elements:[...project.elements,target]});

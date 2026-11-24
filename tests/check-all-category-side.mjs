@@ -6,7 +6,7 @@ const panel=read('src/components/PropertiesPanel.svelte');
 const templates=read('src/lib/templates.ts');
 const validation=read('src/lib/validation.ts');
 const pkg=JSON.parse(read('package.json'));
-assert.equal(pkg.version,'0.1.0-alpha.9.3.15');
+assert.equal(pkg.version,'0.1.0-alpha.9.3.16');
 const content=panel.slice(panel.indexOf("{#if activeTab === 'content'}"),
   panel.indexOf("{:else if activeTab === 'typography'}"));
 assert(content.includes('Posição horizontal de {KIND_INFO[selected.kind].label}'));
@@ -40,3 +40,8 @@ for(const shape of [
  assert(right+shape.width*shape.scale<=1920.001);
 }
 console.log('Desktop Alpha 9.3.15: posicionamento de todas categorias, validação JSON e preservação de Y OK.');
+
+const wizard=app.slice(app.indexOf('  function chooseWizardElement('),app.indexOf('  function goWizardStep('));
+assert(wizard.includes('project.palette?.colors || DEFAULT_PALETTE.colors'));
+assert(wizard.includes('accent:colors.primary,secondary:colors.secondary,background:colors.background'));
+console.log('Paleta do projeto aplicada aos elementos criados no assistente.');

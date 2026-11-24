@@ -1,5 +1,10 @@
 # Histórico de alterações — RDV Bus Studio
 
+## [0.1.0-alpha.9.3.16] — Paleta global de produção
+
+- Elementos criados pelo assistente herdam a paleta do projeto, incluindo créditos e categorias do lote.
+- Posição, duração, animação e cores individuais de texto preservadas.
+
 ## 0.1.0-alpha.9.3.15 — Posicionamento horizontal isolado por elemento
 
 - Controle À esquerda/À direita agora aparece na aba Conteúdo de todas as categorias, não apenas nas barras.
