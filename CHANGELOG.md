@@ -1,5 +1,11 @@
 # Histórico de alterações — RDV Bus Studio
 
+## [0.1.0-alpha.9.3.20] — Produção e locais
+
+- Exclusão de local adicional com confirmação e seleção do local anterior.
+- Nome do projeto na janela principal de produção.
+- Inibição de inatividade e suspensão no Linux via GTK, quando suportada, durante produção individual, lote e Navigator.
+
 ## [0.1.0-alpha.9.3.19] — Locais adicionais
 
 - Adicionar local copia os textos e configurações do último local da sequência, com identidade própria e inclusão independente no ZIP.

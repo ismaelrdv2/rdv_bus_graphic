@@ -6,7 +6,7 @@ const rust=read('src-tauri/src/kdenlive.rs');
 const native=read('src-tauri/src/lib.rs');
 const bridge=read('src/lib/kdenlive.ts');
 const pkg=JSON.parse(read('package.json'));
-assert.equal(pkg.version,'0.1.0-alpha.9.3.19');
+assert.equal(pkg.version,'0.1.0-alpha.9.3.20');
 assert(app.includes("Produção · RDV Bus Studio"),'Painel Produção ausente');
 assert(app.includes('videoFormat=KDENLIVE_OVERLAY_PRESET.format'),'Preset Kdenlive ausente');
 assert(app.includes('KDENLIVE_OVERLAY_PRESET'));
