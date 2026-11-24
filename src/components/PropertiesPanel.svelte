@@ -257,13 +257,16 @@
           </select>
         </label>
       {/if}
-      {#if !bottomBar && ((selected.kind==='technical' && (selected.technicalLayout || 'side')==='side') ||
-        (selected.kind==='freeText' && ['technicalBar','legacyPresentationBar'].includes(selected.freeTextStyle || '')))}
-        <label class="field"><span>Posição da {selected.kind==='technical'?'ficha técnica':'barra de texto livre'}</span>
-          <select value={selected.technicalSide || 'left'} on:change={(event)=>onTechnicalSide(event.currentTarget.value as 'left' | 'right')}>
-            <option value="left">À esquerda</option><option value="right">À direita</option>
-          </select>
-        </label>
+      <label class="field"><span>Posição horizontal de {KIND_INFO[selected.kind].label}</span>
+        <select value={selected.technicalSide || (selected.style.x > project.canvas.width/2 ? 'right' : 'left')}
+          on:change={(event)=>onTechnicalSide(event.currentTarget.value as 'left' | 'right')}>
+          <option value="left">À esquerda</option><option value="right">À direita</option>
+        </select>
+      </label>
+      {#if isFullscreen}
+        <p class="inspector-hint">Este modelo cobre todo o quadro. O fundo permanece em tela cheia; para ajustar a composição, utilize os controles do elemento.</p>
+      {:else if bottomBar}
+        <p class="inspector-hint">No formato 9:16, a barra técnica ocupa a largura inferior. O lado é salvo individualmente para o formato 16:9.</p>
       {/if}
       {#if selected.kind==='freeText' && studioOnlyStyle(selected.freeTextStyle)}
         <p class="inspector-hint">Este formato utiliza exclusivamente o padrão visual Studio.</p>
