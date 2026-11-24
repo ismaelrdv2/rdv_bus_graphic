@@ -5,6 +5,7 @@
   import { writeTextFile } from '@tauri-apps/plugin-fs';
   import { getOutputDirectory, joinOutputPath, openOutputDirectory, rememberOutputFile } from './lib/output';
   import Icon from './components/Icon.svelte';
+  import Navigator from './components/Navigator.svelte';
   import UpdateCenter from './components/UpdateCenter.svelte';
   import LibraryPanel from './components/LibraryPanel.svelte';
   import PropertiesPanel from './components/PropertiesPanel.svelte';
@@ -26,6 +27,19 @@
   import { isDesktop, loadAutosave, openProjectBrowser, openProjectNative, saveProject, writeAutosave } from './lib/projects';
   import { KDENLIVE_OVERLAY_PRESET, prepareKdenliveClip } from './lib/kdenlive';
 
+  let showNavigator=false;
+  async function saveNavigatorText(name:string,content:string,mime:string):Promise<void>{
+    if(isTauri()){const path=await nativeSave({defaultPath:joinOutputPath(await getOutputDirectory(),name)});if(path)await writeTextFile(path,content);}
+    else{const u=URL.createObjectURL(new Blob([content],{type:mime}));const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),5000);}
+  }
+  async function renderNavigator(width:number,height:number,duration:number,fps:30|60,render:(t:number)=>string,progress:(n:number,total:number)=>void,cancel:()=>boolean):Promise<string>{
+    if(!isTauri())throw Error('Disponível no Desktop nativo.');
+    const path=await nativeSave({defaultPath:joinOutputPath(await getOutputDirectory(),'RDV_Navigator.mov'),filters:[{name:'QuickTime Animation',extensions:['mov']}]});
+    if(!path)return 'Exportação cancelada.';
+    const frames=Math.ceil(duration*fps);if(frames<1||frames>216000)throw Error('Duração de exportação inválida.');
+    const canvas=document.createElement('canvas');let job:string|undefined;
+    try{job=await beginVideo(path,width,height,fps,frames,'mov-qtrle');for(let i=0;i<frames;i++){if(cancel())throw Error('Exportação cancelada.');const png=await svgToPngBase64(render(i/fps),width,height,canvas,1,'transparent');await pushVideoFrame(job,png);progress(i+1,frames);}if(cancel())throw Error('Exportação cancelada.');const result=await finishVideo(job);job=undefined;return result;}finally{if(job)await cancelVideo(job).catch(()=>{});}
+  }
   let project: RDVProject = loadAutosave();
   let selectedId: string | null = project.elements[0]?.id || null;
   let time = 1.65;
@@ -837,6 +851,7 @@
       <div class="project-control"><span class="project-label">PROJETO ATUAL</span><div class="project-input-wrap"><Icon name="edit" size={14}/><input aria-label="Nome do projeto" value={project.name} maxlength="120" on:input={(event) => applyChange({ ...project, name: event.currentTarget.value })}/></div></div>
     </div>
     <div class="header-actions">
+<button class="button secondary-button" disabled={exportingVideo} on:click={()=>{stopPlayback();showNavigator=true;}}>GPS</button>
 <UpdateCenter platform="desktop" currentVersion={APP_VERSION}/>
       <span class="autosave-mark" title={autosaveOk ? "O projeto está salvo localmente neste dispositivo" : "Armazenamento local indisponível: salve um arquivo JSON"}><span class:autosave-failed={!autosaveOk} class="autosave-dot"></span> {autosaveOk ? "Salvo localmente" : "Salve o projeto"}</span>
       <button class="button ghost-button" on:click={resetProject} title="Criar novo projeto"><Icon name="plus" size={16}/><span>Novo</span></button>
@@ -1057,3 +1072,5 @@
     </div>
   </div>
 {/if}
+
+{#if showNavigator}<Navigator palette={project.palette?.colors||DEFAULT_PALETTE.colors} onClose={()=>showNavigator=false} saveText={saveNavigatorText} renderVideo={renderNavigator}/>{/if}

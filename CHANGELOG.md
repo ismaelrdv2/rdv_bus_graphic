@@ -2,6 +2,7 @@
 
 ## [0.1.0-alpha.9.3.16] — Paleta global de produção
 
+- Navigator experimental: importação de GPS e MP4, sincronização manual, mapa local, demonstração e exportação MOV alfa.
 - Elementos criados pelo assistente herdam a paleta do projeto, incluindo créditos e categorias do lote.
 - Posição, duração, animação e cores individuais de texto preservadas.
 
