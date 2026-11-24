@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import ts from 'typescript';
+const source=readFileSync(new URL('../src/lib/telemetry.ts',import.meta.url),'utf8');
+const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const m=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+const track=m.normalizeTrack([{t:0,lat:0,lon:0,speed:0,bearing:350},{t:1000,lat:0,lon:.0001,speed:10,bearing:10},{t:9000,lat:0,lon:.001,speed:12}]);
+assert.equal(m.at(track,500).speed,5);assert.equal(m.at(track,500).bearing,0);assert.equal(m.at(track,5000),null);assert.equal(m.at(track,-1),null);
+assert.equal(m.parseTrack('time,lat,lon,speed_kmh\\n2026-01-01T00:00:00Z,0,0,36\\n2026-01-01T00:00:01Z,0,.001,36'.replaceAll('\\n','\n'),'x.csv').points[0].speed,10);
+const demo=m.demoTrack();assert(demo.demo);assert(demo.points.length===61);
+const view={width:1920,height:1080,corner:'bottom-right',scale:1,opacity:1,heading:true,tilt:false,radius:200,autoZoom:true,theme:'dark',gauge:'analog',map:true,palette:{primary:'#ff0000',secondary:'#aaaaaa',background:'#000000'}};
+assert(m.frameSvg(demo,demo.points[20].t,view).includes('DEMONSTRAÇÃO'));assert(m.frameSvg(demo,demo.points[20].t,view).includes('#ff0000'));
+assert.equal(m.parseMap(JSON.stringify({type:'FeatureCollection',features:[{geometry:{type:'LineString',coordinates:[[0,0],[1,1]]}}]})).length,1);
+console.log('Telemetria: normalização, interpolação, lacunas, CSV, mapa e SVG OK.');
