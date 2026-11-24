@@ -11,7 +11,6 @@
   import LibraryPanel from './components/LibraryPanel.svelte';
   import PropertiesPanel from './components/PropertiesPanel.svelte';
   import ScenePreview from './components/ScenePreview.svelte';
-  import Timeline from './components/Timeline.svelte';
   import { copyLocation, removeExtraLocation, duplicateElement, makeElement, newProject } from './lib/templates';
   import { APP_VERSION } from './lib/types';
   import { clamp, exportFrameTime } from './lib/timing';
@@ -53,7 +52,7 @@
   let showHelp = false;
   let showSettings = false;
   let showLibrary = true;
-  let previewBackground: 'black' | 'checker' = 'black';
+  let previewBackground: 'black' | 'checker' = 'checker';
   let autosaveOk = true;
   let showExportVideo = false;
   let productionMode:'manual'|'wizard'='manual';
@@ -81,9 +80,9 @@
   $: autosaveOk = writeAutosave(project);
   $: activeDuration=selected?.productionDuration??project.canvas.duration;
   $: totalFrames = Math.round(activeDuration * project.canvas.fps);
-  $: timelineProject={...project,canvas:{...project.canvas,duration:activeDuration}};
-  $: editorPreviewProject=productionMode==='wizard'&&selected?
-    {...timelineProject,elements:[{...selected,visible:true}]}:timelineProject;
+  // Each category is previewed on its own, exactly as it is exported.
+  $: editorPreviewProject={...project,canvas:{...project.canvas,duration:activeDuration},elements:selected?[{...selected,visible:true}]:[]};
+  $: if(time>activeDuration)time=activeDuration;
   const WIZARD_STEPS:{kind:ElementKind;label:string}[]=[
     {kind:'technical',label:'Ficha técnica'},{kind:'route',label:'Linha'},
     {kind:'date',label:'Data'},{kind:'location',label:'Local'},
@@ -453,8 +452,28 @@
     });
   }
 
-  function toggleVisible(id: string): void {
-    changeElement(id, element => ({ ...element, visible: !element.visible }));
+  function selectManualElement(id:string):void {
+    if(exportingVideo)return;
+    const target=project.elements.find(el=>el.id===id);
+    if(!target)return;
+    stopPlayback();productionMode='manual';selectedId=id;
+    time=Math.min(1.65,(target.productionDuration??project.canvas.duration)/2);
+  }
+  function selectManualCategory(kind:ElementKind):void {
+    if(exportingVideo)return;
+    const existing=project.elements.find(el=>el.kind===kind);
+    if(existing){selectManualElement(existing.id);return;}
+    stopPlayback();productionMode='manual';addElement(kind);
+  }
+  function addManualLocation():void {
+    if(exportingVideo)return;
+    stopPlayback();productionMode='manual';addElement('location');
+  }
+  function selectManualCredit(photo:boolean):void {
+    if(exportingVideo)return;
+    productionMode='manual';chooseWizardElement('credit',photo);
+    const target=project.elements.find(el=>el.id===selectedId);
+    time=Math.min(1.65,(target?.productionDuration??project.canvas.duration)/2);
   }
 
   function moveElement(id: string, x: number, y: number): void {
@@ -474,7 +493,8 @@
   }
 
   function deleteSelected(): void {
-    if (!selectedId) return;
+    if (!selectedId||exportingVideo) return;
+    stopPlayback();
     const removedId = selectedId;
     applyChange({ ...project, elements: project.elements.filter(element => element.id !== removedId) });
     selectedId = project.elements.at(-1)?.id ?? null;
@@ -630,6 +650,7 @@
   }
 
   function togglePlayback(): void {
+    if(!selected||exportingVideo)return;
     if (playing) { stopPlayback(); return; }
     if (time >= activeDuration) time = 0;
     playing = true;
@@ -746,7 +767,7 @@
   async function exportVideo():Promise<void>{
     if(exportingVideo)return;
     if(!isDesktop())return notify('Produção de vídeo exige o aplicativo Desktop Tauri.','error');
-    const element=selected??project.elements.find(el=>el.visible);
+    const element=selected;
     if(!element)return notify('Selecione uma categoria para gerar seu vídeo.','error');
     const preset=VIDEO_FORMATS.find(item=>item.value===videoFormat)??VIDEO_FORMATS[0];
     const cleanName=(project.name+'_'+element.title).normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
@@ -822,6 +843,7 @@
   }
 
   async function exportSvg(): Promise<void> {
+    if(!selected)return notify('Selecione uma categoria para exportar o SVG.','error');
     try {
       const svg = document.querySelector<SVGSVGElement>('.scene-svg');
       if (!svg) throw new Error('A pré-visualização não está disponível.');
@@ -885,7 +907,7 @@
 
   <div class="workspace">
     <nav class="app-rail" aria-label="Navegação principal">
-      <button class:rail-active={showLibrary} class="rail-button" aria-label="Biblioteca de elementos" title="Biblioteca" on:click={() => showLibrary = !showLibrary}><Icon name="grid" size={21}/><small>Elementos</small></button>
+      <button class:rail-active={showLibrary} class="rail-button" aria-label="Categorias" title="Categorias" on:click={() => showLibrary = !showLibrary}><Icon name="grid" size={21}/><small>Categorias</small></button>
       <button class="rail-button" aria-label="Propriedades do projeto" title="Projeto" on:click={() => { selectedId = null; showLibrary = true; }}><Icon name="layers" size={21}/><small>Projeto</small></button>
       <div class="rail-spacer"></div>
       <button class="rail-button production-rail-button" aria-label="Abrir Produção" title="Produção de arquivos" on:click={() => openVideoDialog()}><Icon name="film" size={22}/><small>Produção</small></button>
@@ -894,7 +916,7 @@
     </nav>
 
     {#if showLibrary}
-      <aside class="library-panel"><LibraryPanel {project} {selectedId} onAdd={addElement} onSelect={(id) => selectedId = id} onToggleVisible={toggleVisible}/></aside>
+      <aside class="library-panel"><LibraryPanel {project} {selectedId} onCategory={selectManualCategory} onSelect={selectManualElement} onAddLocation={addManualLocation} onDeleteLocation={deleteWizardLocation} onCredit={selectManualCredit} disabled={exportingVideo}/></aside>
     {/if}
 
     <main class="editor-main">
@@ -940,11 +962,11 @@
         </section>
       {/if}
       <div class="canvas-toolbar">
-        <div class="canvas-title"><Icon name="layout" size={17}/><strong>Editor de cena</strong><span class="breadcrumb-separator">/</span><span>Composição principal</span></div>
+        <div class="canvas-title"><Icon name="layout" size={17}/><strong>Pré-visualização</strong><span class="breadcrumb-separator">/</span><span>{selected?.title??"Selecione uma categoria"}</span></div>
         <div class="canvas-toolbar-right"><button class="canvas-chip preview-toggle" class:preview-toggle-active={previewBackground === 'black'} aria-pressed={previewBackground === 'black'} title="Alternar fundo preto e transparência quadriculada" on:click={() => previewBackground = previewBackground === 'black' ? 'checker' : 'black'}><Icon name="layers" size={13}/> {previewBackground === 'black' ? 'Fundo preto' : 'Quadriculado'}</button><span class="canvas-chip"><span class="chip-dot"></span>Pré-visualização SVG</span><span class="canvas-chip resolution-chip">{project.canvas.width} × {project.canvas.height}</span></div>
       </div>
       <div class="canvas-main-area">
-        <div class="canvas-stack">
+        <div class="canvas-stack" class:portrait-preview={project.canvas.width===1080}>
           <div class="canvas-top-caption"><span><Icon name="maximize" size={15}/> Monitor de pré-visualização</span><span>{project.canvas.width === 1080 ? '9:16' : '16:9'} · SVG com transparência</span></div>
           <div class="canvas-bezel">
             <div class="stage-checker" class:stage-black={previewBackground === 'black'} class:portrait-stage={project.canvas.width === 1080} style={`aspect-ratio: ${project.canvas.width} / ${project.canvas.height}`}><ScenePreview project={editorPreviewProject} {selectedId} {time} onSelect={(id) => selectedId = id} onMove={moveElement} onResize={resizeElement}
@@ -952,10 +974,17 @@
               onTextFormat={editTextFormatting} onParagraphFormat={editParagraphDirect} {systemFonts}/>
 </div>
           </div>
-          <div class="canvas-bottom-bar"><span><span class="live-indicator"></span> Cena editável</span><span>Clique no texto para editar · arraste o painel para mover · alças para redimensionar</span><span>{project.elements.filter(e => e.visible).length} visíveis de {project.elements.length}</span></div>
+          <div class="canvas-bottom-bar"><span><span class="live-indicator"></span> Categoria editável</span><span>Clique no texto para editar · arraste o painel para mover · alças para redimensionar</span><span>{selected?"1 categoria selecionada":"Nenhuma categoria selecionada"}</span></div>
         </div>
       </div>
-      <div class="timeline-panel"><Timeline project={timelineProject} {selectedId} {time} {playing} onTogglePlay={togglePlayback} onStop={stopAndRewind} onSeek={seek} onSelect={(id) => selectedId = id}/></div>
+      <section class="preview-controls" aria-label="Controles da animação">
+        <div class="preview-playback">
+          <button class="button secondary-button" title="Voltar ao início" aria-label="Voltar ao início" disabled={!selected||exportingVideo} on:click={stopAndRewind}><Icon name="skip-back" size={18}/></button>
+          <button class="button primary-button" disabled={!selected||exportingVideo} on:click={togglePlayback}><Icon name={playing?'pause':'play'} size={18}/>{playing?'Pausar':'Reproduzir'}</button>
+          <span class="preview-time">{time.toFixed(2)} / {activeDuration.toFixed(2)} s</span>
+        </div>
+        <input type="range" aria-label="Posição da pré-visualização da animação" min="0" max={activeDuration} step={1/project.canvas.fps} value={time} disabled={!selected||exportingVideo} on:input={event=>{stopPlayback();seek(Number(event.currentTarget.value));}}/>
+      </section>
     </main>
 
     <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onBackgroundOpacity={changeBackgroundOpacity} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onShineToggle={updateSelectedShine} onDiagonalGlowToggle={updateSelectedDiagonalGlow} onDiagonalGlowIntensity={updateSelectedDiagonalIntensity} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onFooter={updateSelectedFooter} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onProductionDuration={updateSelectedProductionDuration} onProductionIncluded={updateSelectedProductionIncluded} onPhotoCredit={updateSelectedPhotoCredit} onTechnicalLayout={updateTechnicalLayout}
@@ -1074,8 +1103,8 @@
   <div class="dialog-backdrop" role="presentation">
     <div class="help-dialog" role="dialog" aria-modal="true" aria-label="Ajuda do RDV Bus Studio">
       <div class="dialog-heading"><div><Icon name="sparkles"/><strong>Bem-vindo ao RDV Bus Studio</strong></div><button aria-label="Fechar ajuda" class="icon-button" on:click={() => showHelp = false}>×</button></div>
-      <div class="dialog-content"><p>Esta é a reconstrução da identidade clássica na nova geração do RDV Bus. Clique nos textos para editar diretamente e usar a barra flutuante. Arraste os painéis para mover elementos e visualize as animações na linha do tempo.</p>
-      <div class="help-grid"><div><strong>Adicionar</strong><span>Escolha um modelo na biblioteca da esquerda.</span></div><div><strong>Personalizar</strong><span>Selecione e arraste as alças para dimensionar; Shift mantém a proporção. Use o painel à direita para ajustes precisos.</span></div><div><strong>Reproduzir</strong><span>Use o botão Play ou a barra de espaço.</span></div><div><strong>Salvar</strong><span>Ctrl+S grava o projeto. Ctrl+O abre um projeto.</span></div><div><strong>Exportação</strong><span>SVG no navegador e desktop; vídeo com FFmpeg na versão Tauri.</span></div><div><strong>Excluir</strong><span>Use Delete fora dos campos de edição.</span></div></div>
+      <div class="dialog-content"><p>Esta é a reconstrução da identidade clássica na nova geração do RDV Bus. Clique nos textos para editar diretamente e usar a barra flutuante. Arraste os painéis para mover elementos e visualize as animações da categoria selecionada com os controles de reprodução.</p>
+      <div class="help-grid"><div><strong>Adicionar</strong><span>Escolha uma categoria no painel à esquerda. Se ela ainda não existir, será criada.</span></div><div><strong>Personalizar</strong><span>Selecione e arraste as alças para dimensionar; Shift mantém a proporção. Use o painel à direita para ajustes precisos.</span></div><div><strong>Reproduzir</strong><span>Use Reproduzir ou a barra de espaço.</span></div><div><strong>Salvar</strong><span>Ctrl+S grava o projeto. Ctrl+O abre um projeto.</span></div><div><strong>Exportação</strong><span>SVG no navegador e desktop; vídeo com FFmpeg na versão Tauri.</span></div><div><strong>Excluir</strong><span>Use Delete fora dos campos de edição.</span></div></div>
       <p class="dialog-disclaimer">Exportação de vídeo experimental com FFmpeg já disponível no aplicativo Tauri. Renderização nativa resvg e exportação PNG ainda estão planejadas.</p></div>
       <button class="button primary-button dialog-close" on:click={() => showHelp = false}>Começar a editar</button>
     </div>

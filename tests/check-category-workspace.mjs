@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const app=read('src/App.svelte'),lib=read('src/components/LibraryPanel.svelte'),css=read('src/app.css');
+assert(!app.includes('<Timeline')&&!app.includes('timelineProject')&&!app.includes('timeline-panel'));
+assert(app.includes('elements:selected?[{...selected,visible:true}]:[]'));
+assert(app.includes('if(existing){selectManualElement(existing.id);return;}'));
+assert(app.includes('stopPlayback();productionMode=\'manual\';addElement(kind)'));
+assert(app.includes('Posição da pré-visualização da animação')&&app.includes('stopPlayback();seek('));
+assert(app.includes('on:click={togglePlayback}')&&app.includes('on:click={stopAndRewind}'));
+assert(lib.includes('onCategory(kind)')&&lib.includes('onAddLocation')&&lib.includes('onDeleteLocation')&&lib.includes('onCredit(true)'));
+assert(!lib.includes('CAMADAS DO PROJETO'));
+assert(css.includes('.preview-controls')&&css.includes('.canvas-stack.portrait-preview'));
+assert(app.includes('snapshotForElement(')&&app.includes('produceWizardZip()')&&app.includes('<Navigator'));
+console.log('Editor por categoria: preview isolado, sem trilhas, seleção sem duplicação, reprodução e produção preservadas.');

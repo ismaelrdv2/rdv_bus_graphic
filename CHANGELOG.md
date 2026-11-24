@@ -1,5 +1,11 @@
 # Histórico de alterações — RDV Bus Studio
 
+## [0.1.0-alpha.9.3.23] — Espaço de trabalho por categoria
+
+- Removida a linha do tempo de camadas do editor principal; controle simples de reprodução e posição da animação, como no Mobile.
+- Categorias selecionadas individualmente, com criação somente quando ainda inexistentes; monitor ampliado e visualização isolada, igual à exportação.
+- Locais adicionais e créditos acessíveis no modo manual; projetos existentes, assistente de produção e Navigator preservados.
+
 ## [0.1.0-alpha.9.3.22] — Opacidade global e progresso independente
 
 - Controle global da opacidade da cor de fundo na paleta, preservado nos projetos e presets.
