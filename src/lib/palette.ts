@@ -14,7 +14,7 @@ export const PALETTE_PRESETS: ReadonlyArray<{ id: Exclude<PaletteId, 'custom'>; 
   { id: 'pink-cyan', name: 'Rosa e ciano', colors: { primary: '#ED7BC6', secondary: '#6BE3EF', background: '#2A143C' } },
 ];
 
-export const DEFAULT_PALETTE: ProjectPalette = { preset: 'purple-gold', colors: DEFAULT_COLORS };
+export const DEFAULT_PALETTE: ProjectPalette = { preset: 'purple-gold', colors: DEFAULT_COLORS, backgroundOpacity:100 };
 
 /** Aceita HTML hexadecimal #RGB/#RRGGBB ou rgb(R,G,B); rejeita valores fora de 0..255. */
 export function parseColor(value: string): string | null {
@@ -51,6 +51,7 @@ export function palettePaint(style: HudStyle) {
   const classic = secondary===BRAND.lilac.toUpperCase() && background===BRAND.purpleDeep.toUpperCase();
   return {
     primary, secondary, background,
+    backgroundAlpha: backgroundAlpha(style.backgroundOpacity),
     edge: classic ? BRAND.purpleEdge : mixHex(secondary, background, .60),
     dark: classic ? BRAND.purpleDark : mixHex(background, '#000000', .35),
     muted: classic ? BRAND.muted : mixHex(secondary, '#FFFFFF', .25),
@@ -97,3 +98,6 @@ export function withTextGroupColor(element: HudElement, group: TextColorGroup, r
 export function textGroupAsSelected(element: HudElement, group: TextColorGroup): TextColorRole {
   return element.textGroups?.[group] || 'original';
 }
+
+/** Global palette opacity scales existing background fills only; old projects retain their exact look. */
+export function backgroundAlpha(value:unknown):number{return typeof value==='number'&&Number.isFinite(value)?Math.max(0,Math.min(100,value))/100:1;}

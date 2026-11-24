@@ -219,7 +219,7 @@
       </linearGradient>
       <clipPath id={clipId}><path d={panelPath}/></clipPath>
     </defs>
-    <path d={panelPath} fill={`url(#${gradId})`}/>
+    <path d={panelPath} fill={`url(#${gradId})`} fill-opacity={paint.backgroundAlpha}/>
     <path d={edgePath} stroke={accent} opacity={studioGold} stroke-width="5" fill="none"/>
     <path d={isRight ? `M104 0 L20 ${height}` : `M${w-105} 0 L${w-20} ${height}`} stroke={paint.edge} stroke-width="2" fill="none"/>
     <g clip-path={`url(#${clipId})`}>
@@ -247,7 +247,7 @@
   {:else if fullTech}
     <!-- Ficha técnica em tela inteira, com campos organizados em grade. -->
     <defs><linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1"><stop stop-color={paint.background}/><stop offset=".75" stop-color={bg}/><stop offset="1" stop-color={paint.dark}/></linearGradient></defs>
-    <rect width={w} height={height} fill={`url(#${gradId})`} fill-opacity=".96"/>
+    <rect width={w} height={height} fill={`url(#${gradId})`} fill-opacity={.96*paint.backgroundAlpha}/>
     <path d={`M${fullMargin} ${height*.118} H${w-fullMargin}`} stroke={paint.edge} stroke-width="3"/>
     <path d={`M${fullMargin} ${height*.118} H${fullMargin+Math.min(260,w*.21)}`} stroke={accent} opacity={studioGold} stroke-width="5"/>
     <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={fullMargin} y={height*.104} fill={textColor(element,'heading','primary')} font-family={fontFamily} font-weight="800" font-size={scaledText(fields.heading,fullTitleSize,w-2*fullMargin)} letter-spacing="5">{fields.heading}</text>
@@ -269,7 +269,7 @@
     <FooterBrand {element} x={fullMargin} y={height-38} fontSize={16} maxWidth={Math.max(90,w*.43)} maxHeight={46} color={textColor(element,'footer','secondary')} letterSpacing={8}/>
     <path d={`M${w-fullMargin-70} ${height-36} h45 l24 -24`} stroke={accent} opacity={studioGold} stroke-width="3" fill="none"/>
   {:else if technicalAlpha1}
-    <rect width={w} height={height} rx="16" fill={bg} fill-opacity="0.95"/>
+    <rect width={w} height={height} rx="16" fill={bg} fill-opacity={0.95*paint.backgroundAlpha}/>
     <rect width="7" height={height} rx="3" fill={accent}/>
     <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="33" y={53*sy} fill={textColor(element,'heading','primary')} font-size={scaledText(fields.heading,25*textFactor,w-66)} letter-spacing="3" font-weight="700" font-family={fontFamily}>{fields.heading}</text>
     <path d={`M33 ${77*sy} H${w-30}`} stroke="#39445a" stroke-width="2"/>
@@ -285,7 +285,7 @@
     <defs><linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1"><stop stop-color={paint.background}/><stop offset="1" stop-color={bg}/></linearGradient>
       <clipPath id={contentClipId}><rect x={bodyLeft} y={bodyStart} width={bodyWidth} height={bodyAreaHeight}/></clipPath>
     </defs>
-    <rect width={w} height={height} fill={`url(#${gradId})`} fill-opacity=".96"/>
+    <rect width={w} height={height} fill={`url(#${gradId})`} fill-opacity={.96*paint.backgroundAlpha}/>
     <path d={`M${fullMargin} ${height*.15} H${w-fullMargin}`} stroke={paint.edge} stroke-width="3"/>
     <path d={`M${fullMargin} ${height*.15} H${fullMargin+Math.min(250,w*.25)}`} stroke={accent} opacity={studioGold} stroke-width="5"/>
     <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={fullMargin} y={height*.128} fill={textColor(element,'heading','primary')} font-family={fontFamily} font-size={scaledText(fields.heading, headingSize, w-2*fullMargin)} font-weight={rich.titleBold?'800':'400'} font-style={rich.titleItalic?'italic':'normal'} text-decoration={rich.titleUnderline?'underline':'none'} letter-spacing="2">{fields.heading}</text>
@@ -307,7 +307,7 @@
     <FooterBrand {element} x={fullMargin} y={height-34} fontSize={16} maxWidth={Math.max(90,w*.43)} maxHeight={46} color={textColor(element,'footer','secondary')} letterSpacing={7}/>
     <path d={`M${w-fullMargin-65} ${height-34} h44 l19 -19`} fill="none" stroke={accent} opacity={studioGold} stroke-width="3"/>
   {:else if corner}
-    <rect width={w} height={height} rx="15" fill={bg} fill-opacity="0.96" stroke={paint.edge} stroke-width="3"/>
+    <rect width={w} height={height} rx="15" fill={bg} fill-opacity={0.96*paint.backgroundAlpha} stroke={paint.edge} stroke-width="3"/>
     <path d={`M12 1 H${Math.min(w/2,120)}`} stroke={accent} opacity={studioGold} stroke-width="4"/>
     <path d={`M${w-85} ${height-2} h62 l15 -14`} stroke={paint.edge} stroke-width="3" fill="none"/>
     {#if element.imageData}
@@ -317,7 +317,7 @@
       <text x={w/2} y={height*.74} font-family={fontFamily} font-size={Math.min(15*textFactor,w/16)} fill={paint.muted} text-anchor="middle">ESCOLHA UMA IMAGEM</text>
     {/if}
   {:else if credit}
-    <rect width={w} height={height} rx="15" fill={bg} fill-opacity="0.98" stroke={paint.edge} stroke-width="3"/>
+    <rect width={w} height={height} rx="15" fill={bg} fill-opacity={0.98*paint.backgroundAlpha} stroke={paint.edge} stroke-width="3"/>
     <path d={`M13 2 H${Math.min(w*.5,198)}`} stroke={accent} opacity={studioGold} stroke-width="5"/>
     <path d={`M${w-115} ${height-2} h80 l22 -20`} stroke={accent} opacity={studioGold} stroke-width="3" fill="none"/>
     <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={studioTextX} y={height*.30} font-family={fontFamily} font-weight="800" font-size={Math.min(15*textFactor,height*.2)} fill={textColor(element,'heading','secondary')} letter-spacing="2.8">{fields.heading}</text>
@@ -331,7 +331,7 @@
       </linearGradient>
       <clipPath id={contentClipId}><rect x={compactLabelX} y="6" width={compactLabelWidth} height={Math.max(12,height-12)}/></clipPath>
     </defs>
-    <rect x="1.5" y="1.5" width={Math.max(1,w-3)} height={Math.max(1,height-3)} rx="15" fill={`url(#${gradId})`} fill-opacity=".98" stroke={paint.edge} stroke-width="2.5"/>
+    <rect x="1.5" y="1.5" width={Math.max(1,w-3)} height={Math.max(1,height-3)} rx="15" fill={`url(#${gradId})`} fill-opacity={.98*paint.backgroundAlpha} stroke={paint.edge} stroke-width="2.5"/>
     <path d={`M13 1.5 H${Math.min(w*.42,230)}`} stroke={accent} opacity={studioGold} stroke-width="4"/>
     <rect x="9" y={height*.25} width="4" height={height*.5} rx="2" fill={accent} fill-opacity=".9"/>
     {#if compactWeights.stacked}
@@ -373,7 +373,7 @@
       <clipPath id={contentClipId}><rect x={freeSocial?112:32} y="7" width={Math.max(32,w-(freeSocial?152:72))} height={Math.max(12,height-14)}/></clipPath>
     </defs>
     <rect x="2" y="2" width={Math.max(1,w-4)} height={Math.max(1,height-4)} rx="20"
-      fill={`url(#${gradId})`} stroke={paint.edge} stroke-width="2.5" fill-opacity=".97"/>
+      fill={`url(#${gradId})`} stroke={paint.edge} stroke-width="2.5" fill-opacity={.97*paint.backgroundAlpha}/>
     <rect x="9" y={height*.20} width="5" height={height*.60} rx="2.5" fill={accent}/>
     <path d={`M28 2 H${Math.min(w*.38,290)}`} stroke={accent} opacity={studioGold} stroke-width="4" fill="none"/>
     <path d={`M${w-110} ${height-4} h79 l18 -17`} stroke={paint.edge} stroke-width="2.5" fill="none"/>
@@ -413,7 +413,7 @@
       </linearGradient>
     </defs>
     <rect x="2" y="2" width={Math.max(1,w-4)} height={Math.max(1,height-4)} rx={studioPresentationBar?20:16}
-      fill={`url(#${gradId})`} fill-opacity=".98" stroke={paint.edge} stroke-width="2.5"/>
+      fill={`url(#${gradId})`} fill-opacity={.98*paint.backgroundAlpha} stroke={paint.edge} stroke-width="2.5"/>
     <rect x="10" y={height*.20} width="5" height={height*.60} rx="2.5" fill={accent} opacity={studioGold}/>
     <path d={`M25 2 H${Math.min(w*.38,230)}`} stroke={accent} opacity={studioGold} stroke-width="4"/>
     <path d={`M${w-120} ${height-4} h82 l25 -21`} stroke={paint.edge} stroke-width="2.5" fill="none"/>
@@ -466,7 +466,7 @@
         fill={textColor(element,'line2','secondary')} font-family={fontFamily}>{fields.line2}</text>
     {/if}
   {:else if slide}
-    <path d={`M14 0 H${w-32} L${w} 26 V${height-20} Q${w} ${height} ${w-20} ${height} H16 Q0 ${height} 0 ${height-16} V14 Q0 0 14 0Z`} fill={bg} fill-opacity=".97" stroke={paint.edge} stroke-width="3"/>
+    <path d={`M14 0 H${w-32} L${w} 26 V${height-20} Q${w} ${height} ${w-20} ${height} H16 Q0 ${height} 0 ${height-16} V14 Q0 0 14 0Z`} fill={bg} fill-opacity={.97*paint.backgroundAlpha} stroke={paint.edge} stroke-width="3"/>
     <path d={`M16 1 H${Math.min(w*.38,230)}`} stroke={accent} opacity={studioGold} stroke-width="5"/>
     <path d={`M${w-120} ${height-1} h82 l25 -21`} stroke={accent} opacity={studioGold} stroke-width="3" fill="none"/>
     <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x="34" y={height*.2} font-size={Math.min(20*textFactor,height*.14)} fill={textColor(element,'heading','secondary')} font-weight="800" letter-spacing="3">{fields.heading}</text>
@@ -474,7 +474,7 @@
     <text opacity={studioValueAlpha} data-edit-field="line1" style={fieldTextStyle(element,'line1')} x="34" y={height*.59} font-size={scaledText(fields.line1,Math.min(size,height*.35),w-70)} fill={textColor(element,'line1','white')} font-weight="800">{fields.line1}</text>
     <text opacity={studioValueAlpha} data-edit-field="line2" style={fieldTextStyle(element,'line2')} x="34" y={height*.90} font-size={Math.min(23*textFactor,height*.14)} fill={textColor(element,'line2','secondary')}>{fields.line2}</text>
   {:else}
-    <path d={`M14 0 H${w-28} L${w} 25 V${height-17} Q${w} ${height} ${w-17} ${height} H14 Q0 ${height} 0 ${height-14} V14 Q0 0 14 0Z`} fill={bg} fill-opacity=".98" stroke={paint.edge} stroke-width="2.5"/>
+    <path d={`M14 0 H${w-28} L${w} 25 V${height-17} Q${w} ${height} ${w-17} ${height} H14 Q0 ${height} 0 ${height-14} V14 Q0 0 14 0Z`} fill={bg} fill-opacity={.98*paint.backgroundAlpha} stroke={paint.edge} stroke-width="2.5"/>
     <path d={`M14 1 H${Math.min(w*.4,185)}`} stroke={accent} opacity={studioGold} stroke-width="5"/>
     <path d={`M${w-95} ${height-1} h55 l20 -18`} stroke={accent} opacity={studioGold} stroke-width="2.5" fill="none"/>
     <text opacity={studioHeadingAlpha} data-edit-field="heading" style={fieldTextStyle(element,'heading')} x={studioTextX} y={height*.25} fill={textColor(element,'heading','secondary')} font-family={fontFamily} font-size={Math.min(20*textFactor,height*.18)} font-weight="800" letter-spacing="2.5">{fields.heading}</text>

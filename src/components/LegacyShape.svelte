@@ -189,13 +189,13 @@
       {#if element.imageData}
         <image href={element.imageData} x="0" y="0" width={w} height={h} preserveAspectRatio="xMidYMid meet" />
       {:else}
-        <rect x="1" y="1" width={w-2} height={h-2} rx="12" fill={background} fill-opacity=".75" stroke={accent} stroke-width="2" />
+        <rect x="1" y="1" width={w-2} height={h-2} rx="12" fill={background} fill-opacity={.75*paint.backgroundAlpha} stroke={accent} stroke-width="2" />
         <text x={w/2} y={h*.55} font-size={Math.min(20,h*.2)} text-anchor="middle" fill={textColor(element,'line1','white')}>INSERIR LOGOMARCA</text>
       {/if}
     </g>
   {:else if isTechSide}
     <g opacity={Math.min(1,pPanel*4)} transform={`translate(${direction*(1-pPanel)*(w+40)} 0)`}>
-      <path d={sideRight ? `M84 0 H${w} V${h} H0 Z` : `M0 0 H${w-84} L${w} ${h} H0 Z`} fill={`url(#${gradientId})`} fill-opacity=".83" />
+      <path d={sideRight ? `M84 0 H${w} V${h} H0 Z` : `M0 0 H${w-84} L${w} ${h} H0 Z`} fill={`url(#${gradientId})`} fill-opacity={.83*paint.backgroundAlpha} />
       <path d={sideRight ? `M84 0 L0 ${h}` : `M${w-84} 0 L${w} ${h}`} stroke={accent} stroke-width="4" fill="none"/>
       <path d={sideRight ? `M101 0 L17 ${h}` : `M${w-101} 0 L${w-17} ${h}`} stroke={paint.edge} stroke-width="2" fill="none"/>
     </g>
@@ -227,7 +227,7 @@
     </g>
   {:else if fullTech}
     <g opacity={pPanel}>
-      <rect width={w} height={h} fill={`url(#${gradientId})`} fill-opacity=".88" />
+      <rect width={w} height={h} fill={`url(#${gradientId})`} fill-opacity={.88*paint.backgroundAlpha} />
       <path d={`M${margin} ${margin+58} V${margin} H${margin+180} M${w-margin-180} ${h-margin} H${w-margin} V${h-margin-58}`} fill="none" stroke={accent} stroke-width="3" />
       <path d={`M${margin} ${margin+80} V${h-margin-80} M${w-margin} ${margin+80} V${h-margin-80}`} fill="none" stroke={paint.edge} stroke-width="1.5" opacity=".55" />
     </g>
@@ -243,7 +243,7 @@
       {@const p = rowReveals[i]}
       {#if value}
         <g opacity={p} transform={`translate(0 ${26*(1-p)})`}>
-          <path d={`M${x+20} ${y} H${x+cellW-20} L${x+cellW} ${y+20} V${y+cellH-20} Q${x+cellW} ${y+cellH} ${x+cellW-20} ${y+cellH} H${x+20} Q${x} ${y+cellH} ${x} ${y+cellH-20} V${y+20} Q${x} ${y} ${x+20} ${y} Z`} fill={`url(#${cardGradientId})`} fill-opacity=".52" stroke={paint.edge} stroke-width="2" />
+          <path d={`M${x+20} ${y} H${x+cellW-20} L${x+cellW} ${y+20} V${y+cellH-20} Q${x+cellW} ${y+cellH} ${x+cellW-20} ${y+cellH} H${x+20} Q${x} ${y+cellH} ${x} ${y+cellH-20} V${y+20} Q${x} ${y} ${x+20} ${y} Z`} fill={`url(#${cardGradientId})`} fill-opacity={.52*paint.backgroundAlpha} stroke={paint.edge} stroke-width="2" />
           <path d={`M${x+25} ${y+18} v36 h57`} fill="none" stroke={accent} stroke-width="3" />
           <text data-edit-caption={i} style={fieldTextStyle(element,'caption'+i)} x={x+32} y={y+(portrait?110:94)} font-size={portrait?18:19} font-weight="800" fill={textColor(element,('caption'+i) as TextColorKey,'secondary')} letter-spacing="2.2">{(captions[i]||'').toUpperCase()}</text>
           <text data-edit-field={'line'+(i+1)} style={fieldTextStyle(element,'line'+(i+1))} x={x+32} y={y+(portrait?164:156)} font-family={fontFamily} font-size={fit(value, portrait?43:46,cellW-64)} font-weight="800" fill={textColor(element,('line'+(i+1)) as TextColorKey,'white')}>{value}</text>
@@ -253,7 +253,7 @@
     <g opacity={pFooter}><FooterBrand {element} x={margin} y={h-54} fontSize={17} maxWidth={Math.max(90,w*.42)} maxHeight={44} color={textColor(element,'footer','secondary')} letterSpacing={6}/><path d={`M${w-margin-160} ${h-62} H${w-margin-42} L${w-margin} ${h-102}`} stroke={accent} stroke-width="2" fill="none" /></g>
   {:else if fullSlide}
     <g opacity={pPanel}>
-      <rect width={w} height={h} fill={`url(#${gradientId})`} fill-opacity=".9" />
+      <rect width={w} height={h} fill={`url(#${gradientId})`} fill-opacity={.9*paint.backgroundAlpha} />
       <path d={`M${margin} ${margin+58} V${margin} H${margin+180} M${w-margin-180} ${h-margin} H${w-margin} V${h-margin-58}`} fill="none" stroke={accent} stroke-width="3"/>
       <path d={`M${margin} ${margin+80} V${h-margin-80} M${w-margin} ${margin+80} V${h-margin-80}`} fill="none" stroke={paint.edge} opacity=".55" stroke-width="1.5"/>
     </g>
@@ -262,7 +262,7 @@
     </g>
     <path d={`M${margin+65} ${portrait?405:327} h${(w-2*margin-130)*pRule}`} stroke={accent} stroke-width="3" opacity={pRule}/>
     <g opacity={pBody} transform={`translate(0 ${32*(1-pBody)})`}>
-      <rect x={margin} y={portrait?470:375} width={w-2*margin} height={h-(portrait?470:375)-150} rx="20" fill={background} fill-opacity=".65" stroke={paint.edge} stroke-width="2" />
+      <rect x={margin} y={portrait?470:375} width={w-2*margin} height={h-(portrait?470:375)-150} rx="20" fill={background} fill-opacity={.65*paint.backgroundAlpha} stroke={paint.edge} stroke-width="2" />
       <path d={`M${margin+34} ${portrait?505:410} v58 h78`} fill="none" stroke={paint.edge} stroke-width="3"/>
       <g clip-path={`url(#${slideBodyClipId})`}>
       {#each bodyLayout.lines as line, i}
@@ -285,7 +285,7 @@
          os textos chegam em tempos diferentes e podem rolar separadamente. -->
     <!-- Revelação horizontal + halo do RDV v6 (somente renderizador clássico). -->
     <g mask={`url(#${panelWipeId})`} opacity={Math.min(1,pPanel*3)}>
-      <path d={`M16 0 H${w-22} L${w} 22 V${h-20} Q${w} ${h} ${w-20} ${h} H16 Q0 ${h} 0 ${h-16} V16 Q0 0 16 0Z`} fill={background} fill-opacity=".87" stroke={paint.edge} stroke-width="2" />
+      <path d={`M16 0 H${w-22} L${w} 22 V${h-20} Q${w} ${h} ${w-20} ${h} H16 Q0 ${h} 0 ${h-16} V16 Q0 0 16 0Z`} fill={background} fill-opacity={.87*paint.backgroundAlpha} stroke={paint.edge} stroke-width="2" />
       <path d={`M${w-90} ${h-1} h45 l25 -18`} fill="none" stroke={accent} stroke-width="2.2" />
     </g>
     <g clip-path={`url(#${goldRevealId})`} opacity={pRule}>

@@ -60,7 +60,7 @@
     <clipPath id={`portrait-clip-${id}`}><path d={panelShape}/></clipPath>
   </defs>
   <g opacity={panel} transform={`translate(0 ${95*(1-panel)})`}>
-    <path d={panelShape} fill={`url(#portrait-bar-${id})`} fill-opacity={studio?.98:.93}
+    <path d={panelShape} fill={`url(#portrait-bar-${id})`} fill-opacity={(studio?.98:.93)*paint.backgroundAlpha}
       stroke={studio?paint.edge:'none'} stroke-width={studio?2.5:0}/>
     {#if studio}
       <rect x="12" y={h*.20} width="6" height={h*.60} rx="3" fill={element.style.accent}/>

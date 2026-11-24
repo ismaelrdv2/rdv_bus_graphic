@@ -25,7 +25,7 @@ export type TextColorKey = TextField | 'caption0' | 'caption1' | 'caption2' | 'c
 export type TextColorGroup = 'title' | 'body' | 'secondary';
 export type PaletteId = 'purple-gold' | 'blue-orange' | 'green-yellow' | 'red-gold' | 'pink-cyan' | 'custom';
 export interface PaletteColors { primary: string; secondary: string; background: string; }
-export interface ProjectPalette { preset: PaletteId; colors: PaletteColors; }
+export interface ProjectPalette { preset: PaletteId; colors: PaletteColors; backgroundOpacity?: number; }
 export interface RichTextSettings {
   titleSize: number;
   bodySize: number;
@@ -60,6 +60,7 @@ export interface HudStyle {
   secondary?: string;
   background: string;
   opacity: number;
+  backgroundOpacity?: number;
   /** Escala independente para edição diretamente na pré-visualização. */
   scaleX: number;
   scaleY: number;
