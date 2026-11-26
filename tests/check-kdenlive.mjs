@@ -6,7 +6,7 @@ const rust=read('src-tauri/src/kdenlive.rs');
 const native=read('src-tauri/src/lib.rs');
 const bridge=read('src/lib/kdenlive.ts');
 const pkg=JSON.parse(read('package.json'));
-assert.equal(pkg.version,'0.1.0-alpha.9.3.13');
+assert.equal(pkg.version,'0.1.0-alpha.9.3.14');
 assert(app.includes("Produção · RDV Bus Studio"),'Painel Produção ausente');
 assert(app.includes('videoFormat=KDENLIVE_OVERLAY_PRESET.format'),'Preset Kdenlive ausente');
 assert(app.includes('KDENLIVE_OVERLAY_PRESET'));
@@ -20,7 +20,7 @@ assert(bridge.includes('quality: 2'));
 assert(bridge.includes("invoke<string>('kdenlive_prepare_clip',options)"));
 assert(native.includes('mod kdenlive;'));
 assert(native.includes('kdenlive::prepare_clip('));
-assert(native.includes('kdenlive_prepare_clip, list_system_fonts'));
+assert(native.includes('kdenlive_prepare_clip')&&native.includes('list_system_fonts')&&native.includes('production_bundle_zip'));
 for(const fragment of [
  '<mlt LC_NUMERIC=', '<profile description=', '<chain id=', '<playlist id=',
  'frame_rate_num=', 'display_aspect_num=', 'let last = frames - 1',

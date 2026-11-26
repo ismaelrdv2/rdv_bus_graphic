@@ -78,6 +78,10 @@ export function validateProject(raw: unknown): RDVProject {
       id,
       ...(Object.keys(formats).length ? { textFormatting: formats } : {}),
       ...(technicalCaptions ? { technicalCaptions } : {}),
+      productionDuration: typeof item.productionDuration==='number'&&Number.isFinite(item.productionDuration)?
+        clamp(item.productionDuration,1,60):undefined,
+      productionIncluded:item.productionIncluded!==false,
+      ...(item.kind==='credit'&&item.productionRole==='photoCredit'?{productionRole:'photoCredit' as const}:{}),
       ...(Object.keys(validTextRoles).length ? { textColors: validTextRoles } : {}),
       ...(Object.keys(validGroups).length ? { textGroups: validGroups } : {}),
       kind: item.kind as ElementKind,

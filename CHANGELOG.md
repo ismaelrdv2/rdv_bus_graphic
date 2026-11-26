@@ -1,5 +1,15 @@
 # Histórico de alterações — RDV Bus Studio
 
+## 0.1.0-alpha.9.3.14 — Produção por etapas e duração individual
+
+- Botão Produção alterna **Manual** (vídeo da categoria/elemento selecionado) e **Passo a passo** (diversos vídeos individuais compactados em ZIP).
+- Passos: Ficha técnica, Linha, Data, Locais (múltiplos), Crédito de filmagem/Fotografia, Motorista e Texto livre.
+- Inclui controles de Voltar/Avançar, caixa para incluir/excluir cada elemento, duração de vídeo por elemento no Conteúdo e identificação especial do crédito fotográfico.
+- O modo em lote isola a renderização de cada elemento, respeita o FPS, resolução e formato selecionado (MOV/MP4/MKV/WebM), e cria um único arquivo ZIP com vídeos numerados.
+- Compactação ZIP32 implementada em Rust sem serviços externos, limites por arquivo, validação de nomes e proteção contra sobrescrita; arquivos temporários removidos no encerramento.
+- Mantidos JSON, autosave, Kdenlive MLT no modo manual, Chroma Key, brilho, animações e formatos anteriores.
+- AppImage requer as bibliotecas nativas Tauri no Acer; interface Svelte e módulo ZIP Rust possuem testes independentes.
+
 ## 0.1.0-alpha.9.3.13 — Produção centralizada e barras por categoria
 
 - Novo acesso **Produção** na parte inferior da navegação Desktop; recursos SVG, formato de vídeo, transparência, Chroma Key e preset Kdenlive reunidos no mesmo diálogo.

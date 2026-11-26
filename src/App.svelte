@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
-  import { isTauri } from '@tauri-apps/api/core';
+  import { invoke, isTauri } from '@tauri-apps/api/core';
   import { save as nativeSave } from '@tauri-apps/plugin-dialog';
   import { writeTextFile } from '@tauri-apps/plugin-fs';
   import { getOutputDirectory, joinOutputPath, openOutputDirectory, rememberOutputFile } from './lib/output';
@@ -41,6 +41,11 @@
   let previewBackground: 'black' | 'checker' = 'black';
   let autosaveOk = true;
   let showExportVideo = false;
+  let productionMode:'manual'|'wizard'='manual';
+  let wizardIndex=0;
+  let wizardCreditType:'film'|'photo'='film';
+  let renderingProject:RDVProject=project;
+  let batchCount=0,batchCurrent=0,batchLabel='';
   let videoFormat: VideoFormat = 'mov-qtrle';
   let rasterQuality: RasterQuality = 2;
   let exportBackground: ExportBackground = 'transparent';
@@ -59,7 +64,17 @@
 
   $: selected = project.elements.find(element => element.id === selectedId) || null;
   $: autosaveOk = writeAutosave(project);
-  $: totalFrames = Math.round(project.canvas.duration * project.canvas.fps);
+  $: activeDuration=selected?.productionDuration??project.canvas.duration;
+  $: totalFrames = Math.round(activeDuration * project.canvas.fps);
+  $: timelineProject={...project,canvas:{...project.canvas,duration:activeDuration}};
+  $: editorPreviewProject=productionMode==='wizard'&&selected?
+    {...timelineProject,elements:[{...selected,visible:true}]}:timelineProject;
+  const WIZARD_STEPS:{kind:ElementKind;label:string}[]=[
+    {kind:'technical',label:'Ficha técnica'},{kind:'route',label:'Linha'},
+    {kind:'date',label:'Data'},{kind:'location',label:'Local'},
+    {kind:'credit',label:'Crédito da filmagem / fotos'},
+    {kind:'driver',label:'Motorista'},{kind:'freeText',label:'Texto livre'}
+  ];
 
   function notify(text: string, kind: UiStatus['kind'] = 'info'): void {
     status = { kind, text };
@@ -324,7 +339,8 @@
     ];
     if (!needed.length) return;
     const seconds = Math.ceil(Math.max(...needed) * 10) / 10;
-    applyChange({ ...project, canvas: { ...project.canvas, duration: Math.min(30, seconds) } });
+    if(selectedId)changeElement(selectedId,element=>({...element,productionDuration:Math.min(60,seconds)}));
+    else applyChange({ ...project, canvas: { ...project.canvas, duration: Math.min(30, seconds) } });
     notify(seconds > 30 ? `Rolagem requer aproximadamente ${seconds.toFixed(1)} s. Esta alpha limita a duração a 30 s.`
       : `Duração ajustada para ${seconds.toFixed(1)} s, incluindo entrada e saída.`, seconds > 30 ? 'info' : 'success');
   }
@@ -450,6 +466,83 @@
     }));
   }
 
+  function updateSelectedProductionDuration(seconds:number):void {
+    if(!selectedId||exportingVideo)return;
+    changeElement(selectedId,element=>({...element,
+      productionDuration:Math.max(1,Math.min(60,Number.isFinite(seconds)?seconds:5.3))}));
+  }
+  function updateSelectedProductionIncluded(value:boolean):void {
+    if(!selectedId||exportingVideo)return;
+    changeElement(selectedId,element=>({...element,productionIncluded:value}));
+  }
+  function updateSelectedPhotoCredit(photo:boolean):void {
+    if(!selectedId||exportingVideo)return;
+    changeElement(selectedId,element=>element.kind!=='credit'?element:{
+      ...element,productionRole:photo?'photoCredit':undefined,
+      fields:{...element.fields,heading:photo?'CRÉDITO FOTOGRÁFICO':'CRÉDITO DE FILMAGEM'}
+    });
+  }
+  function wizardElementKind(kind:ElementKind,photo=false):HudElement|undefined {
+    return project.elements.find(el=>el.kind===kind&&
+      (kind!=='credit'||(photo?el.productionRole==='photoCredit':el.productionRole!=='photoCredit')));
+  }
+  function chooseWizardElement(kind:ElementKind,photo=false):void {
+    let target=wizardElementKind(kind,photo);
+    if(!target){
+      if(project.elements.length>=MAX_ELEMENTS){notify('Limite de elementos atingido.','error');return;}
+      target=makeElement(kind);
+      if(photo)target={...target,productionRole:'photoCredit',
+        fields:{...target.fields,heading:'CRÉDITO FOTOGRÁFICO',line1:'Fotografia',line2:'RDV Bus'}};
+      applyChange({...project,elements:[...project.elements,target]});
+    }
+    selectedId=target.id;stopPlayback();
+  }
+  function goWizardStep(index:number):void {
+    if(exportingVideo)return;
+    wizardIndex=Math.max(0,Math.min(WIZARD_STEPS.length-1,index));
+    wizardCreditType='film';
+    chooseWizardElement(WIZARD_STEPS[wizardIndex].kind);
+  }
+  function startWizard():void {
+    if(exportingVideo)return;
+    productionMode='wizard';showExportVideo=false;
+    goWizardStep(0);
+  }
+  function addWizardLocation():void {
+    if(exportingVideo||project.elements.length>=MAX_ELEMENTS)return;
+    addElement('location');
+  }
+  function choosePhotoWizard():void {
+    wizardCreditType='photo';chooseWizardElement('credit',true);
+  }
+  function chooseFilmWizard():void {
+    wizardCreditType='film';chooseWizardElement('credit',false);
+  }
+  function snapshotForElement(element:HudElement):RDVProject {
+    const duration=Math.max(1,Math.min(60,element.productionDuration??project.canvas.duration));
+    return {...project,canvas:{...project.canvas,duration},
+      elements:[{...element,visible:true}]};
+  }
+  const batchKeys:{key:string;kind:ElementKind;photo?:boolean}[]=[
+    {key:'Ficha_Tecnica',kind:'technical'},{key:'Linha',kind:'route'},
+    {key:'Data',kind:'date'},{key:'Local',kind:'location'},
+    {key:'Credito_Filmagem',kind:'credit'},
+    {key:'Credito_Fotografico',kind:'credit',photo:true},
+    {key:'Motorista',kind:'driver'},{key:'Texto_Livre',kind:'freeText'}
+  ];
+  function collectWizardElements():{name:string;element:HudElement}[] {
+    const result:{name:string;element:HudElement}[]=[];
+    for(const category of batchKeys){
+      const rows=project.elements.filter(element=>element.kind===category.kind
+        && element.productionIncluded!==false
+        && (category.kind!=='credit'||Boolean(element.productionRole==='photoCredit')===Boolean(category.photo)));
+      for(const [j,element] of rows.entries()){
+        const safe=category.kind==='location'?'Local_'+(j+1):category.key+(j?'_'+(j+1):'');
+        result.push({name:safe,element});
+      }
+    }
+    return result;
+  }
   function changeCanvas(key: 'fps' | 'duration' | 'orientation', value: number | string): void {
     if (key === 'orientation') {
       const portrait = value === 'portrait';
@@ -483,7 +576,7 @@
     if (!playing) return;
     const delta = lastFrame === null ? 0 : Math.min((timestamp - lastFrame) / 1000, 0.1);
     lastFrame = timestamp;
-    time = time + delta >= project.canvas.duration ? 0 : time + delta;
+    time = time + delta >= activeDuration ? 0 : time + delta;
     frameHandle = requestAnimationFrame(animationFrame);
   }
 
@@ -496,14 +589,14 @@
 
   function togglePlayback(): void {
     if (playing) { stopPlayback(); return; }
-    if (time >= project.canvas.duration) time = 0;
+    if (time >= activeDuration) time = 0;
     playing = true;
     lastFrame = null;
     frameHandle = requestAnimationFrame(animationFrame);
   }
 
   function seek(value: number): void {
-    time = clamp(value, 0, project.canvas.duration);
+    time = clamp(value, 0, activeDuration);
     lastFrame = null;
   }
 
@@ -578,69 +671,108 @@
     if (!isDesktop()) notify('Para gerar vídeo, abra o RDV Bus no aplicativo desktop Tauri.', 'info');
   }
 
-  async function exportVideo(): Promise<void> {
-    if (exportingVideo) return;
-    if (!isDesktop()) return notify('Exportação de vídeo disponível somente no aplicativo desktop Tauri. Use npm run desktop:dev.', 'error');
-    const preset = VIDEO_FORMATS.find(item => item.value === videoFormat) ?? VIDEO_FORMATS[0];
-    // H.264 não tem canal alfa. Mesmo que o formato mude antes da reatividade da UI,
-    // nunca gere MP4 com fundo transparente (que seria interpretado como preto).
-    const effectiveBackground: ExportBackground = videoFormat === 'mp4-h264' && exportBackground === 'transparent' ? 'green' : exportBackground;
-    const cleanName = project.name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50) || 'rdv_bus';
+  /** Renderiza uma única categoria, sem mexer no restante do projeto salvo. */
+  async function renderVideoFile(snapshot:RDVProject,output:string):Promise<number> {
+    const frames=Math.round(snapshot.canvas.duration*snapshot.canvas.fps);
+    if(frames<1||frames>1800)throw new Error('Duração individual excede o limite de 1.800 quadros para esta resolução/FPS.');
+    const effectiveBackground:ExportBackground=videoFormat==='mp4-h264'&&exportBackground==='transparent'?'green':exportBackground;
+    renderingProject=snapshot;exportTime=0;
+    await tick();
+    const canvas=document.createElement('canvas');
+    const jobId=await beginVideo(output,snapshot.canvas.width,snapshot.canvas.height,snapshot.canvas.fps,frames,videoFormat);
     try {
-      const output = await nativeSave({ title: 'Exportar vídeo RDV Bus', defaultPath: joinOutputPath(await getOutputDirectory(), `${cleanName}.${preset.ext}`), filters: [{ name: preset.label, extensions: [preset.ext] }] });
-      if (!output) return;
-      stopPlayback();
-      exportingVideo = true;
-      cancelRequested = false;
-      exportProgress = 0;
-      selectedVideoName = output;
-      await tick();
-      const canvas = document.createElement('canvas');
-      const frames = Math.round(project.canvas.duration * project.canvas.fps);
-      const jobId = await beginVideo(output, project.canvas.width, project.canvas.height, project.canvas.fps, frames, videoFormat);
-      try {
-        for (let index = 0; index < frames; index++) {
-          if (cancelRequested) throw new Error('Exportação cancelada.');
-          exportTime = exportFrameTime(index, frames, project.canvas.duration);
-          await tick();
-          const svg = document.querySelector<SVGSVGElement>('.export-render-stage .scene-svg');
-          if (!svg) throw new Error('Quadro SVG de exportação não encontrado.');
-          // O SVG declara tamanho intrínseco ampliado, preservando o viewBox original.
-          // Assim o WebView realmente rasteriza os vetores a 2×, em vez de esticar
-          // um bitmap já rasterizado a 1080p.
-          const xml = exportFrameSvg(svg, project.canvas.width * rasterQuality, project.canvas.height * rasterQuality);
-          const data = await svgToPngBase64(xml, project.canvas.width, project.canvas.height, canvas, rasterQuality, effectiveBackground);
-          await pushVideoFrame(jobId, data);
-          exportProgress = (index + 1) / frames;
-          // Libera o loop de eventos periodicamente para atualizar o painel de progresso.
-          if (index % 8 === 0) await new Promise<void>(resolve => setTimeout(resolve, 0));
-        }
-        await finishVideo(jobId);
-        showExportVideo = false;
-        outputDirectory = rememberOutputFile(output);
-        if (prepareForKdenlive) {
-          try {
-            const mlt = await prepareKdenliveClip({
-              path: output,width:project.canvas.width,height:project.canvas.height,
-              fps:project.canvas.fps,frames,background:effectiveBackground
-            });
-            notify(`Vídeo e clipe Kdenlive preparados: ${mlt}`, 'success');
-          } catch (error) {
-            notify(`Vídeo exportado, mas falhou o arquivo Kdenlive: ${error instanceof Error ? error.message : String(error)}`, 'error');
-          }
-        }else{
-          notify(`Vídeo exportado: ${output}`, 'success');
-        }
-      } catch (error) {
-        try { await cancelVideo(jobId); } catch { /* O processo pode ter encerrado. */ }
-        throw error;
+      for(let index=0;index<frames;index++){
+        if(cancelRequested)throw new Error('Produção cancelada.');
+        exportTime=exportFrameTime(index,frames,snapshot.canvas.duration);
+        await tick();
+        const svg=document.querySelector<SVGSVGElement>('.export-render-stage .scene-svg');
+        if(!svg)throw new Error('Quadro de exportação indisponível.');
+        const xml=exportFrameSvg(svg,snapshot.canvas.width*rasterQuality,snapshot.canvas.height*rasterQuality);
+        const data=await svgToPngBase64(xml,snapshot.canvas.width,snapshot.canvas.height,canvas,rasterQuality,effectiveBackground);
+        await pushVideoFrame(jobId,data);
+        exportProgress=batchCount>0?
+          (batchCurrent+(index+1)/frames)/batchCount:(index+1)/frames;
+        if(index%8===0)await new Promise<void>(resolve=>setTimeout(resolve,0));
       }
-    } catch (error) {
-      notify(`Falha ao gerar vídeo: ${error instanceof Error ? error.message : String(error)}`, 'error');
-    } finally {
-      exportingVideo = false;
-      cancelRequested = false;
-      selectedVideoName = '';
+      await finishVideo(jobId);
+      return frames;
+    } catch(error) {
+      try{await cancelVideo(jobId);}catch{/* FFmpeg pode ter encerrado */}
+      throw error;
+    }
+  }
+  async function exportVideo():Promise<void>{
+    if(exportingVideo)return;
+    if(!isDesktop())return notify('Produção de vídeo exige o aplicativo Desktop Tauri.','error');
+    const element=selected??project.elements.find(el=>el.visible);
+    if(!element)return notify('Selecione uma categoria para gerar seu vídeo.','error');
+    const preset=VIDEO_FORMATS.find(item=>item.value===videoFormat)??VIDEO_FORMATS[0];
+    const cleanName=(project.name+'_'+element.title).normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,75)||'rdv_bus';
+    const output=await nativeSave({title:'Produzir vídeo da categoria',defaultPath:joinOutputPath(await getOutputDirectory(),
+      cleanName+'.'+preset.ext),filters:[{name:preset.label,extensions:[preset.ext]}]});
+    if(!output)return;
+    stopPlayback();exportingVideo=true;cancelRequested=false;exportProgress=0;
+    batchCount=0;selectedVideoName=output;
+    const snapshot=snapshotForElement(element);
+    try{
+      const frames=await renderVideoFile(snapshot,output);
+      outputDirectory=rememberOutputFile(output);
+      showExportVideo=false;
+      if(prepareForKdenlive){
+        try{
+          const mlt=await prepareKdenliveClip({path:output,width:snapshot.canvas.width,
+            height:snapshot.canvas.height,fps:snapshot.canvas.fps,frames,
+            background:videoFormat==='mp4-h264'&&exportBackground==='transparent'?'green':exportBackground});
+          notify('Vídeo e clipe Kdenlive preparados: '+mlt,'success');
+        }catch(error){
+          notify('Vídeo exportado, mas falhou o arquivo Kdenlive: '+String(error),'error');
+        }
+      }else notify('Vídeo da categoria exportado: '+output,'success');
+    }catch(error){notify('Falha ao gerar vídeo: '+String(error),'error');}
+    finally{exportingVideo=false;cancelRequested=false;renderingProject=project;selectedVideoName='';}
+  }
+  /** Passo a passo: gera vídeos separados e os agrega sem sobrescrever arquivos. */
+  async function produceWizardZip():Promise<void>{
+    if(exportingVideo)return;
+    if(!isDesktop())return notify('O ZIP de vídeos exige o aplicativo Desktop Tauri.','error');
+    const list=collectWizardElements();
+    if(!list.length)return notify('Marque ao menos uma categoria para gerar o ZIP.','error');
+    if(list.length>24)return notify('Máximo de 24 vídeos por produção.','error');
+    const preset=VIDEO_FORMATS.find(item=>item.value===videoFormat)??VIDEO_FORMATS[0];
+    for(const item of list){
+      if(Math.round((item.element.productionDuration??project.canvas.duration)*project.canvas.fps)>1800)
+        return notify('A categoria '+item.element.title+' excede 1.800 quadros; reduza a duração ou FPS.','error');
+    }
+    const safeProject=project.name.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,60)||'RDV_Bus';
+    const zipPath=await nativeSave({title:'Salvar produção completa RDV Bus',defaultPath:joinOutputPath(await getOutputDirectory(),
+      safeProject+'_Producao.zip'),filters:[{name:'Produção ZIP',extensions:['zip']}]});
+    if(!zipPath)return;
+    let stage:string|undefined;
+    stopPlayback();exportingVideo=true;cancelRequested=false;exportProgress=0;
+    batchCount=list.length;batchCurrent=0;
+    try{
+      stage=await invoke<string>('production_stage_create');
+      const filenames:string[]=[];
+      for(const [index,item] of list.entries()){
+        if(cancelRequested)throw new Error('Produção cancelada.');
+        batchCurrent=index;batchLabel=item.element.title;
+        const filename=String(index+1).padStart(2,'0')+'_'+item.name+'.'+preset.ext;
+        selectedVideoName='Etapa '+(index+1)+'/'+list.length+' · '+item.element.title;
+        await renderVideoFile(snapshotForElement(item.element),joinOutputPath(stage,filename));
+        filenames.push(filename);
+      }
+      if(cancelRequested)throw new Error('Produção cancelada.');
+      selectedVideoName='Compactando '+list.length+' vídeos…';
+      await invoke('production_bundle_zip',{stage,output:zipPath,files:filenames});
+      outputDirectory=rememberOutputFile(zipPath);showExportVideo=false;
+      notify('Produção concluída: '+list.length+' vídeos no ZIP '+zipPath,'success');
+    }catch(error){
+      notify('Falha na produção em lote: '+String(error),'error');
+    }finally{
+      if(stage)await invoke('production_stage_cleanup',{stage}).catch(()=>{});
+      batchCount=0;batchCurrent=0;batchLabel='';renderingProject=project;
+      exportingVideo=false;cancelRequested=false;selectedVideoName='';
     }
   }
 
@@ -720,6 +852,46 @@
     {/if}
 
     <main class="editor-main">
+      {#if productionMode==='wizard'}
+        <section class="wizard-desktop-bar" aria-label="Assistente de produção">
+          <div class="wizard-desktop-heading">
+            <strong>Passo {wizardIndex+1} de {WIZARD_STEPS.length}: {WIZARD_STEPS[wizardIndex].label}</strong>
+            <button class="button secondary-button" disabled={exportingVideo} on:click={()=>productionMode='manual'}>Modo manual</button>
+          </div>
+          <div class="wizard-desktop-controls">
+            {#if WIZARD_STEPS[wizardIndex].kind==='location'}
+              {#each project.elements.filter(el=>el.kind==='location') as place,i}
+                <button class="button secondary-button" class:active-wizard-item={selectedId===place.id}
+                  on:click={()=>selectedId=place.id}>Local {i+1}</button>
+              {/each}
+              <button class="button secondary-button" on:click={addWizardLocation}>+ Adicionar local</button>
+            {/if}
+            {#if WIZARD_STEPS[wizardIndex].kind==='credit'}
+              <button class="button secondary-button" class:active-wizard-item={wizardCreditType==='film'}
+                on:click={chooseFilmWizard}>Crédito de filmagem</button>
+              <button class="button secondary-button" class:active-wizard-item={wizardCreditType==='photo'}
+                on:click={choosePhotoWizard}>Crédito de fotos</button>
+            {/if}
+            {#if selected}
+              <label class="wizard-desktop-checkbox"><input type="checkbox" checked={selected.productionIncluded!==false}
+                on:change={event=>updateSelectedProductionIncluded(event.currentTarget.checked)}/>
+                Incluir {selected.title} no ZIP
+              </label>
+            {/if}
+          </div>
+          <div class="wizard-desktop-nav">
+            <button class="button secondary-button" disabled={wizardIndex===0||exportingVideo}
+              on:click={()=>goWizardStep(wizardIndex-1)}>‹ Voltar</button>
+            {#if wizardIndex<WIZARD_STEPS.length-1}
+              <button class="button primary-button" disabled={exportingVideo}
+                on:click={()=>goWizardStep(wizardIndex+1)}>Avançar ›</button>
+            {:else}
+              <button class="button primary-button" disabled={exportingVideo}
+                on:click={()=>openVideoDialog()}>✓ Produzir ZIP</button>
+            {/if}
+          </div>
+        </section>
+      {/if}
       <div class="canvas-toolbar">
         <div class="canvas-title"><Icon name="layout" size={17}/><strong>Editor de cena</strong><span class="breadcrumb-separator">/</span><span>Composição principal</span></div>
         <div class="canvas-toolbar-right"><button class="canvas-chip preview-toggle" class:preview-toggle-active={previewBackground === 'black'} aria-pressed={previewBackground === 'black'} title="Alternar fundo preto e transparência quadriculada" on:click={() => previewBackground = previewBackground === 'black' ? 'checker' : 'black'}><Icon name="layers" size={13}/> {previewBackground === 'black' ? 'Fundo preto' : 'Quadriculado'}</button><span class="canvas-chip"><span class="chip-dot"></span>Pré-visualização SVG</span><span class="canvas-chip resolution-chip">{project.canvas.width} × {project.canvas.height}</span></div>
@@ -728,7 +900,7 @@
         <div class="canvas-stack">
           <div class="canvas-top-caption"><span><Icon name="maximize" size={15}/> Monitor de pré-visualização</span><span>{project.canvas.width === 1080 ? '9:16' : '16:9'} · SVG com transparência</span></div>
           <div class="canvas-bezel">
-            <div class="stage-checker" class:stage-black={previewBackground === 'black'} class:portrait-stage={project.canvas.width === 1080} style={`aspect-ratio: ${project.canvas.width} / ${project.canvas.height}`}><ScenePreview {project} {selectedId} {time} onSelect={(id) => selectedId = id} onMove={moveElement} onResize={resizeElement}
+            <div class="stage-checker" class:stage-black={previewBackground === 'black'} class:portrait-stage={project.canvas.width === 1080} style={`aspect-ratio: ${project.canvas.width} / ${project.canvas.height}`}><ScenePreview project={editorPreviewProject} {selectedId} {time} onSelect={(id) => selectedId = id} onMove={moveElement} onResize={resizeElement}
               onBeginEdit={stopPlayback} onEditField={editTextDirect} onEditCaption={editCaptionDirect}
               onTextFormat={editTextFormatting} onParagraphFormat={editParagraphDirect} {systemFonts}/>
 </div>
@@ -736,10 +908,10 @@
           <div class="canvas-bottom-bar"><span><span class="live-indicator"></span> Cena editável</span><span>Clique no texto para editar · arraste o painel para mover · alças para redimensionar</span><span>{project.elements.filter(e => e.visible).length} visíveis de {project.elements.length}</span></div>
         </div>
       </div>
-      <div class="timeline-panel"><Timeline {project} {selectedId} {time} {playing} onTogglePlay={togglePlayback} onStop={stopAndRewind} onSeek={seek} onSelect={(id) => selectedId = id}/></div>
+      <div class="timeline-panel"><Timeline project={timelineProject} {selectedId} {time} {playing} onTogglePlay={togglePlayback} onStop={stopAndRewind} onSeek={seek} onSelect={(id) => selectedId = id}/></div>
     </main>
 
-    <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onShineToggle={updateSelectedShine} onDiagonalGlowToggle={updateSelectedDiagonalGlow} onDiagonalGlowIntensity={updateSelectedDiagonalIntensity} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onFooter={updateSelectedFooter} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onTechnicalLayout={updateTechnicalLayout}
+    <aside class="inspector-panel"><PropertiesPanel {project} {selected} onField={updateSelectedField} onStyle={updateSelectedStyle} onTextColor={changeSelectedTextColor} onTextGroup={changeSelectedTextGroup} onProjectTextGroup={changeProjectTextGroup} onAllSelectedText={changeAllSelectedTextColor} onAllProjectText={changeAllProjectTextColor} onPalettePreset={changeProjectPalettePreset} onPaletteColor={changeProjectPaletteColor} onAnimation={updateSelectedAnimation} onShineToggle={updateSelectedShine} onDiagonalGlowToggle={updateSelectedDiagonalGlow} onDiagonalGlowIntensity={updateSelectedDiagonalIntensity} onRename={updateSelectedTitle} onDuplicate={duplicateSelected} onDelete={deleteSelected} onImage={updateSelectedImage} onFooter={updateSelectedFooter} onCanvas={changeCanvas} onTechnicalSide={updateTechnicalSide} onProductionDuration={updateSelectedProductionDuration} onProductionIncluded={updateSelectedProductionIncluded} onPhotoCredit={updateSelectedPhotoCredit} onTechnicalLayout={updateTechnicalLayout}
       {systemFonts} onFontFamily={updateSelectedFontFamily} onVisualPreset={updateSelectedVisualPreset} onFitScrollDuration={fitSelectedScrollDuration} onRichText={updateRichText} onFreeTextStyle={changeFreeTextStyle} onLabelBarSize={updateLabelBarSize} onAutoFitLabel={setLabelAutoFit} onFreeTextNote={updateSelectedFreeTextNote} onFreeTextIcon={updateSelectedFreeTextIcon} onFreeTextDisplay={updateSelectedFreeTextDisplay} onFreeTextCaption={updateFreeTextCaption} onResetScale={resetSelectedScale} onStandardizeSelected={standardizeSelectedCard} onStandardizeAll={standardizeAllCards} onSelectNone={() => selectedId = null}/></aside>
   </div>
 
@@ -748,7 +920,7 @@
 
 {#if exportingVideo}
   <div class="export-render-stage" aria-hidden="true" style={`width:${project.canvas.width}px;height:${project.canvas.height}px`}>
-    <ScenePreview {project} selectedId={null} time={exportTime} onSelect={() => {}} onMove={() => {}} />
+    <ScenePreview project={renderingProject} selectedId={null} time={exportTime} onSelect={() => {}} onMove={() => {}} />
   </div>
 {/if}
 
@@ -757,7 +929,16 @@
     <div class="help-dialog production-dialog" role="dialog" aria-modal="true" aria-label="Produção de vídeo, SVG e projeto">
       <div class="dialog-heading"><div><Icon name="film"/><strong>Produção · RDV Bus Studio</strong></div><button class="icon-button" aria-label="Fechar" disabled={exportingVideo} on:click={() => showExportVideo = false}>×</button></div>
       <div class="dialog-content video-export-content">
-        <p>Escolha o formato de saída e a composição. Os elementos continuam sendo personalizados nas suas próprias categorias.</p>
+        <p>Escolha entre produzir a categoria selecionada ou seguir o assistente para vários vídeos em um ZIP.</p>
+        <div class="production-mode-desktop" role="group" aria-label="Modo de produção">
+          <button type="button" class:chosen={productionMode==='manual'} disabled={exportingVideo}
+            on:click={()=>productionMode='manual'}>Manual · categoria selecionada</button>
+          <button type="button" class:chosen={productionMode==='wizard'} disabled={exportingVideo}
+            on:click={startWizard}>Passo a passo · ZIP</button>
+        </div>
+        {#if productionMode==='wizard'}
+          <p class="export-description">Ordem: ficha técnica, linha, data, locais, créditos de filmagem/fotos, motorista e texto livre. As caixas desmarcadas não entram no ZIP; cada elemento tem duração própria.</p>
+        {/if}
         <div class="production-project-controls">
           <label for="production-orientation">Proporção e resolução</label>
           <select id="production-orientation" value={project.canvas.width===1080?'portrait':'landscape'} disabled={exportingVideo}
@@ -770,9 +951,10 @@
             on:change={event=>changeCanvas('fps',Number(event.currentTarget.value))}>
             <option value="30">30 FPS</option><option value="60">60 FPS</option>
           </select>
-          <label for="production-duration">Duração (segundos)</label>
-          <input id="production-duration" type="number" min="1" max="30" step="0.1" value={project.canvas.duration}
-            disabled={exportingVideo} on:change={event=>changeCanvas('duration',Number(event.currentTarget.value))}/>
+          <label for="production-duration">Duração da categoria selecionada (segundos)</label>
+          <input id="production-duration" type="number" min="1" max="60" step="0.1"
+            value={selected?.productionDuration??project.canvas.duration}
+            disabled={exportingVideo} on:change={event=>selected?updateSelectedProductionDuration(Number(event.currentTarget.value)):changeCanvas('duration',Number(event.currentTarget.value))}/>
         </div>
         <div class="production-quick-actions">
           <button type="button" class="button secondary-button" disabled={exportingVideo} on:click={() => void exportSvg()}><Icon name="download" size={16}/> Exportar quadro SVG</button>
@@ -825,7 +1007,7 @@
         {#if exportingVideo}
           <label for="export-progress">Gerando vídeo: {Math.round(exportProgress * 100)}%</label>
           <progress id="export-progress" value={exportProgress} max="1" style="width:100%"></progress>
-          <p class="export-description">{selectedVideoName}</p>
+          <p class="export-description">{selectedVideoName} {batchCount>0?`· ${batchCurrent+1}/${batchCount}: ${batchLabel}`:''}</p>
         {/if}
       </div>
       <div class="dialog-actions">
@@ -833,7 +1015,8 @@
           <button class="button secondary-button" on:click={() => cancelRequested = true} disabled={cancelRequested}>Cancelar geração</button>
         {:else}
           <button class="button ghost-button" on:click={() => showExportVideo = false}>Voltar à edição</button>
-          <button class="button primary-button" on:click={() => void exportVideo()} disabled={!isDesktop()}><Icon name="film" size={16}/> Gerar vídeo</button>
+          <button class="button primary-button" on:click={() => void (productionMode==='wizard'?produceWizardZip():exportVideo())}
+            disabled={!isDesktop()}><Icon name="film" size={16}/> {productionMode==='wizard'?'Produzir ZIP':'Gerar vídeo da categoria'}</button>
         {/if}
       </div>
     </div>

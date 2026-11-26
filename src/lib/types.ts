@@ -1,4 +1,4 @@
-export const APP_VERSION = '0.1.0-alpha.9.3.13';
+export const APP_VERSION = '0.1.0-alpha.9.3.14';
 export const SCHEMA_VERSION = 1;
 export const DEFAULT_DURATION = 5.3;
 export const MAX_ELEMENTS = 64;
@@ -102,6 +102,12 @@ export interface HudElement {
   footerText?: string;
   footerImageData?: string;
   technicalSide?: 'left' | 'right';
+  /** Duração individual da saída deste elemento, independente da duração geral. */
+  productionDuration?:number;
+  /** Quando false, o elemento não entra no ZIP do passo a passo. */
+  productionIncluded?:boolean;
+  /** Crédito de fotografia é uma subcategoria independente do crédito de filmagem. */
+  productionRole?:'photoCredit';
   /** Estilos opcionais do Texto livre; versões anteriores usam 'classic'. */
   freeTextStyle?: FreeTextStyle;
   /** Ícone social opcional do Texto livre; compatível com projetos antigos. */
